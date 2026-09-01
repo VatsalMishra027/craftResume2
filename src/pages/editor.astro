@@ -2,24 +2,181 @@
 import Layout from '../layouts/Layout.astro';
 import Logo from '../components/Logo.astro';
 import Field from '../components/editor/Field.astro';
-import { TEMPLATES } from '../lib/templates';
+import { ACCENTS, ATS_LABEL, templatesByCategory } from '../lib/templates';
 import '../styles/resume.css';
 
-const sections = [
-  { key: 'experience', title: 'Experience', add: 'Add a role' },
-  { key: 'education', title: 'Education', add: 'Add a qualification' },
-  { key: 'projects', title: 'Projects', add: 'Add a project' },
+/** Left rail. `basics` is the singleton; everything else is a repeatable list. */
+const panels = [
+  { key: 'basics', title: 'Personal Info', icon: 'user' },
+  { key: 'experience', title: 'Experience', icon: 'case', add: 'Add a role' },
+  { key: 'education', title: 'Education', icon: 'cap', add: 'Add a qualification' },
+  { key: 'skills', title: 'Skills', icon: 'star', add: 'Add a skill' },
+  { key: 'languages', title: 'Languages', icon: 'globe', add: 'Add a language' },
+  { key: 'projects', title: 'Projects', icon: 'doc', add: 'Add a project' },
+  { key: 'certifications', title: 'Certifications', icon: 'award', add: 'Add a certification' },
+  { key: 'publications', title: 'Publications', icon: 'book', add: 'Add a publication' },
+  { key: 'interests', title: 'Interests', icon: 'heart', add: 'Add an interest' },
 ] as const;
+
+const icons: Record<string, string> = {
+  user: '<circle cx="8" cy="5.4" r="2.6"/><path d="M2.8 13.6a5.2 5.2 0 0 1 10.4 0"/>',
+  case: '<rect x="2.2" y="5.4" width="11.6" height="8.2" rx="1.2"/><path d="M6 5.4V3.6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1.8"/>',
+  cap: '<path d="m8 2.6 6 2.8-6 2.8-6-2.8z"/><path d="M4.4 6.6v3.6c0 1 1.6 1.8 3.6 1.8s3.6-.8 3.6-1.8V6.6"/>',
+  star: '<path d="m8 1.9 1.9 3.9 4.3.6-3.1 3 .7 4.3L8 11.7 4.2 13.7l.7-4.3-3.1-3 4.3-.6z"/>',
+  globe: '<circle cx="8" cy="8" r="6"/><path d="M2 8h12M8 2c1.8 2 1.8 10 0 12M8 2C6.2 4 6.2 12 8 14"/>',
+  doc: '<path d="M9 1.8H4.4a1 1 0 0 0-1 1v10.4a1 1 0 0 0 1 1h7.2a1 1 0 0 0 1-1V5.4z"/><path d="M9 1.8v3.6h3.6"/>',
+  award: '<circle cx="8" cy="6.2" r="3.8"/><path d="M5.6 9.5 4.6 14 8 12.4 11.4 14l-1-4.5"/>',
+  book: '<path d="M2.6 3h4a2 2 0 0 1 2 2v8a1.6 1.6 0 0 0-1.6-1.6H2.6z"/><path d="M13.4 3h-4a2 2 0 0 0-2 2v8a1.6 1.6 0 0 1 1.6-1.6h4.4z"/>',
+  heart:
+    '<path d="M8 13.6S2.2 10.3 2.2 6.4a2.9 2.9 0 0 1 5.8-.9 2.9 2.9 0 0 1 5.8.9c0 3.9-5.8 7.2-5.8 7.2z"/>',
+};
+
+const listPanels = panels.filter((panel) => panel.key !== 'basics');
 ---
 
 <Layout title="Editor — CraftResume" bare>
   <div class="flex h-dvh flex-col">
     <!-- Top bar -->
-    <header class="flex h-14 flex-none items-center justify-between gap-4 border-b border-line bg-paper px-4 sm:px-6">
-      <Logo />
+    <header
+      class="flex h-14 flex-none items-center justify-between gap-3 border-b border-line bg-paper px-3 sm:px-5"
+    >
+      <div class="flex items-center gap-4">
+        <Logo class="[&>span:last-child]:hidden sm:[&>span:last-child]:inline" />
+
+        <div class="flex items-center gap-1.5">
+          <!-- Template -->
+          <div class="relative" data-menu="template">
+            <button
+              type="button"
+              data-menu-button
+              aria-expanded="false"
+              class="inline-flex h-9 items-center gap-2 rounded-lg border border-line px-3 text-[13px] font-medium text-ink transition-colors duration-150 hover:bg-paper-sunk"
+            >
+              <svg viewBox="0 0 16 16" fill="none" class="size-3.5 text-ink-muted" aria-hidden="true">
+                <path
+                  d="M8 1.8 14.2 5 8 8.2 1.8 5zM1.8 8l6.2 3.2L14.2 8M1.8 11l6.2 3.2L14.2 11"
+                  stroke="currentColor"
+                  stroke-width="1.2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"></path>
+              </svg>
+              <span class="hidden sm:inline" data-template-label>Atlas</span>
+              <span class="text-ink-faint" aria-hidden="true">▾</span>
+            </button>
+
+            <div
+              data-menu-panel
+              hidden
+              class="absolute left-0 top-11 z-40 max-h-[min(32rem,70vh)] w-[19rem] overflow-y-auto overscroll-contain rounded-xl border border-line bg-paper p-1.5 shadow-lift"
+            >
+              {
+                templatesByCategory().map((group) => (
+                  <div>
+                    <p class="px-2.5 pb-1 pt-2 text-[10px] font-semibold tracking-[0.14em] text-ink-faint uppercase">
+                      {group.category}
+                    </p>
+                    {group.items.map((template) => (
+                      <button
+                        type="button"
+                        data-template={template.id}
+                        data-template-name={template.name}
+                        aria-pressed="false"
+                        class="flex w-full items-start gap-2.5 rounded-lg px-2.5 py-2 text-left transition-colors duration-150 hover:bg-paper-sunk"
+                      >
+                        <span
+                          class="mt-1 size-3.5 flex-none rounded-full border border-line-strong"
+                          data-template-tick
+                        />
+                        <span class="min-w-0 flex-1">
+                          <span class="flex items-baseline gap-2">
+                            <span class="text-[13px] font-semibold tracking-[-0.01em]">
+                              {template.name}
+                            </span>
+                            <span class="ml-auto flex-none text-[10px] text-ink-faint">
+                              {ATS_LABEL[template.ats]}
+                            </span>
+                          </span>
+                          <span class="mt-0.5 block text-[11px] leading-snug text-ink-muted">
+                            {template.tagline}
+                          </span>
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                ))
+              }
+
+              <a
+                href="/templates?tab=roles"
+                class="mt-2 flex items-center justify-between gap-2 rounded-lg border-t border-line px-2.5 pt-2.5 pb-1.5 text-[11px] font-medium text-ink-muted transition-colors duration-150 hover:text-ink"
+              >
+                Browse role blueprints
+                <span aria-hidden="true">→</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- Colour -->
+          <div class="relative" data-menu="accent">
+            <button
+              type="button"
+              data-menu-button
+              aria-expanded="false"
+              class="inline-flex h-9 items-center gap-2 rounded-lg border border-line px-3 text-[13px] font-medium text-ink transition-colors duration-150 hover:bg-paper-sunk"
+            >
+              <span class="size-3.5 rounded-full" data-accent-dot></span>
+              <span class="hidden sm:inline">Color</span>
+              <span class="text-ink-faint" aria-hidden="true">▾</span>
+            </button>
+
+            <div
+              data-menu-panel
+              hidden
+              class="absolute left-0 top-11 z-40 w-[15.5rem] rounded-xl border border-line bg-paper p-3 shadow-lift"
+            >
+              <p class="pb-2.5 text-[10px] font-semibold tracking-[0.14em] text-ink-faint uppercase">
+                Print accent colors
+              </p>
+              <div class="grid grid-cols-4 gap-2.5">
+                {
+                  ACCENTS.map((accent) => (
+                    <button
+                      type="button"
+                      data-accent={accent.id}
+                      aria-pressed="false"
+                      title={accent.name}
+                      style={`background:${accent.hex}`}
+                      class="grid size-9 place-items-center rounded-full text-paper transition-transform duration-150 hover:scale-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+                    >
+                      <svg
+                        viewBox="0 0 16 16"
+                        fill="none"
+                        class="size-4 opacity-0"
+                        data-accent-tick
+                        aria-hidden="true"
+                      >
+                        <path
+                          d="m3.4 8.4 3 3 6.2-6.6"
+                          stroke="currentColor"
+                          stroke-width="1.8"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
+                      <span class="sr-only">{accent.name}</span>
+                    </button>
+                  ))
+                }
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <div class="flex items-center gap-3">
-        <span class="hidden text-xs text-ink-faint sm:inline" data-save-status>Saved to this browser</span>
+        <span class="hidden text-xs text-ink-faint lg:inline" data-save-status>
+          Saved to this browser
+        </span>
 
         <button
           type="button"
@@ -40,51 +197,86 @@ const sections = [
       </div>
     </header>
 
-    <!-- Split view -->
-    <div
-      data-view-root
-      data-active-view="edit"
-      class="grid min-h-0 flex-1 lg:grid-cols-[minmax(380px,30rem)_1fr]"
-    >
+    <!-- Three panes: section rail · form · preview -->
+    <div data-view-root data-active-view="edit" class="editor-grid min-h-0 flex-1">
+      <!-- Section rail -->
+      <nav class="pane-rail border-line bg-paper lg:border-r" aria-label="Sections">
+        <p class="rail-heading">Sections</p>
+        <ul class="rail-list">
+          {
+            panels.map((panel) => (
+              <li class="rail-row" data-rail={panel.key}>
+                <button
+                  type="button"
+                  data-goto={panel.key}
+                  aria-current="false"
+                  class="rail-item"
+                >
+                  <svg
+                    viewBox="0 0 16 16"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class="size-4 flex-none text-ink-muted"
+                    aria-hidden="true"
+                    set:html={icons[panel.icon]}
+                  />
+                  <span class="rail-label truncate" data-rail-label={panel.key}>
+                    {panel.title}
+                  </span>
+                  <span class="rail-count" data-count={panel.key} />
+                </button>
+
+                {/* The singleton carries the name and contact block rather than a
+                    heading of its own, so there is nothing here to retitle. */}
+                {panel.key !== 'basics' && (
+                  <Fragment>
+                    <button
+                      type="button"
+                      class="rail-more"
+                      data-section-menu={panel.key}
+                      aria-expanded="false"
+                      aria-label={`Rename or remove ${panel.title}`}
+                      title={`Rename or remove ${panel.title}`}
+                    >
+                      <svg viewBox="0 0 16 16" fill="currentColor" class="size-3.5" aria-hidden="true">
+                        <circle cx="3.6" cy="8" r="1.2" />
+                        <circle cx="8" cy="8" r="1.2" />
+                        <circle cx="12.4" cy="8" r="1.2" />
+                      </svg>
+                    </button>
+
+                    <div class="rail-menu" data-section-panel={panel.key} hidden>
+                      <button type="button" class="rail-menu-item" data-section-rename={panel.key}>
+                        Rename heading
+                      </button>
+                      <button type="button" class="rail-menu-item" data-section-toggle={panel.key}>
+                        <span data-toggle-label>Remove from resume</span>
+                      </button>
+                    </div>
+                  </Fragment>
+                )}
+              </li>
+            ))
+          }
+        </ul>
+      </nav>
+
       <!-- Form -->
       <section
         data-editor-form
-        class="pane-edit min-h-0 overflow-y-auto border-line bg-paper lg:border-r"
+        class="pane-edit min-h-0 overflow-y-auto border-line bg-paper"
         aria-label="Resume details"
       >
-        <div class="mx-auto max-w-2xl space-y-10 px-4 pt-8 pb-28 sm:px-6 lg:pb-10">
-          <!-- Template -->
-          <section>
-            <h2 class="eyebrow">Template</h2>
-            <div class="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-              {
-                TEMPLATES.map((template) => (
-                  <button
-                    type="button"
-                    data-template={template.id}
-                    aria-pressed="false"
-                    class="rounded-lg border border-line px-3 py-2.5 text-left text-ink-soft transition-colors duration-200 hover:border-line-strong"
-                  >
-                    <span class="block text-[13px] font-semibold tracking-[-0.01em]">
-                      {template.name}
-                    </span>
-                    <span class="mt-0.5 block text-[10px] opacity-70">{template.bestFor}</span>
-                  </button>
-                ))
-              }
-            </div>
-          </section>
-
-          <!-- Basics -->
-          <section class="border-t border-line pt-8">
-            <h2 class="eyebrow">Your details</h2>
+        <div class="mx-auto max-w-2xl px-4 pt-7 pb-28 sm:px-6 lg:pb-10">
+          <!-- Personal info -->
+          <section data-panel="basics" hidden>
+            <h2 class="panel-title">Personal Info</h2>
             <div class="mt-4 grid gap-3 sm:grid-cols-2">
               <Field label="Full name" field="basics.fullName" placeholder="Ananya Rao" />
-              <Field
-                label="Job title"
-                field="basics.title"
-                placeholder="Senior Product Designer"
-              />
+              <Field label="Job title" field="basics.title" placeholder="Senior Product Designer" />
               <Field label="Email" field="basics.email" type="email" placeholder="you@email.com" />
               <Field label="Phone" field="basics.phone" placeholder="+91 98200 41122" />
               <Field label="Location" field="basics.location" placeholder="Bengaluru, India" />
@@ -93,8 +285,8 @@ const sections = [
                 label="LinkedIn"
                 field="basics.linkedin"
                 placeholder="linkedin.com/in/yourname"
-                class="sm:col-span-2"
               />
+              <Field label="GitHub" field="basics.github" placeholder="github.com/yourname" />
               <Field
                 label="Summary"
                 field="basics.summary"
@@ -104,82 +296,78 @@ const sections = [
                 hint="Keep it to about 40 words. Specific beats impressive."
               />
             </div>
+
+            <div class="mt-10 border-t border-line pt-6">
+              <div class="flex flex-wrap items-center justify-between gap-4">
+                <p class="max-w-xs text-xs leading-relaxed text-ink-faint">
+                  Everything here is stored in this browser only. Nothing is uploaded.
+                </p>
+                <button
+                  type="button"
+                  data-clear
+                  class="rounded-full border border-line px-3.5 py-1.5 text-xs font-medium text-ink-muted transition-colors duration-200 hover:border-clay hover:text-clay"
+                >
+                  Clear everything
+                </button>
+              </div>
+            </div>
           </section>
 
           <!-- Repeatable sections -->
           {
-            sections.map((section) => (
-              <section class="border-t border-line pt-8">
+            listPanels.map((panel) => (
+              <section data-panel={panel.key} hidden>
                 <div class="flex items-center justify-between gap-4">
-                  <h2 class="eyebrow">{section.title}</h2>
+                  <h2 class="panel-title" data-panel-title={panel.key}>
+                    {panel.title}
+                  </h2>
                   <button
                     type="button"
-                    data-add={section.key}
-                    class="inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-medium text-ink transition-colors duration-200 hover:bg-paper-sunk"
+                    data-add={panel.key}
+                    class="inline-flex flex-none items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-medium text-ink transition-colors duration-200 hover:bg-paper-sunk"
                   >
                     <span aria-hidden="true">+</span>
-                    {section.add}
+                    {panel.add}
                   </button>
                 </div>
-                <div class="mt-4 space-y-3" data-list={section.key} />
+                <div class="mt-4 space-y-3" data-list={panel.key} />
               </section>
             ))
           }
-
-          <!-- Skills -->
-          <section class="border-t border-line pt-8">
-            <h2 class="eyebrow">Skills</h2>
-            <div class="mt-4">
-              <Field
-                label="Skills"
-                field="skills"
-                rows={3}
-                placeholder="Product strategy, User research, Figma, Accessibility"
-                hint="Separate with commas or new lines."
-              />
-            </div>
-          </section>
-
-          <!-- Danger zone -->
-          <section class="border-t border-line pt-8 pb-4">
-            <div class="flex flex-wrap items-center justify-between gap-4">
-              <p class="max-w-xs text-xs leading-relaxed text-ink-faint">
-                Everything here is stored in this browser only. Nothing is uploaded.
-              </p>
-              <button
-                type="button"
-                data-clear
-                class="rounded-full border border-line px-3.5 py-1.5 text-xs font-medium text-ink-muted transition-colors duration-200 hover:border-clay hover:text-clay"
-              >
-                Clear everything
-              </button>
-            </div>
-          </section>
         </div>
       </section>
 
+      <!-- Drag to give either side more room. -->
+      <div
+        data-splitter
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Resize the editing panel"
+        tabindex="0"
+        title="Drag to resize · arrow keys to nudge · double-click to reset"
+        class="pane-splitter"
+      >
+        <span class="pane-splitter-grip" aria-hidden="true"></span>
+      </div>
+
       <!-- Live preview -->
       <section class="pane-preview min-h-0 overflow-y-auto bg-paper-sunk" aria-label="Live preview">
-        <div class="mx-auto w-full max-w-[860px] px-4 pt-8 pb-28 sm:px-8 lg:pb-10">
-          <div class="mb-4 flex items-center justify-between">
+        <div class="mx-auto w-full max-w-[900px] px-4 pt-7 pb-28 sm:px-8 lg:pb-10">
+          <div class="mb-4 flex items-center justify-between gap-4">
             <p class="text-xs text-ink-faint" data-page-count>Live preview · A4</p>
-            <button
-              type="button"
-              data-download
-              class="text-xs font-medium text-ink underline-offset-4 hover:underline"
-            >
-              Download PDF
-            </button>
+            <p class="hidden text-xs text-ink-faint sm:block">
+              Double-click anything on the page to edit it
+            </p>
           </div>
 
-          <div
-            class="sheet-fit sheet-fit--flow rounded-sm shadow-page"
-            data-sheet-fit="flow"
+          <div class="sheet-fit sheet-fit--flow rounded-sm shadow-page" data-sheet-fit="flow">
+            <div data-preview class="resume-sheet resume-sheet--live t-atlas"></div>
+          </div>
+
+          <p
+            class="mt-4 hidden text-center text-[11px] leading-relaxed text-ink-faint"
+            data-page-note
           >
-            <div data-preview class="resume-sheet t-onyx"></div>
-          </div>
-
-          <p class="mt-4 hidden text-center text-[11px] leading-relaxed text-ink-faint" data-page-note>
             The dashed line marks the end of page one. Most recruiters prefer a single page.
           </p>
         </div>
@@ -217,11 +405,282 @@ const sections = [
 </Layout>
 
 <style>
+  /* --split is the form pane's width in rem; the splitter writes to it. */
+  .editor-grid {
+    --rail: 12.5rem;
+    --split: 27rem;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .pane-rail {
+    overflow-x: auto;
+    overflow-y: hidden;
+    border-bottom: 1px solid var(--color-line);
+  }
+
+  .rail-heading {
+    display: none;
+  }
+
+  .rail-list {
+    display: flex;
+    gap: 0.25rem;
+    padding: 0.5rem 0.75rem;
+    min-width: max-content;
+  }
+
+  .rail-row {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.125rem;
+  }
+
+  .rail-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1 1 auto;
+    min-width: 0;
+    border-radius: 0.5rem;
+    padding: 0.5rem 0.7rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--color-ink-soft);
+    white-space: nowrap;
+    transition:
+      background-color 150ms ease,
+      color 150ms ease;
+  }
+
+  .rail-item:hover {
+    background: var(--color-paper-sunk);
+  }
+
+  .rail-item[aria-current="true"] {
+    background: var(--color-paper-sunk);
+    color: var(--color-ink);
+    font-weight: 600;
+  }
+
+  .rail-item[aria-current="true"] svg {
+    color: var(--color-ink);
+  }
+
+  .rail-count {
+    margin-left: auto;
+    font-size: 0.6875rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--color-ink-faint);
+    padding-left: 0.5rem;
+    transition: opacity 150ms ease;
+  }
+
+  .rail-count:empty {
+    display: none;
+  }
+
+  /* A section the user has taken off the sheet still lists here, so the
+     content is not lost and one click puts the heading back. */
+  .rail-row[data-hidden="true"] .rail-item {
+    color: var(--color-ink-faint);
+  }
+
+  .rail-row[data-hidden="true"] .rail-label {
+    text-decoration: line-through;
+    text-decoration-thickness: 1px;
+  }
+
+  .rail-more {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 0.375rem;
+    color: var(--color-ink-faint);
+    transition:
+      opacity 150ms ease,
+      background-color 150ms ease,
+      color 150ms ease;
+  }
+
+  .rail-more:hover,
+  .rail-more[aria-expanded="true"] {
+    background: var(--color-line);
+    color: var(--color-ink);
+  }
+
+  /* Where there is a pointer the dots stay out of the layout until wanted, so
+     a long section name keeps the whole row to itself at rest, and they take
+     the count's place rather than crowding it. On touch there is no hover to
+     wait for, so they sit in the row and both fit. */
+  @media (hover: hover) {
+    .rail-more {
+      position: absolute;
+      right: 0.3rem;
+      top: 50%;
+      transform: translateY(-50%);
+      opacity: 0;
+    }
+
+    .rail-row:hover .rail-more,
+    .rail-row:focus-within .rail-more,
+    .rail-more[aria-expanded="true"] {
+      opacity: 1;
+    }
+
+    .rail-row:hover .rail-count,
+    .rail-row:focus-within .rail-count,
+    .rail-row:has(.rail-more[aria-expanded="true"]) .rail-count {
+      opacity: 0;
+    }
+  }
+
+  /* Fixed, and placed by script: the rail scrolls in both layouts, and an
+     absolutely positioned menu would be clipped by it. */
+  .rail-menu {
+    position: fixed;
+    z-index: 50;
+    width: 12.5rem;
+    border-radius: 0.75rem;
+    border: 1px solid var(--color-line);
+    background: var(--color-paper);
+    padding: 0.25rem;
+    box-shadow: var(--shadow-lift);
+  }
+
+  .rail-menu-item {
+    display: block;
+    width: 100%;
+    border-radius: 0.5rem;
+    padding: 0.5rem 0.625rem;
+    text-align: left;
+    font-size: 0.8125rem;
+    color: var(--color-ink);
+    transition: background-color 150ms ease;
+  }
+
+  .rail-menu-item:hover {
+    background: var(--color-paper-sunk);
+  }
+
+  .rail-menu-item[data-section-toggle]:hover {
+    color: var(--color-clay);
+    background: var(--color-clay-soft);
+  }
+
+  .rail-row[data-renaming="true"] .rail-item,
+  .rail-row[data-renaming="true"] .rail-more {
+    display: none;
+  }
+
+  .rail-rename {
+    width: 100%;
+    min-width: 8rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--color-ink);
+    background: var(--color-surface);
+    padding: 0.45rem 0.55rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--color-ink);
+  }
+
+  .rail-rename:focus {
+    outline: none;
+  }
+
+  .panel-title {
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: -0.015em;
+  }
+
+  .pane-splitter {
+    display: none;
+  }
+
   /* One pane at a time below the split-view breakpoint. */
   @media (width < 64rem) {
-    [data-active-view='edit'] .pane-preview,
-    [data-active-view='preview'] .pane-edit {
+    [data-active-view="edit"] .pane-preview,
+    [data-active-view="preview"] .pane-edit,
+    [data-active-view="preview"] .pane-rail {
       display: none;
+    }
+  }
+
+  @media (width >= 64rem) {
+    .editor-grid {
+      grid-template-rows: minmax(0, 1fr);
+      grid-template-columns: var(--rail) var(--split) 0.5rem minmax(0, 1fr);
+    }
+
+    .pane-rail {
+      overflow-x: hidden;
+      overflow-y: auto;
+      border-bottom: 0;
+      padding: 1.5rem 0.75rem;
+    }
+
+    .rail-heading {
+      display: block;
+      padding: 0 0.7rem 0.6rem;
+      font-size: 0.625rem;
+      font-weight: 600;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--color-ink-faint);
+    }
+
+    .rail-list {
+      display: block;
+      padding: 0;
+      min-width: 0;
+    }
+
+    .rail-list li + li {
+      margin-top: 0.125rem;
+    }
+
+    .pane-splitter {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: col-resize;
+      background: var(--color-line);
+      transition: background-color 150ms ease;
+      touch-action: none;
+    }
+
+    .pane-splitter:hover,
+    .pane-splitter:focus-visible,
+    .pane-splitter[data-dragging="true"] {
+      background: var(--color-line-strong);
+      outline: none;
+    }
+
+    .pane-splitter-grip {
+      width: 2px;
+      height: 2.25rem;
+      border-radius: 999px;
+      background: var(--color-ink-faint);
+      opacity: 0;
+      transition: opacity 150ms ease;
+    }
+
+    .pane-splitter:hover .pane-splitter-grip,
+    .pane-splitter:focus-visible .pane-splitter-grip,
+    .pane-splitter[data-dragging="true"] .pane-splitter-grip {
+      opacity: 1;
+    }
+
+    /* While dragging, the pointer must not select text or hit the iframe-ish
+       preview surface. */
+    :global(body[data-resizing="true"]) {
+      cursor: col-resize;
+      user-select: none;
     }
   }
 </style>

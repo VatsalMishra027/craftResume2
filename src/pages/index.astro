@@ -4,13 +4,23 @@ import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import TemplateCard from '../components/TemplateCard.astro';
 import TemplateThumb from '../components/TemplateThumb.astro';
-import { TEMPLATES } from '../lib/templates';
+import { TEMPLATES, TEMPLATE_CATEGORIES } from '../lib/templates';
+import { BLUEPRINTS } from '../lib/blueprints';
+
+/** One layout per shelf, so the grid shows the range without printing all 12. */
+const featured = TEMPLATE_CATEGORIES.map(
+  (category) => TEMPLATES.find((template) => template.category === category)!,
+).filter(Boolean);
+
+/** The hero stack turns through four layouts that look nothing like each other. */
+const bookIds = ['atlas', 'ledger', 'vertex', 'cascade'];
+const bookTemplates = bookIds.map((id) => TEMPLATES.find((t) => t.id === id)!).filter(Boolean);
 
 const steps = [
   {
     n: '01',
     title: 'Pick a template',
-    body: 'Four layouts, each built for a different kind of role. Swap between them at any point — your content stays put.',
+    body: `${TEMPLATES.length} layouts and ${BLUEPRINTS.length} pre-filled role blueprints. Swap between them at any point — your content stays put.`,
   },
   {
     n: '02',
@@ -54,7 +64,7 @@ const faqs = [
   },
   {
     q: 'Are the templates ATS friendly?',
-    a: 'All four use standard section headings, real text and a single-flow reading order. Onyx and Grid are the safest bets if you know your application goes through a strict parser.',
+    a: `All ${TEMPLATES.length} use standard section headings, real text and a single reading order, and each card tells you how strictly it parses. Ledger, Beacon and Meridian are the safest bets when you know the application goes through an automated screen.`,
   },
   {
     q: 'How does the download work?',
@@ -114,7 +124,11 @@ const faqs = [
           <dl class="mt-12 flex flex-wrap gap-x-10 gap-y-5 border-t border-line pt-7">
             <div>
               <dt class="eyebrow">Templates</dt>
-              <dd class="mt-1 text-xl font-semibold tabular-nums">4</dd>
+              <dd class="mt-1 text-xl font-semibold tabular-nums">{TEMPLATES.length}</dd>
+            </div>
+            <div>
+              <dt class="eyebrow">Role blueprints</dt>
+              <dd class="mt-1 text-xl font-semibold tabular-nums">{BLUEPRINTS.length}</dd>
             </div>
             <div>
               <dt class="eyebrow">Downloads</dt>
@@ -127,19 +141,34 @@ const faqs = [
           </dl>
         </div>
 
-        <!-- Layered preview: the real renderer, not a screenshot. -->
-        <div class="relative mx-auto w-full max-w-[420px] lg:max-w-none">
-          <div
-            class="absolute -right-2 top-6 hidden w-[78%] rotate-[4deg] overflow-hidden rounded-lg border border-line bg-surface opacity-70 shadow-lift sm:block"
-            aria-hidden="true"
+        <!-- Layered preview: the real renderer, not a screenshot. The stack
+             turns itself, a page at a time, through four of the templates. -->
+        <div class="relative mx-auto w-full max-w-[380px] pb-10 lg:max-w-[440px]">
+          <button
+            type="button"
+            data-book
+            aria-label="Turn to the next template"
+            class="book block w-[88%] cursor-pointer focus-visible:outline-none"
+            style="aspect-ratio: 210 / 297"
           >
-            <TemplateThumb templateId="quill" />
-          </div>
-          <div
-            class="relative w-[88%] -rotate-[1.5deg] overflow-hidden rounded-lg border border-line bg-surface shadow-page"
-          >
-            <TemplateThumb templateId="meridian" />
-          </div>
+            {
+              bookTemplates.map((template, index) => (
+                <span
+                  class="book-page"
+                  data-book-page
+                  data-name={template.name}
+                  data-state={index === 0 ? 'front' : index === 1 ? 'stack' : 'deep'}
+                >
+                  <TemplateThumb templateId={template.id} />
+                </span>
+              ))
+            }
+          </button>
+
+          <p class="book-caption text-xs text-ink-muted">
+            <span class="font-medium text-ink" data-book-caption>{bookTemplates[0].name}</span>
+            <span class="text-ink-faint"> · tap to turn the page</span>
+          </p>
         </div>
       </div>
     </section>
@@ -173,11 +202,11 @@ const faqs = [
           <div>
             <p class="eyebrow">Templates</p>
             <h2 class="display mt-3 max-w-xl text-[clamp(1.9rem,4vw,2.7rem)]">
-              Four layouts, no filler.
+              {TEMPLATES.length} layouts, no filler.
             </h2>
             <p class="mt-4 max-w-md text-ink-muted">
-              Every preview below is the live template rendering real content — what you see is
-              exactly what prints.
+              One from each shelf below — ATS-focused through creative. Every preview is the live
+              template rendering real content, so what you see is exactly what prints.
             </p>
           </div>
           <a
@@ -189,8 +218,30 @@ const faqs = [
           </a>
         </div>
 
-        <div class="mt-12 grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
-          {TEMPLATES.map((template) => <TemplateCard template={template} />)}
+        <div class="mt-12 grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
+          {featured.map((template) => <TemplateCard template={template} />)}
+        </div>
+
+        <div
+          class="mt-14 flex flex-col items-start justify-between gap-5 rounded-card border border-line bg-surface p-7 sm:flex-row sm:items-center"
+        >
+          <div>
+            <p class="eyebrow">Fast start</p>
+            <h3 class="mt-2 text-lg font-semibold tracking-[-0.015em]">
+              Or open one already written for your job.
+            </h3>
+            <p class="mt-1.5 max-w-lg text-sm leading-relaxed text-ink-muted">
+              {BLUEPRINTS.length} role blueprints — engineering, product, data, finance, marketing,
+              design, healthcare and executive — each arriving as a finished resume you edit over
+              instead of an empty form.
+            </p>
+          </div>
+          <a
+            href="/templates?tab=roles"
+            class="inline-flex h-11 flex-none items-center rounded-full border border-line-strong px-6 text-sm font-medium text-ink transition-colors duration-200 hover:bg-paper-sunk"
+          >
+            See the blueprints
+          </a>
         </div>
       </div>
     </section>
@@ -279,6 +330,8 @@ const faqs = [
 
 <script>
   import { observeSheets } from '../lib/fit';
+  import { initBook } from '../scripts/book';
 
   observeSheets();
+  initBook();
 </script>

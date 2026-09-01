@@ -1,17 +1,28 @@
 ---
-import { renderResume, sheetClass } from '../lib/render';
+import { renderResume, sheetClass, sheetStyle } from '../lib/render';
 import { SAMPLE_RESUME } from '../lib/sample';
+import { DEFAULT_ACCENT } from '../lib/templates';
+import type { ResumeData } from '../lib/types';
 import '../styles/resume.css';
 
 interface Props {
   templateId: string;
+  accentId?: string;
+  /** Content to render. Defaults to the shared sample resume. */
+  data?: ResumeData;
   class?: string;
 }
 
-const { templateId, class: className = '' } = Astro.props;
-const html = renderResume(SAMPLE_RESUME, templateId);
+const {
+  templateId,
+  accentId = DEFAULT_ACCENT,
+  data = SAMPLE_RESUME,
+  class: className = '',
+} = Astro.props;
+// Decorative, and often wrapped in a link of its own — so no anchors inside.
+const html = renderResume(data, templateId, { links: false });
 ---
 
 <div class={`sheet-fit sheet-fit--page ${className}`} data-sheet-fit="page" aria-hidden="true">
-  <div class={sheetClass(templateId)} set:html={html} />
+  <div class={sheetClass(templateId)} style={sheetStyle(accentId)} set:html={html} />
 </div>

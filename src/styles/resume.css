@@ -2,14 +2,30 @@
    Resume sheet styles.
    Deliberately plain CSS, not Tailwind: these rules need mm/pt units so the
    on-screen preview and the printed PDF are the same document.
+
+   Every template is driven by one --rs-accent, set inline on the sheet. Each
+   shade below is mixed from it, so switching colour re-themes the whole page
+   without a second stylesheet.
 --------------------------------------------------------------------------- */
 
 .resume-sheet {
-  --rs-ink: #14140f;
-  --rs-soft: #3d3a33;
-  --rs-muted: #6b665c;
-  --rs-line: #d8d4c9;
-  --rs-accent: #14140f;
+  /* Overridden inline by sheetStyle(); these are the fallbacks. */
+  --rs-accent: #1e3a5f;
+  --rs-accent-hi: #2ec4b6;
+
+  /* Pulled toward near-black so even a pale accent keeps white text legible. */
+  --rs-accent-deep: color-mix(in srgb, var(--rs-accent) 84%, #0b1018);
+  --rs-accent-tint: color-mix(in srgb, var(--rs-accent) 7%, #fff);
+  --rs-accent-line: color-mix(in srgb, var(--rs-accent) 26%, #fff);
+  --rs-on-accent: #fff;
+  --rs-on-accent-soft: color-mix(in srgb, #fff 74%, var(--rs-accent));
+  --rs-on-accent-faint: color-mix(in srgb, #fff 52%, var(--rs-accent));
+
+  /* Body ink carries a trace of the accent so the page reads as one object. */
+  --rs-ink: color-mix(in srgb, var(--rs-accent) 20%, #14140f);
+  --rs-soft: color-mix(in srgb, var(--rs-accent) 16%, #3d3a33);
+  --rs-muted: color-mix(in srgb, var(--rs-accent) 12%, #6b665c);
+  --rs-line: color-mix(in srgb, var(--rs-accent) 14%, #d8d4c9);
 
   width: 210mm;
   min-height: 297mm;
@@ -24,7 +40,8 @@
 }
 
 .resume-sheet p:last-child,
-.resume-sheet ul:last-child {
+.resume-sheet ul:last-child,
+.resume-sheet ol:last-child {
   margin-bottom: 0;
 }
 
@@ -58,6 +75,7 @@
 .rs-contact li {
   display: inline-flex;
   align-items: center;
+  gap: 1.4mm;
 }
 
 /* Dot separators, but never a trailing one. */
@@ -75,6 +93,12 @@
   padding-bottom: 5mm;
   border-bottom: 1px solid var(--rs-line);
   margin-bottom: 6mm;
+}
+
+.rs-icon {
+  width: 3.2mm;
+  height: 3.2mm;
+  flex: none;
 }
 
 /* --- Sections ------------------------------------------------------------ */
@@ -99,7 +123,6 @@
 .rs-summary {
   margin: 0;
   color: var(--rs-soft);
-  max-width: 62em;
 }
 
 .rs-entry {
@@ -124,10 +147,35 @@
   margin: 0;
 }
 
+.rs-entry-sub {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 6mm;
+}
+
 .rs-entry-org {
   font-size: 9.4pt;
   color: var(--rs-soft);
   margin: 0.6mm 0 0;
+}
+
+.rs-entry-where {
+  font-size: 8.6pt;
+  color: var(--rs-muted);
+  margin: 0.6mm 0 0;
+  white-space: nowrap;
+  flex: none;
+}
+
+.rs-entry-inline {
+  color: var(--rs-muted);
+}
+
+.rs-entry-note {
+  font-size: 9pt;
+  color: var(--rs-muted);
+  margin: 1mm 0 0;
 }
 
 .rs-entry-meta {
@@ -139,6 +187,9 @@
 }
 
 .rs-bullets {
+  /* Restated because Tailwind's preflight resets every list to none, which
+     would leave achievement bullets as bare indented lines. */
+  list-style: disc;
   margin: 2mm 0 0;
   padding-left: 4.2mm;
   color: var(--rs-soft);
@@ -150,29 +201,271 @@
 }
 
 .rs-bullets li::marker {
-  color: var(--rs-line);
+  color: var(--rs-accent-line);
 }
 
-.rs-skills {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1.6mm 2mm;
+/* --- Skills, languages, chips, lists ------------------------------------- */
+.rs-meters {
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
-.rs-skill {
+.rs-meters li {
+  margin-bottom: 2.4mm;
+}
+
+.rs-meter-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 3mm;
   font-size: 8.6pt;
+}
+
+.rs-meter-value {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.7;
+  flex: none;
+}
+
+.rs-meter {
+  display: block;
+  height: 1px;
+  margin-top: 1.2mm;
+  background: currentColor;
+  opacity: 0.28;
+}
+
+.rs-meter i {
+  display: block;
+  height: 3px;
+  margin-top: -1px;
+  background: currentColor;
+}
+
+.rs-dotrows {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2.6mm 4mm;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.rs-dotrow-name {
+  display: block;
+  font-size: 8.8pt;
   color: var(--rs-soft);
-  border: 1px solid var(--rs-line);
-  border-radius: 999px;
-  padding: 0.8mm 2.4mm;
+}
+
+.rs-dotrow-level {
+  display: block;
+  font-size: 8pt;
+  font-style: italic;
+  color: var(--rs-accent);
+  border-bottom: 1px dotted var(--rs-line);
+  padding-bottom: 0.8mm;
+}
+
+.rs-pairs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 8.6pt;
+}
+
+.rs-pairs li {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 3mm;
+  margin-bottom: 1.4mm;
+}
+
+.rs-pair-value {
+  opacity: 0.75;
+  text-align: right;
+  flex: none;
+}
+
+.rs-inline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  color: var(--rs-soft);
+}
+
+.rs-inline li {
+  display: inline;
+}
+
+.rs-inline li:not(:last-child)::after {
+  content: " • ";
+  color: var(--rs-accent-line);
+}
+
+.rs-runin {
+  margin: 0;
+  color: var(--rs-soft);
+}
+
+.rs-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.2mm;
+  list-style: none;
+  margin: 1.4mm 0 0;
+  padding: 0;
+}
+
+.rs-chips li {
+  font-size: 7.6pt;
+  color: var(--rs-muted);
+  background: var(--rs-accent-tint);
+  border-radius: 2px;
+  padding: 0.5mm 1.6mm;
+}
+
+.rs-tech {
+  font-size: 8.4pt;
+  font-style: italic;
+  color: var(--rs-muted);
+  margin: 1mm 0 0;
+}
+
+/* Skills as chips. Same vocabulary as the project tech tags, one size up. */
+.rs-chips--skills li {
+  font-size: 8.2pt;
+  color: var(--rs-soft);
+  padding: 0.8mm 2mm;
+  border-radius: 3px;
+}
+
+/* A plain word list in columns — the ATS-safe way to show a skill set. */
+.rs-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.2mm 5mm;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 8.8pt;
+  color: var(--rs-soft);
+}
+
+.rs-grid li {
+  position: relative;
+  padding-left: 3mm;
+}
+
+.rs-grid li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 1.6mm;
+  width: 1.4mm;
+  height: 1.4mm;
+  background: var(--rs-accent);
+}
+
+.rs-plainlist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  color: var(--rs-soft);
+}
+
+.rs-plainlist li {
+  margin-bottom: 1.4mm;
+}
+
+.rs-mini {
+  margin-bottom: 2.6mm;
+}
+
+.rs-mini-title {
+  font-size: 8.8pt;
+  font-weight: 600;
+  margin: 0;
+}
+
+.rs-mini-meta {
+  font-size: 8.2pt;
+  opacity: 0.72;
+  margin: 0.4mm 0 0;
+}
+
+.rs-pubs {
+  list-style: disc;
+  margin: 0;
+  padding-left: 4.2mm;
+  color: var(--rs-soft);
+}
+
+.rs-pubs li {
+  margin-bottom: 1.4mm;
+}
+
+.rs-pubs li::marker {
+  color: var(--rs-accent-line);
+}
+
+.rs-pubs--numbered {
+  list-style: decimal;
+}
+
+.rs-pubs--numbered li::marker {
+  color: var(--rs-muted);
+}
+
+.rs-pub-meta {
+  color: var(--rs-muted);
+}
+
+.rs-interests {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.rs-interests li {
+  display: flex;
+  align-items: center;
+  gap: 2mm;
+  font-size: 8.8pt;
+  color: var(--rs-soft);
+  margin-bottom: 1.6mm;
+}
+
+.rs-icon--disc {
+  width: 4.6mm;
+  height: 4.6mm;
+  padding: 1mm;
+  box-sizing: border-box;
+  border-radius: 50%;
+  background: var(--rs-accent-tint);
+  color: var(--rs-accent);
+}
+
+.rs-duo {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 8mm;
+  margin-bottom: 6mm;
+}
+
+.rs-duo .rs-section {
+  margin-bottom: 0;
 }
 
 .rs-link {
-  color: inherit;
+  color: var(--rs-accent);
   text-decoration: none;
+}
+
+.rs-project-link {
+  font-size: 8pt;
 }
 
 /* Empty-state placeholder shown only in the live preview. */
@@ -182,188 +475,1054 @@
 }
 
 /* ===========================================================================
-   Onyx — centred, conservative, maximum ATS safety.
+   Atlas — full-height colour rail carrying the scannable facts.
    =========================================================================== */
-.t-onyx .rs-header {
-  text-align: center;
-}
-
-.t-onyx .rs-contact {
-  justify-content: center;
-}
-
-.t-onyx .rs-name {
-  letter-spacing: 0.01em;
-  font-size: 20pt;
-}
-
-.t-onyx .rs-section-title {
-  text-align: center;
-  border-bottom: 1px solid var(--rs-line);
-  padding-bottom: 2mm;
-}
-
-/* ===========================================================================
-   Meridian — left rail for the scannable facts, main column for the story.
-   =========================================================================== */
-.t-meridian {
+.t-atlas {
   padding: 0;
   display: flex;
   align-items: stretch;
+  /* The rail lives on the sheet's own background, not the aside's. A fragmented
+     box repaints its background on every fragment, so the colour carries onto
+     page two even though the aside's content stopped on page one. */
+  background: linear-gradient(to right, var(--rs-accent-deep) 0 66mm, #fff 66mm);
 }
 
-.t-meridian .rs-aside {
-  width: 62mm;
+.t-atlas .rs-rail {
+  width: 66mm;
   flex: none;
-  background: #f5f3ee;
-  padding: 16mm 9mm;
+  color: var(--rs-on-accent);
+  padding: 14mm 9mm;
   box-sizing: border-box;
 }
 
-.t-meridian .rs-main {
+.t-atlas .rs-main {
   flex: 1;
-  padding: 16mm 13mm 16mm 11mm;
-  box-sizing: border-box;
   min-width: 0;
+  padding: 14mm 13mm 14mm 11mm;
+  box-sizing: border-box;
 }
 
-.t-meridian .rs-header {
-  border-bottom: 0;
-  padding-bottom: 0;
-  margin-bottom: 7mm;
+.t-atlas .rs-rail-head {
+  margin-bottom: 8mm;
 }
 
-.t-meridian .rs-name {
-  font-size: 19pt;
+.t-atlas .rs-rail .rs-name {
+  font-size: 17pt;
+  font-weight: 700;
+  color: var(--rs-on-accent);
 }
 
-.t-meridian .rs-contact {
+.t-atlas .rs-rail .rs-role {
+  font-size: 9.2pt;
+  font-weight: 600;
+  color: var(--rs-on-accent-soft);
+  margin-top: 2mm;
+}
+
+.t-atlas .rs-rail .rs-section-title {
+  color: var(--rs-on-accent-faint);
+  border-bottom: 1px solid color-mix(in srgb, #fff 30%, transparent);
+  padding-bottom: 1.6mm;
+  margin-bottom: 2.6mm;
+}
+
+.t-atlas .rs-rail .rs-contact {
   display: block;
-  font-size: 8.4pt;
-  margin-top: 0;
+  color: var(--rs-on-accent-soft);
+  margin: 0;
 }
 
-.t-meridian .rs-contact li {
+.t-atlas .rs-rail .rs-contact li {
   display: block;
-  margin-bottom: 1.6mm;
-  word-break: break-word;
+  margin-bottom: 1.8mm;
 }
 
-.t-meridian .rs-contact li + li::before {
+.t-atlas .rs-rail .rs-contact li + li::before {
   display: none;
 }
 
-.t-meridian .rs-skills {
-  display: block;
+.t-atlas .rs-rail .rs-meters,
+.t-atlas .rs-rail .rs-pairs {
+  color: var(--rs-on-accent-soft);
 }
 
-.t-meridian .rs-skill {
-  display: block;
-  border: 0;
-  border-radius: 0;
-  padding: 0 0 1.4mm;
+.t-atlas .rs-rail .rs-mini-title {
+  color: var(--rs-on-accent);
 }
 
-.t-meridian .rs-aside .rs-section-title {
+.t-atlas .rs-rail .rs-mini-meta {
+  color: var(--rs-on-accent-faint);
+  opacity: 1;
+}
+
+.t-atlas .rs-main .rs-section-title {
   border-bottom: 1px solid var(--rs-line);
   padding-bottom: 1.6mm;
 }
 
-/* ===========================================================================
-   Quill — editorial, serif, wide margins. Reads like a page, not a form.
-   =========================================================================== */
-.t-quill {
-  padding: 20mm 20mm;
-  font-size: 9.8pt;
-}
-
-.t-quill .rs-name {
-  font-family: "Instrument Serif", ui-serif, Georgia, serif;
-  font-size: 29pt;
-  font-weight: 400;
-  letter-spacing: -0.01em;
-}
-
-.t-quill .rs-role {
-  font-size: 10pt;
-  font-style: italic;
-  color: var(--rs-soft);
-}
-
-.t-quill .rs-header {
-  border-bottom: 0;
-  padding-bottom: 0;
-  margin-bottom: 8mm;
-}
-
-.t-quill .rs-section-title {
-  font-family: "Instrument Serif", ui-serif, Georgia, serif;
-  font-size: 12pt;
-  font-weight: 400;
-  letter-spacing: 0;
-  text-transform: none;
-  border-bottom: 1px solid var(--rs-line);
-  padding-bottom: 1.8mm;
-  margin-bottom: 3.5mm;
-}
-
-.t-quill .rs-entry-title {
+.t-atlas .rs-main .rs-entry-title {
   font-size: 10.2pt;
 }
 
-.t-quill .rs-skill {
-  border: 0;
-  padding: 0;
+/* ===========================================================================
+   Ledger — one column, ruled sections, nothing between you and the parser.
+   =========================================================================== */
+.t-ledger {
+  padding: 14mm 15mm;
 }
 
-.t-quill .rs-skill:not(:last-child)::after {
-  content: " · ";
-  color: var(--rs-line);
+.t-ledger .rs-name {
+  font-size: 19pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  color: var(--rs-accent);
 }
 
-.t-quill .rs-section {
-  margin-bottom: 7mm;
+.t-ledger .rs-role {
+  font-size: 10pt;
+  font-weight: 600;
+  color: var(--rs-soft);
+  margin-top: 1mm;
+}
+
+.t-ledger .rs-header {
+  border-bottom: 2px solid var(--rs-accent);
+  padding-bottom: 2.4mm;
+  margin-bottom: 5mm;
+}
+
+.t-ledger .rs-contact {
+  margin-top: 2.4mm;
+  color: var(--rs-accent);
+  gap: 1mm 3mm;
+}
+
+.t-ledger .rs-contact li + li::before {
+  background: currentColor;
+  margin-right: 3mm;
+  opacity: 0.55;
+}
+
+.t-ledger .rs-section-title {
+  border-bottom: 1px solid var(--rs-line);
+  padding-bottom: 1.4mm;
+  margin-bottom: 2.6mm;
+}
+
+.t-ledger .rs-section {
+  margin-bottom: 5mm;
+}
+
+.t-ledger .rs-entry {
+  margin-bottom: 4mm;
+}
+
+.t-ledger .rs-bullets {
+  padding-left: 4mm;
 }
 
 /* ===========================================================================
-   Grid — section labels sit in a fixed left rail. Dense, technical.
+   Scholar — serif CV. Education leads, publications are numbered.
    =========================================================================== */
-.t-grid {
-  font-size: 9.4pt;
+.t-scholar {
+  padding: 18mm 20mm;
+  font-family: "Instrument Serif", ui-serif, Georgia, serif;
+  font-size: 10.4pt;
+  line-height: 1.5;
 }
 
-.t-grid .rs-header {
-  border-bottom: 2px solid var(--rs-ink);
-  padding-bottom: 4mm;
+.t-scholar .rs-header {
+  text-align: center;
+  border-bottom: 1px solid var(--rs-accent);
+  padding-bottom: 3mm;
+  margin-bottom: 6mm;
 }
 
-.t-grid .rs-name {
-  font-size: 18pt;
+.t-scholar .rs-doctype {
+  font-size: 16pt;
   font-weight: 700;
-  letter-spacing: -0.025em;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--rs-accent);
+  margin: 0 0 2mm;
 }
 
-.t-grid .rs-section {
-  display: grid;
-  grid-template-columns: 30mm 1fr;
-  gap: 0 6mm;
+.t-scholar .rs-name {
+  font-size: 15pt;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+.t-scholar .rs-role {
+  font-size: 10pt;
+  color: var(--rs-soft);
+  margin-top: 1mm;
+}
+
+.t-scholar .rs-contact {
+  justify-content: center;
+  font-size: 9pt;
+  margin-top: 2.4mm;
+}
+
+.t-scholar .rs-section-title {
+  font-size: 10pt;
+  letter-spacing: 0.08em;
+  border-bottom: 1px solid var(--rs-line);
+  padding-bottom: 1.2mm;
+  margin-bottom: 2.6mm;
+}
+
+.t-scholar .rs-summary,
+.t-scholar .rs-entry-note,
+.t-scholar .rs-bullets {
+  text-align: justify;
+}
+
+.t-scholar .rs-entry-org {
+  font-style: italic;
+}
+
+.t-scholar .rs-entry-title {
+  font-size: 10.6pt;
+  font-weight: 700;
+}
+
+.t-scholar .rs-plainlist li::before {
+  content: "• ";
+  color: var(--rs-accent-line);
+}
+
+.t-scholar .rs-tech {
+  font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+  font-size: 8.4pt;
+}
+
+/* ===========================================================================
+   Vertex — colour masthead with a monogram, two columns underneath.
+   =========================================================================== */
+.t-vertex {
+  padding: 0;
+  /* Same trick as Atlas: the side column's tint is painted by the sheet so it
+     survives a page break. */
+  background: linear-gradient(to right, #fff 0 108mm, var(--rs-accent-tint) 108mm);
+}
+
+.t-vertex .rs-masthead {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  border-bottom: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.t-vertex .rs-masthead-main {
+  width: 108mm;
+  flex: none;
+  box-sizing: border-box;
+  background: var(--rs-accent-deep);
+  color: var(--rs-on-accent);
+  padding: 11mm 24mm 11mm 12mm;
+}
+
+.t-vertex .rs-masthead-side {
+  flex: 1;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 11mm 12mm 11mm 16mm;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.t-vertex .rs-masthead .rs-name {
+  font-size: 20pt;
+  font-weight: 700;
+  color: var(--rs-on-accent);
+}
+
+.t-vertex .rs-masthead .rs-role {
+  font-size: 10pt;
+  font-weight: 700;
+  font-style: italic;
+  color: var(--rs-accent-hi);
+  margin-top: 1.4mm;
+}
+
+.t-vertex .rs-masthead .rs-summary {
+  font-size: 8.4pt;
+  line-height: 1.55;
+  color: var(--rs-on-accent-soft);
+  margin-top: 3.4mm;
+}
+
+.t-vertex .rs-masthead-side .rs-contact {
+  display: block;
+  margin: 0;
+  text-align: right;
+  font-size: 8.4pt;
+}
+
+.t-vertex .rs-masthead-side .rs-contact li {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2.4mm;
+  margin-bottom: 2mm;
+}
+
+.t-vertex .rs-masthead-side .rs-contact li + li::before {
+  display: none;
+}
+
+.t-vertex .rs-masthead-side .rs-contact .rs-icon {
+  order: 2;
+  width: 6mm;
+  height: 6mm;
+  padding: 1.6mm;
+  box-sizing: border-box;
+  border-radius: 1.4mm;
+  background: var(--rs-accent-deep);
+  color: var(--rs-on-accent);
+}
+
+/* Straddles the seam between the colour block and the white contact panel. */
+.t-vertex .rs-monogram {
+  position: absolute;
+  top: 50%;
+  left: 108mm;
+  transform: translate(-50%, -50%);
+  width: 22mm;
+  height: 22mm;
+  border-radius: 50%;
+  background: var(--rs-accent-hi);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15pt;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.t-vertex .rs-columns {
+  display: flex;
+  align-items: stretch;
+  min-height: 200mm;
+}
+
+.t-vertex .rs-col {
+  box-sizing: border-box;
+  padding: 8mm 8mm 12mm;
+}
+
+.t-vertex .rs-col--main {
+  width: 108mm;
+  flex: none;
+}
+
+.t-vertex .rs-col--side {
+  flex: 1;
+  min-width: 0;
+}
+
+.t-vertex .rs-section--badged .rs-section-title {
+  display: flex;
+  align-items: center;
+  gap: 2.4mm;
+  font-size: 8.4pt;
+  letter-spacing: 0.11em;
+  color: var(--rs-ink);
+  margin-bottom: 3.4mm;
+}
+
+/* The rule runs from the title to the column edge. */
+.t-vertex .rs-section--badged .rs-section-title::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--rs-line);
+}
+
+.t-vertex .rs-badge {
+  width: 6.4mm;
+  height: 6.4mm;
+  flex: none;
+  border-radius: 50%;
+  background: var(--rs-accent-deep);
+  color: var(--rs-on-accent);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.t-vertex .rs-badge .rs-icon {
+  width: 3.4mm;
+  height: 3.4mm;
+}
+
+.t-vertex .rs-entry-meta,
+.t-vertex .rs-entry-where {
+  font-style: italic;
+  color: var(--rs-accent);
+}
+
+.t-vertex .rs-entry-head,
+.t-vertex .rs-entry-sub {
+  display: block;
+}
+
+.t-vertex .rs-bullets {
+  list-style: none;
+  padding-left: 0;
+  margin-top: 2mm;
+}
+
+/* Image-faithful label: the bullets are framed as achievements. */
+.t-vertex .rs-bullets::before {
+  content: "Achievements:";
+  display: block;
+  font-weight: 700;
+  font-style: italic;
+  font-size: 8.4pt;
+  color: var(--rs-accent);
+  margin-bottom: 1.2mm;
+}
+
+.t-vertex .rs-bullets li {
+  position: relative;
+  padding-left: 3.6mm;
+}
+
+.t-vertex .rs-bullets li::before {
+  content: "▸";
+  position: absolute;
+  left: 0;
+  color: var(--rs-accent-hi);
+}
+
+.t-vertex .rs-dotrows {
+  grid-template-columns: 1fr 1fr;
+}
+
+.t-vertex .rs-dotrow-level {
+  color: var(--rs-accent-hi);
+}
+
+/* ===========================================================================
+   Beacon — the plainest sheet here. Black text, ruled headings, no panels.
+   The accent is confined to the rules, so the page stays legible even when
+   a parser strips every colour out of it.
+   =========================================================================== */
+.t-beacon {
+  padding: 14mm 16mm;
+  font-size: 10pt;
+  /* Deliberately unmixed: this template never tints its body ink. */
+  --rs-ink: #14140f;
+  --rs-soft: #2f2c26;
+  --rs-muted: #57544c;
+  --rs-line: #a8a49b;
+}
+
+.t-beacon .rs-header {
+  border-bottom: 1.5pt solid var(--rs-accent);
+  padding-bottom: 3mm;
+  margin-bottom: 5mm;
+}
+
+.t-beacon .rs-name {
+  font-size: 20pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.t-beacon .rs-role {
+  font-size: 10.5pt;
+  font-weight: 600;
+  color: var(--rs-soft);
+  margin-top: 1.2mm;
+}
+
+.t-beacon .rs-contact {
+  margin-top: 2.6mm;
+  font-size: 9pt;
+  color: var(--rs-soft);
+}
+
+.t-beacon .rs-section {
+  margin-bottom: 5mm;
+}
+
+.t-beacon .rs-section-title {
+  font-size: 9.4pt;
+  letter-spacing: 0.1em;
+  color: var(--rs-ink);
+  border-bottom: 1px solid var(--rs-accent);
+  padding-bottom: 1.2mm;
+  margin-bottom: 2.6mm;
+}
+
+.t-beacon .rs-entry-title {
+  font-size: 10.4pt;
+  font-weight: 700;
+}
+
+.t-beacon .rs-entry-org {
+  font-weight: 600;
+  color: var(--rs-soft);
+}
+
+.t-beacon .rs-bullets {
+  padding-left: 4.8mm;
+}
+
+.t-beacon .rs-bullets li::marker {
+  color: var(--rs-muted);
+}
+
+/* ===========================================================================
+   Meridian — centred masthead, a competency band, then a plain record.
+   =========================================================================== */
+.t-meridian {
+  padding: 15mm 17mm;
+}
+
+.t-meridian .rs-header {
+  text-align: center;
+  border-top: 2.4pt solid var(--rs-accent);
+  border-bottom: 1px solid var(--rs-accent);
+  padding: 4mm 0 3.4mm;
   margin-bottom: 5.5mm;
 }
 
-.t-grid .rs-section-title {
-  font-size: 7.8pt;
-  color: var(--rs-muted);
-  margin: 0.6mm 0 0;
+.t-meridian .rs-name {
+  font-size: 19pt;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--rs-accent);
 }
 
-.t-grid .rs-entry-title {
+.t-meridian .rs-role {
   font-size: 9.6pt;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--rs-muted);
+  margin-top: 2.4mm;
 }
 
-.t-grid .rs-skill {
-  border-radius: 3px;
-  background: #f4f2ed;
-  border-color: transparent;
+.t-meridian .rs-contact {
+  justify-content: center;
+  margin-top: 3mm;
+}
+
+.t-meridian .rs-section-title {
+  text-align: center;
+  letter-spacing: 0.18em;
+  border-bottom: 1px solid var(--rs-line);
+  padding-bottom: 1.4mm;
+  margin-bottom: 3mm;
+}
+
+.t-meridian .rs-section--band {
+  background: var(--rs-accent-tint);
+  border: 1px solid var(--rs-accent-line);
+  padding: 4mm 5mm;
+}
+
+.t-meridian .rs-section--band .rs-section-title {
+  border-bottom: 0;
+  padding-bottom: 0;
+  margin-bottom: 2.6mm;
+}
+
+.t-meridian .rs-entry-title {
+  font-size: 10.4pt;
+  font-weight: 700;
+}
+
+.t-meridian .rs-entry-org {
+  font-weight: 600;
+}
+
+/* ===========================================================================
+   Summit — story on the left, a tinted evidence rail down the right.
+   =========================================================================== */
+.t-summit {
+  padding: 0;
+  display: flex;
+  align-items: stretch;
+  /* Painted by the sheet so the rail's tint carries onto a second page. */
+  background: linear-gradient(to right, #fff 0 138mm, var(--rs-accent-tint) 138mm);
+}
+
+.t-summit .rs-main {
+  width: 138mm;
+  flex: none;
+  box-sizing: border-box;
+  padding: 14mm 10mm 14mm 14mm;
+}
+
+.t-summit .rs-rail {
+  flex: 1;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 14mm 12mm 14mm 9mm;
+}
+
+.t-summit .rs-header {
+  border-bottom: 2pt solid var(--rs-accent);
+  padding-bottom: 3mm;
+  margin-bottom: 5mm;
+}
+
+.t-summit .rs-name {
+  font-size: 21pt;
+  font-weight: 700;
+}
+
+.t-summit .rs-role {
+  font-size: 9.6pt;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--rs-accent);
+  margin-top: 1.8mm;
+}
+
+.t-summit .rs-section-title {
+  border-bottom: 1px solid var(--rs-line);
+  padding-bottom: 1.4mm;
+}
+
+.t-summit .rs-rail .rs-contact {
+  display: block;
+  margin: 0;
+}
+
+.t-summit .rs-rail .rs-contact li {
+  display: flex;
+  align-items: flex-start;
+  gap: 2mm;
+  margin-bottom: 1.8mm;
+}
+
+.t-summit .rs-rail .rs-contact li + li::before {
+  display: none;
+}
+
+.t-summit .rs-rail .rs-grid {
+  grid-template-columns: 1fr;
+  gap: 1.4mm;
+}
+
+/* ===========================================================================
+   Cascade — one column threaded by a timeline spine.
+   =========================================================================== */
+.t-cascade {
+  padding: 14mm 15mm;
+}
+
+.t-cascade .rs-header {
+  border-bottom: 0;
+  border-left: 3pt solid var(--rs-accent);
+  padding: 0.6mm 0 0.6mm 5mm;
+  margin-bottom: 6mm;
+}
+
+.t-cascade .rs-name {
+  font-size: 22pt;
+  font-weight: 700;
+}
+
+.t-cascade .rs-role {
+  font-size: 10.4pt;
+  font-weight: 500;
+  color: var(--rs-accent);
+  margin-top: 1.4mm;
+}
+
+.t-cascade .rs-contact {
+  margin-top: 3mm;
+}
+
+/* A short accent stroke under each heading rather than a full rule. */
+.t-cascade .rs-section-title {
+  position: relative;
+  padding-bottom: 2mm;
+  margin-bottom: 3.4mm;
+}
+
+.t-cascade .rs-section-title::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 10mm;
+  height: 1.2pt;
+  background: var(--rs-accent);
+}
+
+.t-cascade .rs-section--timeline .rs-section-body {
+  position: relative;
+  padding-left: 6mm;
+}
+
+.t-cascade .rs-section--timeline .rs-section-body::before {
+  content: "";
+  position: absolute;
+  left: 1.4mm;
+  top: 1.8mm;
+  bottom: 1.8mm;
+  width: 1px;
+  background: var(--rs-accent-line);
+}
+
+.t-cascade .rs-section--timeline .rs-entry {
+  position: relative;
+}
+
+/* The node sits on the spine; the white ring keeps the line from touching it. */
+.t-cascade .rs-section--timeline .rs-entry::before {
+  content: "";
+  position: absolute;
+  left: -5.7mm;
+  top: 1.4mm;
+  width: 2.4mm;
+  height: 2.4mm;
+  border-radius: 50%;
+  background: var(--rs-accent);
+  box-shadow: 0 0 0 0.9mm #fff;
+}
+
+/* ===========================================================================
+   Lattice — slim header rule, then two even columns of dense record.
+   =========================================================================== */
+.t-lattice {
+  padding: 13mm 14mm;
+}
+
+.t-lattice .rs-header {
+  border-bottom: 1px solid var(--rs-line);
+  padding-bottom: 3.4mm;
+  margin-bottom: 5.5mm;
+}
+
+.t-lattice .rs-name {
+  font-size: 19pt;
+  font-weight: 700;
+}
+
+.t-lattice .rs-role {
+  font-size: 9.4pt;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--rs-accent);
+  margin-top: 1.6mm;
+}
+
+.t-lattice .rs-columns {
+  display: flex;
+  align-items: stretch;
+  gap: 8mm;
+}
+
+.t-lattice .rs-col {
+  box-sizing: border-box;
+}
+
+.t-lattice .rs-col--main {
+  width: 92mm;
+  flex: none;
+}
+
+.t-lattice .rs-col--side {
+  flex: 1;
+  min-width: 0;
+  border-left: 1px solid var(--rs-line);
+  padding-left: 8mm;
+}
+
+.t-lattice .rs-section-title {
+  font-size: 8pt;
+  letter-spacing: 0.16em;
+  border-bottom: 1px solid var(--rs-accent-line);
+  padding-bottom: 1.2mm;
+  margin-bottom: 2.8mm;
+}
+
+.t-lattice .rs-section {
+  margin-bottom: 5.5mm;
+}
+
+/* ===========================================================================
+   Harbor — a softly tinted rail beside a conventional corporate record.
+   =========================================================================== */
+.t-harbor {
+  padding: 0;
+  display: flex;
+  align-items: stretch;
+  /* Tint, hairline and page all painted by the sheet, so they survive a break. */
+  background: linear-gradient(
+    to right,
+    var(--rs-accent-tint) 0 61.7mm,
+    var(--rs-accent-line) 61.7mm 62mm,
+    #fff 62mm
+  );
+}
+
+.t-harbor .rs-rail {
+  width: 62mm;
+  flex: none;
+  box-sizing: border-box;
+  padding: 14mm 9mm;
+}
+
+.t-harbor .rs-main {
+  flex: 1;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 14mm 13mm 14mm 11mm;
+}
+
+.t-harbor .rs-header {
+  border-bottom: 0;
+  padding-bottom: 0;
+  margin-bottom: 5mm;
+}
+
+.t-harbor .rs-name {
+  font-size: 20pt;
+  font-weight: 600;
+  color: var(--rs-accent);
+}
+
+.t-harbor .rs-role {
+  font-size: 10pt;
+  font-weight: 500;
+  color: var(--rs-soft);
+  margin-top: 1.4mm;
+}
+
+/* Filled heading bars — the plainest corporate convention there is. */
+.t-harbor .rs-section-title {
+  background: var(--rs-accent);
+  color: var(--rs-on-accent);
+  padding: 1.4mm 2.6mm;
+  margin-bottom: 3mm;
+}
+
+.t-harbor .rs-rail .rs-contact {
+  display: block;
+  margin: 0;
+}
+
+.t-harbor .rs-rail .rs-contact li {
+  display: flex;
+  align-items: flex-start;
+  gap: 2mm;
+  margin-bottom: 1.8mm;
+}
+
+.t-harbor .rs-rail .rs-contact li + li::before {
+  display: none;
+}
+
+/* ===========================================================================
+   Pulse — monogram band, a chip strip of contacts, portfolio-first columns.
+   =========================================================================== */
+.t-pulse {
+  padding: 0;
+  background: linear-gradient(to right, #fff 0 128mm, var(--rs-accent-tint) 128mm);
+}
+
+.t-pulse .rs-band {
+  display: flex;
+  align-items: center;
+  gap: 7mm;
+  background: var(--rs-accent-deep);
+  color: var(--rs-on-accent);
+  padding: 10mm 14mm;
+}
+
+.t-pulse .rs-monogram {
+  width: 26mm;
+  height: 26mm;
+  flex: none;
+  border-radius: 50%;
+  background: var(--rs-accent-hi);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16pt;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.t-pulse .rs-band-main {
+  min-width: 0;
+}
+
+.t-pulse .rs-band .rs-name {
+  font-size: 21pt;
+  font-weight: 700;
+  color: var(--rs-on-accent);
+}
+
+.t-pulse .rs-band .rs-role {
+  font-size: 9.6pt;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--rs-accent-hi);
+  margin-top: 1.6mm;
+}
+
+.t-pulse .rs-band .rs-summary {
+  font-size: 8.4pt;
+  line-height: 1.55;
+  color: var(--rs-on-accent-soft);
+  margin-top: 3mm;
+}
+
+.t-pulse .rs-contact--strip {
+  margin: 0;
+  padding: 3.4mm 14mm;
+  background: #fff;
+  border-bottom: 1px solid var(--rs-line);
+  gap: 1.6mm 2.4mm;
+}
+
+.t-pulse .rs-contact--strip li {
+  gap: 1.6mm;
+  border: 1px solid var(--rs-line);
+  border-radius: 999px;
+  padding: 0.8mm 2.8mm;
+  font-size: 7.8pt;
+}
+
+.t-pulse .rs-contact--strip li + li::before {
+  display: none;
+}
+
+.t-pulse .rs-columns {
+  display: flex;
+  align-items: stretch;
+  min-height: 170mm;
+}
+
+.t-pulse .rs-col {
+  box-sizing: border-box;
+  padding: 8mm 9mm 12mm;
+}
+
+.t-pulse .rs-col--main {
+  width: 128mm;
+  flex: none;
+}
+
+.t-pulse .rs-col--side {
+  flex: 1;
+  min-width: 0;
+}
+
+.t-pulse .rs-section-title {
+  font-size: 8.2pt;
+  letter-spacing: 0.16em;
+  border-bottom: 1px solid var(--rs-accent-line);
+  padding-bottom: 1.4mm;
+  margin-bottom: 3mm;
+}
+
+/* ===========================================================================
+   Helix — licences and credentials up top, the clinical record underneath.
+   =========================================================================== */
+.t-helix {
+  padding: 14mm 15mm;
+}
+
+.t-helix .rs-header {
+  border-bottom: 3pt double var(--rs-accent);
+  padding-bottom: 3mm;
+  margin-bottom: 5mm;
+}
+
+.t-helix .rs-name {
+  font-size: 20pt;
+  font-weight: 700;
+}
+
+.t-helix .rs-role {
+  font-size: 10pt;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--rs-accent);
+  margin-top: 1.2mm;
+}
+
+.t-helix .rs-section-title {
+  font-size: 8.4pt;
+  letter-spacing: 0.12em;
+  border-left: 2.4pt solid var(--rs-accent);
+  padding-left: 2.4mm;
+  margin-bottom: 2.8mm;
+}
+
+/* The credentials block is the first thing a licensing check looks for. */
+.t-helix .rs-section--credentials {
+  background: var(--rs-accent-tint);
+  border: 1px solid var(--rs-accent-line);
+  border-radius: 1.2mm;
+  padding: 3.6mm 4mm;
+}
+
+.t-helix .rs-grid {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.t-helix .rs-entry-org {
+  font-weight: 600;
+}
+
+/* ===========================================================================
+   Click-to-edit affordance. Preview only — never printed, never on a thumb.
+   =========================================================================== */
+.resume-sheet--live [data-e] {
+  cursor: text;
+  border-radius: 1.2mm;
+  box-shadow: 0 0 0 0 transparent;
+  transition:
+    background-color 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.resume-sheet--live [data-e]:hover {
+  background: color-mix(in srgb, var(--rs-accent) 12%, transparent);
+  box-shadow: 0 0 0 1mm color-mix(in srgb, var(--rs-accent) 12%, transparent);
+}
+
+/* A link inside an editable block still behaves as a link. */
+.resume-sheet--live a {
+  cursor: pointer;
+  position: relative;
+  z-index: 1;
+}
+
+.resume-sheet--live [data-e].is-target {
+  background: color-mix(in srgb, var(--rs-accent-hi) 34%, transparent);
+  box-shadow: 0 0 0 1mm color-mix(in srgb, var(--rs-accent-hi) 34%, transparent);
+}
+
+/* The monogram carries an edit hook, and the rule above would round it back
+   into a square in the live preview only. It is a disc everywhere. */
+.resume-sheet .rs-monogram {
+  border-radius: 50%;
 }
 
 /* ===========================================================================
@@ -399,4 +1558,96 @@
   top: calc(297mm * var(--sheet-scale, 1));
   border-top: 1px dashed #d8d4c9;
   pointer-events: none;
+}
+
+/* ===========================================================================
+   Sheet stack. The sheets share one 3D space; the next one lifts out of the
+   stack, passes over the front sheet and settles on top of it.
+   =========================================================================== */
+.book {
+  position: relative;
+  perspective: 2400px;
+  perspective-origin: 50% 40%;
+}
+
+.book-page {
+  position: absolute;
+  inset: 0;
+  transform-origin: center;
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+  border-radius: 0.4rem;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid var(--color-line, #e5e2d9);
+  box-shadow: 0 1px 3px rgb(22 21 15 / 0.06), 0 24px 60px -24px rgb(22 21 15 / 0.28);
+  transition:
+    transform 720ms cubic-bezier(0.32, 0.72, 0.24, 1),
+    box-shadow 720ms ease;
+  will-change: transform;
+}
+
+/* The sheet the reader is looking at. */
+.book-page[data-state="front"] {
+  transform: translate3d(0, 0, 0);
+  z-index: 3;
+}
+
+/* Waiting underneath, nudged right so the stack reads as depth. */
+.book-page[data-state="stack"] {
+  transform: translate3d(10px, 0, -26px);
+  z-index: 2;
+  box-shadow: 0 1px 2px rgb(22 21 15 / 0.05);
+}
+
+.book-page[data-state="deep"] {
+  transform: translate3d(20px, 0, -52px);
+  z-index: 1;
+  box-shadow: 0 1px 2px rgb(22 21 15 / 0.04);
+}
+
+/* Mid-move: out of the stack, clear of the sheet it is about to cover. From
+   here it is promoted to "front" and drops the rest of the way. */
+.book-page[data-state="rising"] {
+  transform: translate3d(42px, -20px, 78px) rotate(1.4deg);
+  z-index: 4;
+  box-shadow: 0 1px 3px rgb(22 21 15 / 0.08), 0 46px 70px -28px rgb(22 21 15 / 0.42);
+}
+
+/* The paper picks up a little shade down its left edge as it passes over the
+   sheet below — the whole illusion. */
+.book-page::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    to right,
+    rgb(22 21 15 / 0.16),
+    rgb(22 21 15 / 0.03) 12%,
+    transparent 30%
+  );
+  opacity: 0;
+  transition: opacity 720ms ease;
+}
+
+.book-page[data-state="rising"]::after {
+  opacity: 1;
+}
+
+.book-caption {
+  position: absolute;
+  inset-inline: 0;
+  bottom: -2.25rem;
+  text-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .book-page {
+    transition-duration: 1ms;
+  }
+
+  .book-page::after {
+    display: none;
+  }
 }

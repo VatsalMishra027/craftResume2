@@ -3,12 +3,27 @@ import Layout from '../layouts/Layout.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import TemplateThumb from '../components/TemplateThumb.astro';
-import { TEMPLATES } from '../lib/templates';
+import { ATS_LABEL, TEMPLATES, TEMPLATE_CATEGORIES } from '../lib/templates';
+import { BLUEPRINTS, ROLE_CATEGORIES } from '../lib/blueprints';
+
+const tabs = [
+  {
+    key: 'layouts',
+    label: `${TEMPLATES.length} Print-Safe Layouts`,
+    icon: '<path d="M8 1.8 14.2 5 8 8.2 1.8 5zM1.8 8l6.2 3.2L14.2 8M1.8 11l6.2 3.2L14.2 11"/>',
+  },
+  {
+    key: 'roles',
+    label: `${BLUEPRINTS.length} Role Blueprints`,
+    icon: '<rect x="2.2" y="5.4" width="11.6" height="8.2" rx="1.2"/><path d="M6 5.4V3.6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1.8M2.2 8.6h11.6"/>',
+    badge: 'Fast Start',
+  },
+];
 ---
 
 <Layout
-  title="Resume templates — CraftResume"
-  description="Four free resume templates, previewed at full size. Pick one and start editing — no account required."
+  title="Resume templates and role blueprints — CraftResume"
+  description={`${TEMPLATES.length} free ATS-friendly resume templates and ${BLUEPRINTS.length} pre-filled role blueprints, previewed at full size. Pick one and start editing — no account required.`}
 >
   <Header active="templates" />
 
@@ -20,53 +35,203 @@ import { TEMPLATES } from '../lib/templates';
           Pick the one that suits<br class="hidden sm:block" /> the job you want.
         </h1>
         <p class="mt-5 max-w-xl text-[17px] leading-relaxed text-ink-soft">
-          Four layouts, all free, all downloadable without a watermark. You are not locked in —
-          switching templates inside the editor keeps everything you have typed.
+          {TEMPLATES.length} layouts and {BLUEPRINTS.length} pre-filled role blueprints, all free and
+          all downloadable without a watermark. You are not locked in — switching templates inside the
+          editor keeps everything you have typed.
         </p>
       </div>
     </section>
 
-    <section>
-      <div class="shell py-16 lg:py-20">
-        <div class="grid gap-x-12 gap-y-16 md:grid-cols-2">
+    <!-- Tabs · filters · grids -->
+    <section data-gallery>
+      <div class="shell pt-10 pb-16 lg:pb-20">
+        <!-- Tabs -->
+        <div class="flex flex-wrap items-center gap-2" role="tablist" aria-label="Template kind">
           {
-            TEMPLATES.map((template, index) => (
-              <article class="group">
-                <div class="flex items-baseline gap-3">
-                  <span class="font-mono text-xs text-ink-faint tabular-nums">
-                    {String(index + 1).padStart(2, '0')}
+            tabs.map((tab) => (
+              <button
+                type="button"
+                role="tab"
+                data-tab={tab.key}
+                aria-selected="false"
+                class="gallery-tab inline-flex items-center gap-2.5 rounded-full border border-line bg-surface px-5 py-3 text-sm font-medium text-ink transition-colors duration-200 hover:border-line-strong"
+              >
+                <svg
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="size-4 flex-none"
+                  aria-hidden="true"
+                  set:html={tab.icon}
+                />
+                <span>{tab.label}</span>
+                {tab.badge && (
+                  <span class="gallery-tab-badge rounded-full bg-paper-sunk px-2 py-0.5 text-[10px] font-semibold tracking-[0.04em] text-ink-muted">
+                    {tab.badge}
                   </span>
-                  <h2 class="text-xl font-semibold tracking-[-0.02em]">{template.name}</h2>
-                  <span class="ml-auto rounded-full bg-clay-soft px-2.5 py-1 text-[11px] font-medium text-clay">
-                    {template.bestFor}
-                  </span>
-                </div>
-
-                <p class="mt-2 text-sm text-ink-muted">{template.tagline}</p>
-
-                <a
-                  href={`/editor?template=${template.id}`}
-                  class="mt-5 block overflow-hidden rounded-card border border-line bg-surface transition-all duration-300 ease-(--ease-out-soft) hover:-translate-y-1 hover:border-line-strong hover:shadow-page focus-visible:ring-2 focus-visible:ring-ink"
-                  aria-label={`Use the ${template.name} template`}
-                >
-                  <TemplateThumb templateId={template.id} />
-                </a>
-
-                <div class="mt-5 flex items-center gap-3">
-                  <a
-                    href={`/editor?template=${template.id}`}
-                    class="inline-flex h-10 items-center rounded-full bg-ink px-5 text-sm font-medium text-paper transition-transform duration-200 ease-(--ease-out-soft) hover:-translate-y-px"
-                  >
-                    Use {template.name}
-                  </a>
-                  <span class="text-xs text-ink-faint">
-                    {template.layout === 'sidebar' ? 'Two column · A4' : 'Single column · A4'}
-                  </span>
-                </div>
-              </article>
+                )}
+              </button>
             ))
           }
         </div>
+
+        <div class="mt-6 border-t border-line pt-6">
+          <!-- Filters: one row per tab -->
+          <div data-filters="layouts" role="group" aria-label="Filter layouts by style">
+            <div class="flex flex-wrap gap-2">
+              <button type="button" data-filter="all" aria-pressed="true" class="gallery-pill"
+                >All</button
+              >
+              {
+                TEMPLATE_CATEGORIES.map((category) => (
+                  <button type="button" data-filter={category} aria-pressed="false" class="gallery-pill">
+                    {category}
+                  </button>
+                ))
+              }
+            </div>
+          </div>
+
+          <div data-filters="roles" role="group" aria-label="Filter blueprints by job family" hidden>
+            <div class="flex flex-wrap gap-2">
+              <button type="button" data-filter="all" aria-pressed="true" class="gallery-pill"
+                >All</button
+              >
+              {
+                ROLE_CATEGORIES.map((category) => (
+                  <button type="button" data-filter={category} aria-pressed="false" class="gallery-pill">
+                    {category}
+                  </button>
+                ))
+              }
+            </div>
+          </div>
+        </div>
+
+        <!-- Layouts -->
+        <div data-panel="layouts" hidden>
+          <div class="mt-12 grid gap-x-10 gap-y-14 md:grid-cols-2 lg:grid-cols-3">
+            {
+              TEMPLATES.map((template, index) => (
+                <article class="group" data-card data-category={template.category}>
+                  <div class="flex items-baseline gap-3">
+                    <span class="font-mono text-xs text-ink-faint tabular-nums">
+                      {String(index + 1).padStart(2, '0')}
+                    </span>
+                    <h2 class="text-lg font-semibold tracking-[-0.02em]">{template.name}</h2>
+                    <span class="ml-auto rounded-full bg-paper-sunk px-2.5 py-1 text-[11px] font-medium text-ink-muted">
+                      {template.category}
+                    </span>
+                  </div>
+
+                  <p class="mt-2 min-h-[2.5rem] text-sm text-ink-muted">{template.tagline}</p>
+
+                  <a
+                    href={`/editor?template=${template.id}`}
+                    class="mt-4 block overflow-hidden rounded-card border border-line bg-surface transition-all duration-300 ease-(--ease-out-soft) hover:-translate-y-1 hover:border-line-strong hover:shadow-page focus-visible:ring-2 focus-visible:ring-ink"
+                    aria-label={`Use the ${template.name} template`}
+                  >
+                    <TemplateThumb templateId={template.id} />
+                  </a>
+
+                  <div class="mt-4 flex flex-wrap items-center gap-2">
+                    <span
+                      class:list={[
+                        'rounded-full px-2.5 py-1 text-[11px] font-medium',
+                        template.ats === 'strict'
+                          ? 'bg-clay-soft text-clay'
+                          : 'bg-paper-sunk text-ink-muted',
+                      ]}
+                    >
+                      {ATS_LABEL[template.ats]}
+                    </span>
+                    <span class="text-[11px] text-ink-faint">
+                      {template.layout === 'single' ? 'Single column' : 'Two column'} · A4
+                    </span>
+                  </div>
+
+                  <p class="mt-2 text-[11px] leading-relaxed text-ink-faint">
+                    Best for {template.bestFor}
+                  </p>
+
+                  <a
+                    href={`/editor?template=${template.id}`}
+                    class="mt-4 inline-flex h-10 items-center rounded-full bg-ink px-5 text-sm font-medium text-paper transition-transform duration-200 ease-(--ease-out-soft) hover:-translate-y-px"
+                  >
+                    Use {template.name}
+                  </a>
+                </article>
+              ))
+            }
+          </div>
+        </div>
+
+        <!-- Role blueprints -->
+        <div data-panel="roles" hidden>
+          <p class="mt-8 max-w-2xl text-sm leading-relaxed text-ink-muted">
+            Each blueprint opens the editor on a finished resume written for that job family —
+            summary, achievements, skills and certifications already in place. Edit over it rather
+            than starting from an empty page. Every line is illustrative and meant to be replaced
+            with your own record.
+          </p>
+
+          <div class="mt-10 grid gap-x-10 gap-y-14 md:grid-cols-2 lg:grid-cols-3">
+            {
+              BLUEPRINTS.map((blueprint) => (
+                <article class="group" data-card data-category={blueprint.category}>
+                  <div class="flex items-baseline gap-3">
+                    <h2 class="text-lg font-semibold tracking-[-0.02em]">{blueprint.role}</h2>
+                    <span class="ml-auto rounded-full bg-clay-soft px-2.5 py-1 text-[11px] font-medium text-clay">
+                      {blueprint.category}
+                    </span>
+                  </div>
+
+                  <p class="mt-1 text-[11px] text-ink-faint">{blueprint.seniority}</p>
+                  <p class="mt-2 min-h-[2.5rem] text-sm text-ink-muted">{blueprint.blurb}</p>
+
+                  <a
+                    href={`/editor?blueprint=${blueprint.id}`}
+                    class="mt-4 block overflow-hidden rounded-card border border-line bg-surface transition-all duration-300 ease-(--ease-out-soft) hover:-translate-y-1 hover:border-line-strong hover:shadow-page focus-visible:ring-2 focus-visible:ring-ink"
+                    aria-label={`Start from the ${blueprint.role} blueprint`}
+                  >
+                    <TemplateThumb
+                      templateId={blueprint.template}
+                      accentId={blueprint.accent}
+                      data={blueprint.data}
+                    />
+                  </a>
+
+                  <ul class="mt-4 flex flex-wrap gap-1.5">
+                    {blueprint.keywords.slice(0, 4).map((keyword) => (
+                      <li class="rounded-full bg-paper-sunk px-2.5 py-1 text-[11px] text-ink-muted">
+                        {keyword}
+                      </li>
+                    ))}
+                  </ul>
+
+                  <a
+                    href={`/editor?blueprint=${blueprint.id}`}
+                    class="mt-4 inline-flex h-10 items-center rounded-full bg-ink px-5 text-sm font-medium text-paper transition-transform duration-200 ease-(--ease-out-soft) hover:-translate-y-px"
+                  >
+                    Start from this
+                  </a>
+                </article>
+              ))
+            }
+          </div>
+        </div>
+
+        <!-- Shown only when a filter matches nothing. -->
+        <p
+          data-empty
+          hidden
+          class="mt-12 rounded-card border border-dashed border-line px-6 py-12 text-center text-sm text-ink-faint"
+        >
+          Nothing on this shelf yet. Try “All”.
+        </p>
       </div>
     </section>
 
@@ -78,8 +243,8 @@ import { TEMPLATES } from '../lib/templates';
           <div>
             <h2 class="text-lg font-semibold tracking-[-0.015em]">Not sure which one?</h2>
             <p class="mt-1.5 max-w-md text-sm text-ink-muted">
-              Start with Onyx. It is the safest layout for automated screening, and you can switch
-              template inside the editor at any time without losing your content.
+              Start with Ledger or Beacon. They are the safest layouts for automated screening, and
+              you can switch template inside the editor at any time without losing your content.
             </p>
           </div>
           <a
@@ -96,8 +261,47 @@ import { TEMPLATES } from '../lib/templates';
   <Footer />
 </Layout>
 
+<style>
+  .gallery-tab[aria-selected="true"] {
+    background: var(--color-ink);
+    border-color: var(--color-ink);
+    color: var(--color-paper);
+  }
+
+  .gallery-tab[aria-selected="true"] .gallery-tab-badge {
+    background: color-mix(in srgb, var(--color-paper) 22%, transparent);
+    color: var(--color-paper);
+  }
+
+  .gallery-pill {
+    border-radius: 999px;
+    border: 1px solid var(--color-line);
+    background: var(--color-surface);
+    padding: 0.4rem 1rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--color-ink-soft);
+    transition:
+      background-color 200ms ease,
+      border-color 200ms ease,
+      color 200ms ease;
+  }
+
+  .gallery-pill:hover {
+    border-color: var(--color-line-strong);
+  }
+
+  .gallery-pill[aria-pressed="true"] {
+    background: var(--color-ink);
+    border-color: var(--color-ink);
+    color: var(--color-paper);
+  }
+</style>
+
 <script>
   import { observeSheets } from '../lib/fit';
+  import { initGallery } from '../scripts/gallery';
 
   observeSheets();
+  initGallery();
 </script>
