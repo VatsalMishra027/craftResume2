@@ -1,0 +1,233 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Logo from '../components/Logo.astro';
+import Field from '../components/editor/Field.astro';
+import { TEMPLATES } from '../lib/templates';
+import '../styles/resume.css';
+
+const sections = [
+  { key: 'experience', title: 'Experience', add: 'Add a role' },
+  { key: 'education', title: 'Education', add: 'Add a qualification' },
+  { key: 'projects', title: 'Projects', add: 'Add a project' },
+] as const;
+---
+
+<Layout title="Editor — CraftResume" bare>
+  <div class="flex h-dvh flex-col">
+    <!-- Top bar -->
+    <header class="flex h-14 flex-none items-center justify-between gap-4 border-b border-line bg-paper px-4 sm:px-6">
+      <Logo />
+
+      <div class="flex items-center gap-3">
+        <span class="hidden text-xs text-ink-faint sm:inline" data-save-status>Saved to this browser</span>
+
+        <button
+          type="button"
+          data-download
+          class="inline-flex h-9 items-center gap-2 rounded-full bg-ink px-4 text-sm font-medium text-paper transition-transform duration-200 ease-(--ease-out-soft) hover:-translate-y-px active:translate-y-0"
+        >
+          <svg viewBox="0 0 16 16" fill="none" class="size-3.5" aria-hidden="true">
+            <path
+              d="M8 2.5v7m0 0L5.2 6.7M8 9.5l2.8-2.8M3 12.2h10"
+              stroke="currentColor"
+              stroke-width="1.4"
+              stroke-linecap="round"
+              stroke-linejoin="round"></path>
+          </svg>
+          <span class="hidden sm:inline">Download PDF</span>
+          <span class="sm:hidden">PDF</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Split view -->
+    <div
+      data-view-root
+      data-active-view="edit"
+      class="grid min-h-0 flex-1 lg:grid-cols-[minmax(380px,30rem)_1fr]"
+    >
+      <!-- Form -->
+      <section
+        data-editor-form
+        class="pane-edit min-h-0 overflow-y-auto border-line bg-paper lg:border-r"
+        aria-label="Resume details"
+      >
+        <div class="mx-auto max-w-2xl space-y-10 px-4 pt-8 pb-28 sm:px-6 lg:pb-10">
+          <!-- Template -->
+          <section>
+            <h2 class="eyebrow">Template</h2>
+            <div class="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {
+                TEMPLATES.map((template) => (
+                  <button
+                    type="button"
+                    data-template={template.id}
+                    aria-pressed="false"
+                    class="rounded-lg border border-line px-3 py-2.5 text-left text-ink-soft transition-colors duration-200 hover:border-line-strong"
+                  >
+                    <span class="block text-[13px] font-semibold tracking-[-0.01em]">
+                      {template.name}
+                    </span>
+                    <span class="mt-0.5 block text-[10px] opacity-70">{template.bestFor}</span>
+                  </button>
+                ))
+              }
+            </div>
+          </section>
+
+          <!-- Basics -->
+          <section class="border-t border-line pt-8">
+            <h2 class="eyebrow">Your details</h2>
+            <div class="mt-4 grid gap-3 sm:grid-cols-2">
+              <Field label="Full name" field="basics.fullName" placeholder="Ananya Rao" />
+              <Field
+                label="Job title"
+                field="basics.title"
+                placeholder="Senior Product Designer"
+              />
+              <Field label="Email" field="basics.email" type="email" placeholder="you@email.com" />
+              <Field label="Phone" field="basics.phone" placeholder="+91 98200 41122" />
+              <Field label="Location" field="basics.location" placeholder="Bengaluru, India" />
+              <Field label="Website" field="basics.website" placeholder="yourname.com" />
+              <Field
+                label="LinkedIn"
+                field="basics.linkedin"
+                placeholder="linkedin.com/in/yourname"
+                class="sm:col-span-2"
+              />
+              <Field
+                label="Summary"
+                field="basics.summary"
+                rows={4}
+                class="sm:col-span-2"
+                placeholder="Two or three lines on what you do and what you are good at."
+                hint="Keep it to about 40 words. Specific beats impressive."
+              />
+            </div>
+          </section>
+
+          <!-- Repeatable sections -->
+          {
+            sections.map((section) => (
+              <section class="border-t border-line pt-8">
+                <div class="flex items-center justify-between gap-4">
+                  <h2 class="eyebrow">{section.title}</h2>
+                  <button
+                    type="button"
+                    data-add={section.key}
+                    class="inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-medium text-ink transition-colors duration-200 hover:bg-paper-sunk"
+                  >
+                    <span aria-hidden="true">+</span>
+                    {section.add}
+                  </button>
+                </div>
+                <div class="mt-4 space-y-3" data-list={section.key} />
+              </section>
+            ))
+          }
+
+          <!-- Skills -->
+          <section class="border-t border-line pt-8">
+            <h2 class="eyebrow">Skills</h2>
+            <div class="mt-4">
+              <Field
+                label="Skills"
+                field="skills"
+                rows={3}
+                placeholder="Product strategy, User research, Figma, Accessibility"
+                hint="Separate with commas or new lines."
+              />
+            </div>
+          </section>
+
+          <!-- Danger zone -->
+          <section class="border-t border-line pt-8 pb-4">
+            <div class="flex flex-wrap items-center justify-between gap-4">
+              <p class="max-w-xs text-xs leading-relaxed text-ink-faint">
+                Everything here is stored in this browser only. Nothing is uploaded.
+              </p>
+              <button
+                type="button"
+                data-clear
+                class="rounded-full border border-line px-3.5 py-1.5 text-xs font-medium text-ink-muted transition-colors duration-200 hover:border-clay hover:text-clay"
+              >
+                Clear everything
+              </button>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <!-- Live preview -->
+      <section class="pane-preview min-h-0 overflow-y-auto bg-paper-sunk" aria-label="Live preview">
+        <div class="mx-auto w-full max-w-[860px] px-4 pt-8 pb-28 sm:px-8 lg:pb-10">
+          <div class="mb-4 flex items-center justify-between">
+            <p class="text-xs text-ink-faint" data-page-count>Live preview · A4</p>
+            <button
+              type="button"
+              data-download
+              class="text-xs font-medium text-ink underline-offset-4 hover:underline"
+            >
+              Download PDF
+            </button>
+          </div>
+
+          <div
+            class="sheet-fit sheet-fit--flow rounded-sm shadow-page"
+            data-sheet-fit="flow"
+          >
+            <div data-preview class="resume-sheet t-onyx"></div>
+          </div>
+
+          <p class="mt-4 hidden text-center text-[11px] leading-relaxed text-ink-faint" data-page-note>
+            The dashed line marks the end of page one. Most recruiters prefer a single page.
+          </p>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- Below the split-view breakpoint the two panes share the screen, so the
+       switch floats above the content rather than crowding the top bar. -->
+  <div
+    class="fixed bottom-5 left-1/2 z-30 flex -translate-x-1/2 rounded-full border border-line bg-paper/95 p-1 shadow-lift backdrop-blur lg:hidden"
+    role="group"
+    aria-label="Panel"
+  >
+    <button
+      type="button"
+      data-view="edit"
+      aria-pressed="true"
+      class="rounded-full bg-surface px-5 py-2 text-xs font-medium text-ink shadow-sm transition-colors"
+    >
+      Edit
+    </button>
+    <button
+      type="button"
+      data-view="preview"
+      aria-pressed="false"
+      class="rounded-full px-5 py-2 text-xs font-medium text-ink-muted transition-colors"
+    >
+      Preview
+    </button>
+  </div>
+
+  <!-- Populated only at print time, at true A4 size. -->
+  <div class="print-root" hidden></div>
+</Layout>
+
+<style>
+  /* One pane at a time below the split-view breakpoint. */
+  @media (width < 64rem) {
+    [data-active-view='edit'] .pane-preview,
+    [data-active-view='preview'] .pane-edit {
+      display: none;
+    }
+  }
+</style>
+
+<script>
+  import { initEditor } from '../scripts/editor';
+
+  initEditor();
+</script>

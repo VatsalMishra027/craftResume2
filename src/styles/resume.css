@@ -1,0 +1,402 @@
+/* ---------------------------------------------------------------------------
+   Resume sheet styles.
+   Deliberately plain CSS, not Tailwind: these rules need mm/pt units so the
+   on-screen preview and the printed PDF are the same document.
+--------------------------------------------------------------------------- */
+
+.resume-sheet {
+  --rs-ink: #14140f;
+  --rs-soft: #3d3a33;
+  --rs-muted: #6b665c;
+  --rs-line: #d8d4c9;
+  --rs-accent: #14140f;
+
+  width: 210mm;
+  min-height: 297mm;
+  padding: 16mm 15mm;
+  box-sizing: border-box;
+  background: #fff;
+  color: var(--rs-ink);
+  font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+  font-size: 9.6pt;
+  line-height: 1.45;
+  overflow-wrap: break-word;
+}
+
+.resume-sheet p:last-child,
+.resume-sheet ul:last-child {
+  margin-bottom: 0;
+}
+
+/* --- Header -------------------------------------------------------------- */
+.rs-name {
+  font-size: 21pt;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  margin: 0;
+}
+
+.rs-role {
+  font-size: 10.5pt;
+  font-weight: 500;
+  color: var(--rs-muted);
+  margin: 1.5mm 0 0;
+}
+
+.rs-contact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1mm 4mm;
+  margin: 4mm 0 0;
+  font-size: 8.6pt;
+  color: var(--rs-soft);
+  list-style: none;
+  padding: 0;
+}
+
+.rs-contact li {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Dot separators, but never a trailing one. */
+.rs-contact li + li::before {
+  content: "";
+  width: 2.5px;
+  height: 2.5px;
+  border-radius: 50%;
+  background: var(--rs-line);
+  margin-right: 4mm;
+  flex: none;
+}
+
+.rs-header {
+  padding-bottom: 5mm;
+  border-bottom: 1px solid var(--rs-line);
+  margin-bottom: 6mm;
+}
+
+/* --- Sections ------------------------------------------------------------ */
+.rs-section {
+  margin-bottom: 6mm;
+  break-inside: avoid-page;
+}
+
+.rs-section:last-child {
+  margin-bottom: 0;
+}
+
+.rs-section-title {
+  font-size: 8.2pt;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--rs-accent);
+  margin: 0 0 3mm;
+}
+
+.rs-summary {
+  margin: 0;
+  color: var(--rs-soft);
+  max-width: 62em;
+}
+
+.rs-entry {
+  margin-bottom: 4.5mm;
+  break-inside: avoid;
+}
+
+.rs-entry:last-child {
+  margin-bottom: 0;
+}
+
+.rs-entry-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 6mm;
+}
+
+.rs-entry-title {
+  font-size: 10pt;
+  font-weight: 600;
+  margin: 0;
+}
+
+.rs-entry-org {
+  font-size: 9.4pt;
+  color: var(--rs-soft);
+  margin: 0.6mm 0 0;
+}
+
+.rs-entry-meta {
+  font-size: 8.4pt;
+  color: var(--rs-muted);
+  white-space: nowrap;
+  flex: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.rs-bullets {
+  margin: 2mm 0 0;
+  padding-left: 4.2mm;
+  color: var(--rs-soft);
+}
+
+.rs-bullets li {
+  margin-bottom: 1.2mm;
+  padding-left: 0.8mm;
+}
+
+.rs-bullets li::marker {
+  color: var(--rs-line);
+}
+
+.rs-skills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.6mm 2mm;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.rs-skill {
+  font-size: 8.6pt;
+  color: var(--rs-soft);
+  border: 1px solid var(--rs-line);
+  border-radius: 999px;
+  padding: 0.8mm 2.4mm;
+}
+
+.rs-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Empty-state placeholder shown only in the live preview. */
+.rs-placeholder {
+  color: #b6b1a5;
+  font-style: italic;
+}
+
+/* ===========================================================================
+   Onyx — centred, conservative, maximum ATS safety.
+   =========================================================================== */
+.t-onyx .rs-header {
+  text-align: center;
+}
+
+.t-onyx .rs-contact {
+  justify-content: center;
+}
+
+.t-onyx .rs-name {
+  letter-spacing: 0.01em;
+  font-size: 20pt;
+}
+
+.t-onyx .rs-section-title {
+  text-align: center;
+  border-bottom: 1px solid var(--rs-line);
+  padding-bottom: 2mm;
+}
+
+/* ===========================================================================
+   Meridian — left rail for the scannable facts, main column for the story.
+   =========================================================================== */
+.t-meridian {
+  padding: 0;
+  display: flex;
+  align-items: stretch;
+}
+
+.t-meridian .rs-aside {
+  width: 62mm;
+  flex: none;
+  background: #f5f3ee;
+  padding: 16mm 9mm;
+  box-sizing: border-box;
+}
+
+.t-meridian .rs-main {
+  flex: 1;
+  padding: 16mm 13mm 16mm 11mm;
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+.t-meridian .rs-header {
+  border-bottom: 0;
+  padding-bottom: 0;
+  margin-bottom: 7mm;
+}
+
+.t-meridian .rs-name {
+  font-size: 19pt;
+}
+
+.t-meridian .rs-contact {
+  display: block;
+  font-size: 8.4pt;
+  margin-top: 0;
+}
+
+.t-meridian .rs-contact li {
+  display: block;
+  margin-bottom: 1.6mm;
+  word-break: break-word;
+}
+
+.t-meridian .rs-contact li + li::before {
+  display: none;
+}
+
+.t-meridian .rs-skills {
+  display: block;
+}
+
+.t-meridian .rs-skill {
+  display: block;
+  border: 0;
+  border-radius: 0;
+  padding: 0 0 1.4mm;
+}
+
+.t-meridian .rs-aside .rs-section-title {
+  border-bottom: 1px solid var(--rs-line);
+  padding-bottom: 1.6mm;
+}
+
+/* ===========================================================================
+   Quill — editorial, serif, wide margins. Reads like a page, not a form.
+   =========================================================================== */
+.t-quill {
+  padding: 20mm 20mm;
+  font-size: 9.8pt;
+}
+
+.t-quill .rs-name {
+  font-family: "Instrument Serif", ui-serif, Georgia, serif;
+  font-size: 29pt;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+
+.t-quill .rs-role {
+  font-size: 10pt;
+  font-style: italic;
+  color: var(--rs-soft);
+}
+
+.t-quill .rs-header {
+  border-bottom: 0;
+  padding-bottom: 0;
+  margin-bottom: 8mm;
+}
+
+.t-quill .rs-section-title {
+  font-family: "Instrument Serif", ui-serif, Georgia, serif;
+  font-size: 12pt;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  border-bottom: 1px solid var(--rs-line);
+  padding-bottom: 1.8mm;
+  margin-bottom: 3.5mm;
+}
+
+.t-quill .rs-entry-title {
+  font-size: 10.2pt;
+}
+
+.t-quill .rs-skill {
+  border: 0;
+  padding: 0;
+}
+
+.t-quill .rs-skill:not(:last-child)::after {
+  content: " · ";
+  color: var(--rs-line);
+}
+
+.t-quill .rs-section {
+  margin-bottom: 7mm;
+}
+
+/* ===========================================================================
+   Grid — section labels sit in a fixed left rail. Dense, technical.
+   =========================================================================== */
+.t-grid {
+  font-size: 9.4pt;
+}
+
+.t-grid .rs-header {
+  border-bottom: 2px solid var(--rs-ink);
+  padding-bottom: 4mm;
+}
+
+.t-grid .rs-name {
+  font-size: 18pt;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+.t-grid .rs-section {
+  display: grid;
+  grid-template-columns: 30mm 1fr;
+  gap: 0 6mm;
+  margin-bottom: 5.5mm;
+}
+
+.t-grid .rs-section-title {
+  font-size: 7.8pt;
+  color: var(--rs-muted);
+  margin: 0.6mm 0 0;
+}
+
+.t-grid .rs-entry-title {
+  font-size: 9.6pt;
+}
+
+.t-grid .rs-skill {
+  border-radius: 3px;
+  background: #f4f2ed;
+  border-color: transparent;
+}
+
+/* ===========================================================================
+   Fit-to-width wrapper. The sheet keeps its true A4 size; only the visual
+   scale changes, so the preview and the print output never diverge.
+   =========================================================================== */
+.sheet-fit {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  background: #fff;
+}
+
+.sheet-fit--page {
+  aspect-ratio: 210 / 297;
+}
+
+.sheet-fit > .resume-sheet {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: top left;
+  transform: scale(var(--sheet-scale, 0.3));
+}
+
+/* A faint guide showing where the first A4 page ends. Only drawn when
+   there is a second page to warn about. */
+.sheet-fit--flow.is-multipage::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(297mm * var(--sheet-scale, 1));
+  border-top: 1px dashed #d8d4c9;
+  pointer-events: none;
+}

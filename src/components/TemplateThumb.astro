@@ -1,0 +1,17 @@
+---
+import { renderResume, sheetClass } from '../lib/render';
+import { SAMPLE_RESUME } from '../lib/sample';
+import '../styles/resume.css';
+
+interface Props {
+  templateId: string;
+  class?: string;
+}
+
+const { templateId, class: className = '' } = Astro.props;
+const html = renderResume(SAMPLE_RESUME, templateId);
+---
+
+<div class={`sheet-fit sheet-fit--page ${className}`} data-sheet-fit="page" aria-hidden="true">
+  <div class={sheetClass(templateId)} set:html={html} />
+</div>

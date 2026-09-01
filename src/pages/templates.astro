@@ -1,0 +1,103 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import TemplateThumb from '../components/TemplateThumb.astro';
+import { TEMPLATES } from '../lib/templates';
+---
+
+<Layout
+  title="Resume templates — CraftResume"
+  description="Four free resume templates, previewed at full size. Pick one and start editing — no account required."
+>
+  <Header active="templates" />
+
+  <main>
+    <section class="border-b border-line bg-surface/60">
+      <div class="shell py-16 lg:py-20">
+        <p class="eyebrow">Templates</p>
+        <h1 class="display mt-3 max-w-2xl text-[clamp(2.2rem,5vw,3.4rem)]">
+          Pick the one that suits<br class="hidden sm:block" /> the job you want.
+        </h1>
+        <p class="mt-5 max-w-xl text-[17px] leading-relaxed text-ink-soft">
+          Four layouts, all free, all downloadable without a watermark. You are not locked in —
+          switching templates inside the editor keeps everything you have typed.
+        </p>
+      </div>
+    </section>
+
+    <section>
+      <div class="shell py-16 lg:py-20">
+        <div class="grid gap-x-12 gap-y-16 md:grid-cols-2">
+          {
+            TEMPLATES.map((template, index) => (
+              <article class="group">
+                <div class="flex items-baseline gap-3">
+                  <span class="font-mono text-xs text-ink-faint tabular-nums">
+                    {String(index + 1).padStart(2, '0')}
+                  </span>
+                  <h2 class="text-xl font-semibold tracking-[-0.02em]">{template.name}</h2>
+                  <span class="ml-auto rounded-full bg-clay-soft px-2.5 py-1 text-[11px] font-medium text-clay">
+                    {template.bestFor}
+                  </span>
+                </div>
+
+                <p class="mt-2 text-sm text-ink-muted">{template.tagline}</p>
+
+                <a
+                  href={`/editor?template=${template.id}`}
+                  class="mt-5 block overflow-hidden rounded-card border border-line bg-surface transition-all duration-300 ease-(--ease-out-soft) hover:-translate-y-1 hover:border-line-strong hover:shadow-page focus-visible:ring-2 focus-visible:ring-ink"
+                  aria-label={`Use the ${template.name} template`}
+                >
+                  <TemplateThumb templateId={template.id} />
+                </a>
+
+                <div class="mt-5 flex items-center gap-3">
+                  <a
+                    href={`/editor?template=${template.id}`}
+                    class="inline-flex h-10 items-center rounded-full bg-ink px-5 text-sm font-medium text-paper transition-transform duration-200 ease-(--ease-out-soft) hover:-translate-y-px"
+                  >
+                    Use {template.name}
+                  </a>
+                  <span class="text-xs text-ink-faint">
+                    {template.layout === 'sidebar' ? 'Two column · A4' : 'Single column · A4'}
+                  </span>
+                </div>
+              </article>
+            ))
+          }
+        </div>
+      </div>
+    </section>
+
+    <section class="border-t border-line">
+      <div class="shell py-16">
+        <div
+          class="flex flex-col items-start justify-between gap-6 rounded-card border border-line bg-surface p-8 sm:flex-row sm:items-center"
+        >
+          <div>
+            <h2 class="text-lg font-semibold tracking-[-0.015em]">Not sure which one?</h2>
+            <p class="mt-1.5 max-w-md text-sm text-ink-muted">
+              Start with Onyx. It is the safest layout for automated screening, and you can switch
+              template inside the editor at any time without losing your content.
+            </p>
+          </div>
+          <a
+            href="/editor"
+            class="inline-flex h-11 flex-none items-center rounded-full bg-ink px-6 text-sm font-medium text-paper transition-transform duration-200 ease-(--ease-out-soft) hover:-translate-y-0.5"
+          >
+            Open the editor
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <Footer />
+</Layout>
+
+<script>
+  import { observeSheets } from '../lib/fit';
+
+  observeSheets();
+</script>

@@ -1,11 +1,284 @@
 ---
-import Welcome from '../components/Welcome.astro';
 import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import TemplateCard from '../components/TemplateCard.astro';
+import TemplateThumb from '../components/TemplateThumb.astro';
+import { TEMPLATES } from '../lib/templates';
 
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
+const steps = [
+  {
+    n: '01',
+    title: 'Pick a template',
+    body: 'Four layouts, each built for a different kind of role. Swap between them at any point — your content stays put.',
+  },
+  {
+    n: '02',
+    title: 'Fill in your details',
+    body: 'A plain form on the left, your real resume on the right. Every keystroke shows up immediately, at full page size.',
+  },
+  {
+    n: '03',
+    title: 'Download the PDF',
+    body: 'A4, selectable text, no watermark. It reads cleanly for a human and parses cleanly for an ATS.',
+  },
+];
+
+const promises = [
+  {
+    title: 'No account, ever',
+    body: 'No email, no password, no verification link. Open the editor and start typing.',
+  },
+  {
+    title: 'Stays on your machine',
+    body: 'Your details are saved in your own browser. Nothing is uploaded to a server.',
+  },
+  {
+    title: 'Nothing is watermarked',
+    body: 'The PDF carries your name and nothing else. No logo, no footer, no trial banner.',
+  },
+  {
+    title: 'Real text, not a picture',
+    body: 'The PDF is rendered as text, so applicant tracking systems can actually read it.',
+  },
+];
+
+const faqs = [
+  {
+    q: 'Is CraftResume really free?',
+    a: 'Yes. Every template and unlimited downloads, with no watermark and no card required. There is no paid tier to upsell you to.',
+  },
+  {
+    q: 'Do I need to create an account?',
+    a: 'No. Your resume is stored in your browser, so you can close the tab and pick it up later on the same device. Clearing your browser data clears the resume too.',
+  },
+  {
+    q: 'Are the templates ATS friendly?',
+    a: 'All four use standard section headings, real text and a single-flow reading order. Onyx and Grid are the safest bets if you know your application goes through a strict parser.',
+  },
+  {
+    q: 'How does the download work?',
+    a: 'Download opens your print dialog with the resume already isolated on an A4 page. Choose “Save as PDF” and you get a clean, selectable-text file.',
+  },
+];
 ---
 
-<Layout>
-	<Welcome />
+<Layout title="CraftResume — Free resume builder, no account needed">
+  <Header />
+
+  <main>
+    <!-- Hero -->
+    <section class="relative overflow-hidden">
+      <div
+        class="pointer-events-none absolute inset-x-0 top-0 h-[420px] bg-gradient-to-b from-paper-sunk/70 to-transparent"
+        aria-hidden="true"
+      >
+      </div>
+
+      <div
+        class="shell relative grid gap-14 py-16 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:gap-16 lg:py-24"
+      >
+        <div>
+          <p
+            class="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1.5 text-xs text-ink-soft"
+          >
+            <span class="size-1.5 rounded-full bg-clay"></span>
+            Free · No account · No watermark
+          </p>
+
+          <h1 class="display mt-6 text-[clamp(2.6rem,7vw,4.4rem)]">
+            Craft a resume<br />
+            <span class="font-serif font-normal italic tracking-[-0.01em]">worth reading.</span>
+          </h1>
+
+          <p class="mt-6 max-w-lg text-[17px] leading-relaxed text-ink-soft">
+            Choose a template, fill in your details, download the PDF. That is the whole product —
+            no sign-up wall, no credit card, no export that quietly stamps a logo on your work.
+          </p>
+
+          <div class="mt-9 flex flex-wrap items-center gap-3">
+            <a
+              href="/editor"
+              class="inline-flex h-12 items-center rounded-full bg-ink px-7 text-[15px] font-medium text-paper transition-transform duration-200 ease-(--ease-out-soft) hover:-translate-y-0.5 active:translate-y-0"
+            >
+              Start building
+            </a>
+            <a
+              href="/templates"
+              class="inline-flex h-12 items-center rounded-full border border-line-strong px-7 text-[15px] font-medium text-ink transition-colors duration-200 hover:bg-paper-sunk"
+            >
+              Browse templates
+            </a>
+          </div>
+
+          <dl class="mt-12 flex flex-wrap gap-x-10 gap-y-5 border-t border-line pt-7">
+            <div>
+              <dt class="eyebrow">Templates</dt>
+              <dd class="mt-1 text-xl font-semibold tabular-nums">4</dd>
+            </div>
+            <div>
+              <dt class="eyebrow">Downloads</dt>
+              <dd class="mt-1 text-xl font-semibold">Unlimited</dd>
+            </div>
+            <div>
+              <dt class="eyebrow">Data leaves your device</dt>
+              <dd class="mt-1 text-xl font-semibold">Never</dd>
+            </div>
+          </dl>
+        </div>
+
+        <!-- Layered preview: the real renderer, not a screenshot. -->
+        <div class="relative mx-auto w-full max-w-[420px] lg:max-w-none">
+          <div
+            class="absolute -right-2 top-6 hidden w-[78%] rotate-[4deg] overflow-hidden rounded-lg border border-line bg-surface opacity-70 shadow-lift sm:block"
+            aria-hidden="true"
+          >
+            <TemplateThumb templateId="quill" />
+          </div>
+          <div
+            class="relative w-[88%] -rotate-[1.5deg] overflow-hidden rounded-lg border border-line bg-surface shadow-page"
+          >
+            <TemplateThumb templateId="meridian" />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- How it works -->
+    <section id="how" class="scroll-mt-20 border-t border-line bg-surface/60">
+      <div class="shell py-20">
+        <p class="eyebrow">How it works</p>
+        <h2 class="display mt-3 max-w-2xl text-[clamp(1.9rem,4vw,2.7rem)]">
+          Three steps. Roughly ten minutes.
+        </h2>
+
+        <ol class="mt-14 grid gap-px overflow-hidden rounded-card border border-line bg-line md:grid-cols-3">
+          {
+            steps.map((step) => (
+              <li class="bg-surface p-7">
+                <span class="font-mono text-xs text-clay">{step.n}</span>
+                <h3 class="mt-4 text-lg font-semibold tracking-[-0.015em]">{step.title}</h3>
+                <p class="mt-2.5 text-sm leading-relaxed text-ink-muted">{step.body}</p>
+              </li>
+            ))
+          }
+        </ol>
+      </div>
+    </section>
+
+    <!-- Templates -->
+    <section class="border-t border-line">
+      <div class="shell py-20">
+        <div class="flex flex-wrap items-end justify-between gap-6">
+          <div>
+            <p class="eyebrow">Templates</p>
+            <h2 class="display mt-3 max-w-xl text-[clamp(1.9rem,4vw,2.7rem)]">
+              Four layouts, no filler.
+            </h2>
+            <p class="mt-4 max-w-md text-ink-muted">
+              Every preview below is the live template rendering real content — what you see is
+              exactly what prints.
+            </p>
+          </div>
+          <a
+            href="/templates"
+            class="inline-flex items-center gap-1.5 text-sm font-medium text-ink underline-offset-4 hover:underline"
+          >
+            See them full size
+            <span aria-hidden="true">→</span>
+          </a>
+        </div>
+
+        <div class="mt-12 grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
+          {TEMPLATES.map((template) => <TemplateCard template={template} />)}
+        </div>
+      </div>
+    </section>
+
+    <!-- Promises -->
+    <section class="border-t border-line bg-surface/60">
+      <div class="shell py-20">
+        <p class="eyebrow">What you get</p>
+        <h2 class="display mt-3 max-w-2xl text-[clamp(1.9rem,4vw,2.7rem)]">
+          The parts other builders charge for.
+        </h2>
+
+        <div class="mt-14 grid gap-x-10 gap-y-9 sm:grid-cols-2 lg:grid-cols-4">
+          {
+            promises.map((item) => (
+              <div class="border-t border-line pt-5">
+                <h3 class="text-[15px] font-semibold tracking-[-0.01em]">{item.title}</h3>
+                <p class="mt-2 text-sm leading-relaxed text-ink-muted">{item.body}</p>
+              </div>
+            ))
+          }
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section id="faq" class="scroll-mt-20 border-t border-line">
+      <div class="shell grid gap-12 py-20 lg:grid-cols-[0.8fr_1.2fr]">
+        <div>
+          <p class="eyebrow">FAQ</p>
+          <h2 class="display mt-3 text-[clamp(1.9rem,4vw,2.7rem)]">Reasonable questions.</h2>
+        </div>
+
+        <div class="divide-y divide-line border-y border-line">
+          {
+            faqs.map((faq) => (
+              <details class="group py-5">
+                <summary class="flex cursor-pointer list-none items-center justify-between gap-6 text-[15px] font-medium">
+                  {faq.q}
+                  <span
+                    class="grid size-6 flex-none place-items-center rounded-full border border-line text-ink-muted transition-transform duration-300 ease-(--ease-out-soft) group-open:rotate-45"
+                    aria-hidden="true"
+                  >
+                    <svg viewBox="0 0 12 12" class="size-3" fill="none">
+                      <path
+                        d="M6 2v8M2 6h8"
+                        stroke="currentColor"
+                        stroke-width="1.4"
+                        stroke-linecap="round"
+                      />
+                    </svg>
+                  </span>
+                </summary>
+                <p class="mt-3 max-w-2xl pr-12 text-sm leading-relaxed text-ink-muted">{faq.a}</p>
+              </details>
+            ))
+          }
+        </div>
+      </div>
+    </section>
+
+    <!-- Closing CTA -->
+    <section class="border-t border-line">
+      <div class="shell py-20">
+        <div class="rounded-card bg-ink px-8 py-16 text-center text-paper sm:px-16">
+          <h2 class="display mx-auto max-w-2xl text-[clamp(1.9rem,4.5vw,3rem)]">
+            Your next resume is about <span class="font-serif font-normal italic">ten minutes</span>
+            away.
+          </h2>
+          <p class="mx-auto mt-5 max-w-md text-[15px] leading-relaxed text-paper/70">
+            No account. No card. Close the tab whenever you like — your draft will be here.
+          </p>
+          <a
+            href="/editor"
+            class="mt-9 inline-flex h-12 items-center rounded-full bg-paper px-8 text-[15px] font-medium text-ink transition-transform duration-200 ease-(--ease-out-soft) hover:-translate-y-0.5 active:translate-y-0"
+          >
+            Start building
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <Footer />
 </Layout>
+
+<script>
+  import { observeSheets } from '../lib/fit';
+
+  observeSheets();
+</script>

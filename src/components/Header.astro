@@ -1,0 +1,42 @@
+---
+import Logo from './Logo.astro';
+
+interface Props {
+  active?: 'templates' | 'how' | null;
+}
+const { active = null } = Astro.props;
+
+const links = [
+  { href: '/templates', label: 'Templates', key: 'templates' },
+  { href: '/#how', label: 'How it works', key: 'how' },
+];
+---
+
+<header class="sticky top-0 z-40 border-b border-line/70 bg-paper/85 backdrop-blur-md">
+  <div class="shell flex h-16 items-center justify-between gap-6">
+    <Logo />
+
+    <nav class="hidden items-center gap-7 text-sm text-ink-soft sm:flex" aria-label="Main">
+      {
+        links.map((link) => (
+          <a
+            href={link.href}
+            class:list={[
+              'transition-colors duration-200 hover:text-ink',
+              active === link.key && 'text-ink font-medium',
+            ]}
+          >
+            {link.label}
+          </a>
+        ))
+      }
+    </nav>
+
+    <a
+      href="/editor"
+      class="inline-flex h-9 items-center rounded-full bg-ink px-4 text-sm font-medium text-paper transition-transform duration-200 ease-(--ease-out-soft) hover:-translate-y-px active:translate-y-0"
+    >
+      Build my resume
+    </a>
+  </div>
+</header>

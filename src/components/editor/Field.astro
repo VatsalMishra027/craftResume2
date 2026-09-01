@@ -1,0 +1,41 @@
+---
+interface Props {
+  label: string;
+  field: string;
+  type?: string;
+  placeholder?: string;
+  rows?: number;
+  hint?: string;
+  class?: string;
+}
+
+const {
+  label,
+  field,
+  type = 'text',
+  placeholder = '',
+  rows = 0,
+  hint,
+  class: className = '',
+} = Astro.props;
+
+const control =
+  'mt-1.5 w-full rounded-lg border border-line bg-surface px-3 py-2.5 text-sm text-ink placeholder:text-ink-faint transition-colors duration-150 hover:border-line-strong focus:border-ink focus:outline-none';
+---
+
+<label class={`block ${className}`}>
+  <span class="text-xs font-medium text-ink-soft">{label}</span>
+  {
+    rows > 0 ? (
+      <textarea
+        data-field={field}
+        rows={rows}
+        placeholder={placeholder}
+        class={`${control} resize-y leading-relaxed`}
+      />
+    ) : (
+      <input data-field={field} type={type} placeholder={placeholder} class={control} />
+    )
+  }
+  {hint && <span class="mt-1.5 block text-[11px] leading-relaxed text-ink-faint">{hint}</span>}
+</label>
