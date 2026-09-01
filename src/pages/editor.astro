@@ -230,29 +230,101 @@ const listPanels = panels.filter((panel) => panel.key !== 'basics');
                 </button>
 
                 {/* The singleton carries the name and contact block rather than a
-                    heading of its own, so there is nothing here to retitle. */}
+                    heading of its own, so it neither moves nor retitles. */}
                 {panel.key !== 'basics' && (
                   <Fragment>
-                    <button
-                      type="button"
-                      class="rail-more"
-                      data-section-menu={panel.key}
-                      aria-expanded="false"
-                      aria-label={`Rename or remove ${panel.title}`}
-                      title={`Rename or remove ${panel.title}`}
-                    >
-                      <svg viewBox="0 0 16 16" fill="currentColor" class="size-3.5" aria-hidden="true">
-                        <circle cx="3.6" cy="8" r="1.2" />
-                        <circle cx="8" cy="8" r="1.2" />
-                        <circle cx="12.4" cy="8" r="1.2" />
-                      </svg>
-                    </button>
+                    <span class="rail-actions">
+                      <button
+                        type="button"
+                        class="rail-btn"
+                        data-section-move={panel.key}
+                        data-direction="up"
+                        aria-label={`Move ${panel.title} up`}
+                        title={`Move ${panel.title} up`}
+                      >
+                        <svg
+                          viewBox="0 0 16 16"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="1.5"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          class="size-3.5"
+                          aria-hidden="true"
+                        >
+                          <path d="M8 12.8V3.4M8 3.4 4.2 7.2M8 3.4l3.8 3.8" />
+                        </svg>
+                      </button>
+
+                      <button
+                        type="button"
+                        class="rail-btn"
+                        data-section-move={panel.key}
+                        data-direction="down"
+                        aria-label={`Move ${panel.title} down`}
+                        title={`Move ${panel.title} down`}
+                      >
+                        <svg
+                          viewBox="0 0 16 16"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="1.5"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          class="size-3.5"
+                          aria-hidden="true"
+                        >
+                          <path d="M8 3.2v9.4M8 12.6l3.8-3.8M8 12.6 4.2 8.8" />
+                        </svg>
+                      </button>
+
+                      <button
+                        type="button"
+                        class="rail-btn"
+                        data-section-menu={panel.key}
+                        aria-expanded="false"
+                        aria-label={`Rename or remove ${panel.title}`}
+                        title={`Rename or remove ${panel.title}`}
+                      >
+                        <svg viewBox="0 0 16 16" fill="currentColor" class="size-3.5" aria-hidden="true">
+                          <circle cx="3.6" cy="8" r="1.2" />
+                          <circle cx="8" cy="8" r="1.2" />
+                          <circle cx="12.4" cy="8" r="1.2" />
+                        </svg>
+                      </button>
+                    </span>
 
                     <div class="rail-menu" data-section-panel={panel.key} hidden>
                       <button type="button" class="rail-menu-item" data-section-rename={panel.key}>
+                        <svg
+                          viewBox="0 0 16 16"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="1.3"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          class="rail-menu-icon"
+                          aria-hidden="true"
+                        >
+                          <path d="M11.2 2.6 13.4 4.8 5.9 12.3 3 13l.7-2.9z" />
+                        </svg>
                         Rename heading
                       </button>
                       <button type="button" class="rail-menu-item" data-section-toggle={panel.key}>
+                        <svg
+                          viewBox="0 0 16 16"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="1.3"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          class="rail-menu-icon"
+                          aria-hidden="true"
+                        >
+                          <path d="M2.2 8s2.4-4.2 5.8-4.2S13.8 8 13.8 8s-2.4 4.2-5.8 4.2S2.2 8 2.2 8z" />
+                          <circle cx="8" cy="8" r="1.6" />
+                          <path d="M2.8 2.8 13.2 13.2" data-toggle-slash />
+                        </svg>
                         <span data-toggle-label>Remove from resume</span>
                       </button>
                     </div>
@@ -492,7 +564,16 @@ const listPanels = panels.filter((panel) => panel.key !== 'basics');
     text-decoration-thickness: 1px;
   }
 
-  .rail-more {
+  /* Move up · move down · rename or remove. One cluster so the three read as
+     one set of controls for the row rather than three unrelated glyphs. */
+  .rail-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.0625rem;
+    flex: none;
+  }
+
+  .rail-btn {
     display: grid;
     place-items: center;
     flex: none;
@@ -501,39 +582,69 @@ const listPanels = panels.filter((panel) => panel.key !== 'basics');
     border-radius: 0.375rem;
     color: var(--color-ink-faint);
     transition:
-      opacity 150ms ease,
-      background-color 150ms ease,
-      color 150ms ease;
+      background-color 120ms ease,
+      color 120ms ease,
+      opacity 120ms ease;
   }
 
-  .rail-more:hover,
-  .rail-more[aria-expanded="true"] {
+  .rail-btn:hover,
+  .rail-btn[aria-expanded="true"] {
     background: var(--color-line);
     color: var(--color-ink);
   }
 
-  /* Where there is a pointer the dots stay out of the layout until wanted, so
-     a long section name keeps the whole row to itself at rest, and they take
-     the count's place rather than crowding it. On touch there is no hover to
-     wait for, so they sit in the row and both fit. */
+  /* The page's focus ring is sized for full-width controls; on a 24px button
+     in a 200px rail it reads as a box drawn around the icon. Tighten it. */
+  .rail-btn:focus-visible {
+    outline-offset: 1px;
+  }
+
+  /* At the ends of the list there is nowhere to go. The button stays put so
+     the cluster does not reflow, but it stops looking like it will do
+     something — and the cursor says so too. */
+  .rail-btn:disabled {
+    opacity: 0.25;
+  }
+
+  .rail-btn:disabled:hover {
+    background: none;
+    color: var(--color-ink-faint);
+  }
+
+  /* Where there is a pointer the controls stay out of the layout until wanted,
+     so a long section name keeps the whole row to itself at rest, and they
+     take the count's place rather than crowding it. The strip carries the
+     row's own hover colour, so the name passes cleanly underneath instead of
+     colliding with the icons. On touch there is no hover to wait for, so they
+     sit in the row and both fit. */
   @media (hover: hover) {
-    .rail-more {
+    .rail-actions {
       position: absolute;
-      right: 0.3rem;
+      right: 0.25rem;
       top: 50%;
       transform: translateY(-50%);
       opacity: 0;
+      pointer-events: none;
+      padding-left: 1.5rem;
+      border-radius: 0.375rem;
+      background: linear-gradient(
+        to right,
+        color-mix(in srgb, var(--color-paper-sunk), transparent 100%),
+        var(--color-paper-sunk) 1.5rem
+      );
+      transition: opacity 150ms ease;
     }
 
-    .rail-row:hover .rail-more,
-    .rail-row:focus-within .rail-more,
-    .rail-more[aria-expanded="true"] {
+    .rail-row:hover .rail-actions,
+    .rail-row:focus-within .rail-actions,
+    .rail-row:has(.rail-btn[aria-expanded="true"]) .rail-actions {
       opacity: 1;
+      pointer-events: auto;
     }
 
     .rail-row:hover .rail-count,
     .rail-row:focus-within .rail-count,
-    .rail-row:has(.rail-more[aria-expanded="true"]) .rail-count {
+    .rail-row:has(.rail-btn[aria-expanded="true"]) .rail-count {
       opacity: 0;
     }
   }
@@ -543,27 +654,48 @@ const listPanels = panels.filter((panel) => panel.key !== 'basics');
   .rail-menu {
     position: fixed;
     z-index: 50;
-    width: 12.5rem;
+    width: 13.75rem;
     border-radius: 0.75rem;
     border: 1px solid var(--color-line);
     background: var(--color-paper);
-    padding: 0.25rem;
+    padding: 0.3125rem;
     box-shadow: var(--shadow-lift);
   }
 
   .rail-menu-item {
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
     width: 100%;
     border-radius: 0.5rem;
-    padding: 0.5rem 0.625rem;
+    padding: 0.5rem 0.5rem;
     text-align: left;
     font-size: 0.8125rem;
+    line-height: 1.25;
     color: var(--color-ink);
-    transition: background-color 150ms ease;
+    transition:
+      background-color 150ms ease,
+      color 150ms ease;
   }
 
   .rail-menu-item:hover {
     background: var(--color-paper-sunk);
+  }
+
+  .rail-menu-item:focus-visible {
+    outline-offset: -1px;
+  }
+
+  .rail-menu-icon {
+    width: 0.9375rem;
+    height: 0.9375rem;
+    flex: none;
+    color: var(--color-ink-muted);
+    transition: color 150ms ease;
+  }
+
+  .rail-menu-item:hover .rail-menu-icon {
+    color: inherit;
   }
 
   .rail-menu-item[data-section-toggle]:hover {
@@ -571,24 +703,45 @@ const listPanels = panels.filter((panel) => panel.key !== 'basics');
     background: var(--color-clay-soft);
   }
 
-  .rail-row[data-renaming="true"] .rail-item,
-  .rail-row[data-renaming="true"] .rail-more {
+  /* Taking a section off the sheet is the one destructive thing in the menu,
+     so it sits below a rule rather than looking like a peer of "rename". */
+  .rail-menu-item[data-section-toggle] {
+    margin-top: 0.25rem;
+    border-top: 1px solid var(--color-line);
+    padding-top: 0.5625rem;
+    border-radius: 0.5rem;
+  }
+
+  /* The eye is crossed out while the section is on the sheet, because that is
+     what the click will do to it; once it is off, the plain eye offers it back. */
+  .rail-row[data-hidden="true"] [data-toggle-slash] {
     display: none;
   }
 
-  .rail-rename {
+  .rail-row[data-renaming="true"] .rail-item,
+  .rail-row[data-renaming="true"] .rail-actions {
+    display: none;
+  }
+
+  /* Global: the input is built by the editor script at rename time, so it never
+     carries this component's scoping attribute and a scoped rule misses it. */
+  :global(.rail-rename) {
     width: 100%;
-    min-width: 8rem;
+    min-width: 0;
     border-radius: 0.5rem;
     border: 1px solid var(--color-ink);
     background: var(--color-surface);
-    padding: 0.45rem 0.55rem;
+    /* Matches .rail-item's box, so the row does not jump on the way in. */
+    padding: 0.5rem 0.7rem;
+    font: inherit;
     font-size: 0.8125rem;
     font-weight: 500;
+    line-height: 1.15;
     color: var(--color-ink);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-ink), transparent 92%);
   }
 
-  .rail-rename:focus {
+  :global(.rail-rename:focus) {
     outline: none;
   }
 

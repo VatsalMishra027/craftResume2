@@ -384,6 +384,66 @@ export function initEditor(): void {
     if (!Object.keys(data.sections).length) delete data.sections;
   }
 
+  /** The order in force: the user's arrangement, or the app's default. */
+  function currentOrder(): SectionKey[] {
+    return data.order?.length ? [...data.order] : [...SECTIONS];
+  }
+
+  /**
+   * The rail lists sections in the order the sheet prints them, so a row that
+   * moves takes its place in the list with it. Templates that keep a section
+   * in a column of its own still reorder within that column, which is why the
+   * rail is the thing that always shows the change.
+   */
+  function syncSectionOrder(): void {
+    const order = currentOrder();
+    const list = document.querySelector<HTMLElement>('.rail-list');
+
+    // `basics` is not in the order and is never appended, so it stays first.
+    order.forEach((key) => {
+      const row = railRows.get(key);
+      if (list && row) list.appendChild(row);
+    });
+
+    order.forEach((key, index) => {
+      railRows
+        .get(key)
+        ?.querySelectorAll<HTMLButtonElement>('[data-section-move]')
+        .forEach((button) => {
+          button.disabled =
+            button.dataset.direction === 'up' ? index === 0 : index === order.length - 1;
+        });
+    });
+  }
+
+  function moveSection(key: SectionKey, delta: number): void {
+    const order = currentOrder();
+    const from = order.indexOf(key);
+    const to = from + delta;
+    if (from < 0 || to < 0 || to >= order.length) return;
+
+    order.splice(to, 0, ...order.splice(from, 1));
+    // Back at the default is the same as never having arranged anything.
+    if (order.every((entry, i) => entry === SECTIONS[i])) delete data.order;
+    else data.order = order;
+
+    syncSectionOrder();
+    paintPreview();
+    markSaved();
+
+    // Moving the row detaches it, which drops focus. Put it back on the button
+    // that was pressed so the section can be walked up the list with repeated
+    // presses — or on its opposite once this one has run out of travel.
+    const row = railRows.get(key);
+    const moved = row?.querySelector<HTMLButtonElement>(
+      `[data-section-move][data-direction="${delta < 0 ? 'up' : 'down'}"]`,
+    );
+    const fallback = row?.querySelector<HTMLButtonElement>(
+      `[data-section-move][data-direction="${delta < 0 ? 'down' : 'up'}"]`,
+    );
+    (moved && !moved.disabled ? moved : fallback)?.focus();
+  }
+
   function syncSectionHeadings(): void {
     SECTIONS.forEach((key) => {
       const row = railRows.get(key);
@@ -497,6 +557,16 @@ export function initEditor(): void {
       const menu = document.querySelector<HTMLElement>(`[data-section-panel="${key}"]`);
       if (menu && !menu.hidden) closeSectionMenus();
       else openSectionMenu(key);
+    });
+  });
+
+  document.querySelectorAll<HTMLElement>('[data-section-move]').forEach((button) => {
+    button.addEventListener('click', () => {
+      closeSectionMenus();
+      moveSection(
+        button.dataset.sectionMove as SectionKey,
+        button.dataset.direction === 'up' ? -1 : 1,
+      );
     });
   });
 
@@ -815,6 +885,7 @@ export function initEditor(): void {
     hydrateStaticFields();
     renderAllSections();
     syncSectionHeadings();
+    syncSectionOrder();
     paintPreview();
     markSaved();
   });
@@ -862,6 +933,7 @@ export function initEditor(): void {
   hydrateStaticFields();
   renderAllSections();
   syncSectionHeadings();
+  syncSectionOrder();
   syncTemplateButtons();
   syncAccentButtons();
   showPanel('basics');

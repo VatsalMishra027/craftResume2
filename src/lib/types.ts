@@ -95,6 +95,11 @@ export interface ResumeData {
   interests: InterestItem[];
   /** Renamed or removed headings. Only holds the sections the user has touched. */
   sections?: Partial<Record<SectionKey, SectionMeta>>;
+  /**
+   * The order the user has arranged the sections into, as a complete list.
+   * Absent means every template keeps the order it was designed around.
+   */
+  order?: SectionKey[];
 }
 
 /** Every repeatable list. `basics` is the one singleton and is handled apart.

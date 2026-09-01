@@ -7,6 +7,7 @@ import type {
   ProjectItem,
   PublicationItem,
   ResumeData,
+  SectionKey,
   SectionMeta,
   SkillItem,
 } from './types';
@@ -74,6 +75,27 @@ function sectionMeta(raw: unknown): ResumeData['sections'] {
   }
 
   return Object.keys(out).length ? out : undefined;
+}
+
+/**
+ * The order the user arranged the sections into. Stored as a complete list, so
+ * a key added to the app in a later release still has somewhere to go: unknown
+ * names are dropped and anything the stored list never mentioned keeps its
+ * default place at the end. An order matching the default is not worth storing.
+ */
+function sectionOrder(raw: unknown): SectionKey[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+
+  const seen = new Set<SectionKey>();
+  for (const entry of raw) {
+    if (typeof entry !== 'string') continue;
+    const key = entry as SectionKey;
+    if (SECTION_KEYS.includes(key)) seen.add(key);
+  }
+  if (!seen.size) return undefined;
+
+  const out = [...seen, ...SECTION_KEYS.filter((key) => !seen.has(key))];
+  return out.every((key, i) => key === SECTION_KEYS[i]) ? undefined : out;
 }
 
 /**
@@ -159,6 +181,7 @@ function normalise(raw: unknown): ResumeData {
       return { id: str(i.id) || uid('int'), name: str(i.name) };
     }),
     sections: sectionMeta(raw.sections),
+    order: sectionOrder(raw.order),
   };
 }
 
