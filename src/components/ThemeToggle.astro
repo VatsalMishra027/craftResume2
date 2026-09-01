@@ -1,0 +1,96 @@
+---
+/**
+ * Light / dark / system, as one button that cycles.
+ *
+ * A three-state switch rather than two: "system" is the default and follows
+ * the OS, and it has to stay reachable — someone who tried dark and changed
+ * their mind should be able to hand the decision back rather than being stuck
+ * with a manual choice for good.
+ */
+interface Props {
+  class?: string;
+}
+const { class: className = '' } = Astro.props;
+---
+
+<button
+  type="button"
+  data-theme-toggle
+  aria-label="Colour theme"
+  title="Colour theme"
+  class={`theme-toggle ${className}`}
+>
+  <svg viewBox="0 0 16 16" fill="none" class="size-4" aria-hidden="true" data-theme-icon="light">
+    <circle cx="8" cy="8" r="3.2" stroke="currentColor" stroke-width="1.3"></circle>
+    <path
+      d="M8 1.4v1.6M8 13v1.6M14.6 8H13M3 8H1.4M12.7 3.3l-1.1 1.1M4.4 11.6l-1.1 1.1M12.7 12.7l-1.1-1.1M4.4 4.4 3.3 3.3"
+      stroke="currentColor"
+      stroke-width="1.3"
+      stroke-linecap="round"></path>
+  </svg>
+
+  <svg viewBox="0 0 16 16" fill="none" class="size-4" aria-hidden="true" data-theme-icon="dark">
+    <path
+      d="M13.4 9.6A5.9 5.9 0 0 1 6.4 2.6a5.9 5.9 0 1 0 7 7z"
+      stroke="currentColor"
+      stroke-width="1.3"
+      stroke-linejoin="round"></path>
+  </svg>
+
+  <svg viewBox="0 0 16 16" fill="none" class="size-4" aria-hidden="true" data-theme-icon="system">
+    <rect x="1.8" y="3" width="12.4" height="8.4" rx="1.2" stroke="currentColor" stroke-width="1.3"
+    ></rect>
+    <path d="M5.4 13.8h5.2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"></path>
+  </svg>
+
+  <span class="sr-only" data-theme-label>System theme</span>
+</button>
+
+<style>
+  .theme-toggle {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 999px;
+    border: 1px solid var(--glass-line);
+    color: var(--color-ink-soft);
+    background: color-mix(in srgb, var(--color-surface) 55%, transparent);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    transition:
+      color 200ms ease,
+      background-color 200ms ease,
+      border-color 200ms ease;
+  }
+
+  .theme-toggle:hover {
+    color: var(--color-ink);
+    border-color: var(--color-line-strong);
+  }
+
+  /* All three icons occupy the same cell; the active one is the only one
+     drawn, so the button never changes size as the theme cycles. */
+  .theme-toggle svg {
+    grid-area: 1 / 1;
+    opacity: 0;
+    transform: scale(0.7) rotate(-25deg);
+    transition:
+      opacity 220ms var(--ease-out-soft),
+      transform 220ms var(--ease-out-soft);
+  }
+
+  .theme-toggle[data-state="light"] [data-theme-icon="light"],
+  .theme-toggle[data-state="dark"] [data-theme-icon="dark"],
+  .theme-toggle[data-state="system"] [data-theme-icon="system"] {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+</style>
+
+<script>
+  import { initThemeToggle } from '../scripts/theme';
+
+  initThemeToggle();
+</script>

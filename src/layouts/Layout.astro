@@ -26,11 +26,26 @@ const {
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:type" content="website" />
+    <meta name="color-scheme" content="light dark" />
+
+    {/* Runs before the first paint, so a dark-mode visitor never sees a white
+        flash on the way in. Deliberately inline and deliberately tiny — an
+        external script would be a round trip the paint has to wait for. */}
+    <script is:inline>
+      try {
+        const stored = localStorage.getItem('craftresume:theme:v1');
+        if (stored === 'dark' || stored === 'light') {
+          document.documentElement.dataset.theme = stored;
+        }
+      } catch {
+        /* Private browsing: fall through to the system preference. */
+      }
+    </script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=Space+Grotesk:wght@500;600;700&display=swap"
       rel="stylesheet"
     />
 

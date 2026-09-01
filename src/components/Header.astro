@@ -1,5 +1,6 @@
 ---
 import Logo from './Logo.astro';
+import ThemeToggle from './ThemeToggle.astro';
 
 interface Props {
   active?: 'templates' | 'how' | null;
@@ -12,17 +13,17 @@ const links = [
 ];
 ---
 
-<header class="sticky top-0 z-40 border-b border-line/70 bg-paper/85 backdrop-blur-md">
+<header class="site-header glass-bar glass-edge sticky top-0 z-40">
   <div class="shell flex h-16 items-center justify-between gap-6">
     <Logo />
 
-    <nav class="hidden items-center gap-7 text-sm text-ink-soft sm:flex" aria-label="Main">
+    <nav class="hidden items-center gap-1 text-sm text-ink-soft sm:flex" aria-label="Main">
       {
         links.map((link) => (
           <a
             href={link.href}
             class:list={[
-              'transition-colors duration-200 hover:text-ink',
+              'nav-link rounded-full px-3.5 py-2 transition-colors duration-200 hover:text-ink',
               active === link.key && 'text-ink font-medium',
             ]}
           >
@@ -32,11 +33,33 @@ const links = [
       }
     </nav>
 
-    <a
-      href="/editor"
-      class="inline-flex h-9 items-center rounded-full bg-ink px-4 text-sm font-medium text-paper transition-transform duration-200 ease-(--ease-out-soft) hover:-translate-y-px active:translate-y-0"
-    >
-      Build my resume
-    </a>
+    <div class="flex items-center gap-2.5">
+      <ThemeToggle />
+      <a
+        href="/editor"
+        class="inline-flex h-9 items-center rounded-full bg-ink px-4 text-sm font-medium text-paper transition-transform duration-200 ease-(--ease-out-soft) hover:-translate-y-px active:translate-y-0"
+      >
+        Build my resume
+      </a>
+    </div>
   </div>
 </header>
+
+<style>
+  /* The bar is glass first and a border second: the hairline is drawn as a
+     gradient so it fades out at the edges rather than ruling the page in two.
+     `glass-bar` supplies the tint and the blur. */
+  .site-header {
+    border-bottom: 1px solid color-mix(in srgb, var(--color-line) 55%, transparent);
+  }
+
+  /* A pill of glass behind the link the pointer is on, so the nav has the same
+     material as the bar it sits in. */
+  .nav-link {
+    position: relative;
+  }
+
+  .nav-link:hover {
+    background: color-mix(in srgb, var(--color-surface) 55%, transparent);
+  }
+</style>

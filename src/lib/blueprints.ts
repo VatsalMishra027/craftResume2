@@ -63,7 +63,7 @@ export const BLUEPRINTS: Blueprint[] = [
         linkedin: 'linkedin.com/in/arjunmehta',
         github: 'github.com/arjunmehta',
         summary:
-          'Backend engineer with 6 years on high-traffic payment and identity systems. I work close to the data layer — schema design, queue semantics, the failure modes nobody writes down — and I leave services easier to operate than I found them.',
+          'Backend engineer with 6 years on high-traffic payment and identity systems. I work close to the data layer: schema design, queue semantics, the failure modes nobody writes down.',
       },
       experience: [
         {
@@ -74,7 +74,7 @@ export const BLUEPRINTS: Blueprint[] = [
           start: '2022',
           end: 'Present',
           bullets:
-            'Re-architected the settlement pipeline from nightly batch to event-driven, cutting reconciliation lag from 14 hours to under 4 minutes.\nOwned the idempotency layer behind 40M monthly transactions; duplicate-charge incidents went from 11 a quarter to zero.\nIntroduced structured tracing across 9 services, which took median incident diagnosis from 45 minutes to 8.\nMentored 4 engineers through their first on-call rotation and wrote the runbooks the team still uses.',
+            'Re-architected the settlement pipeline from nightly batch to event-driven, cutting reconciliation lag from 14 hours to 4 minutes.\nOwned the idempotency layer behind 40M monthly transactions; duplicate charges went from 11 a quarter to zero.\nIntroduced structured tracing across 9 services, taking median incident diagnosis from 45 minutes to 8.',
         },
         {
           id: 'exp-2',
@@ -84,7 +84,7 @@ export const BLUEPRINTS: Blueprint[] = [
           start: '2019',
           end: '2022',
           bullets:
-            'Built the public REST and webhook API now used by 600+ integration partners.\nCut p99 latency on the core catalogue service from 820ms to 140ms by replacing an N+1 read path with a denormalised projection.\nMigrated 60+ services from hand-rolled deploy scripts to a templated CI/CD pipeline, taking release time from 50 minutes to 6.',
+            'Built the public REST and webhook API now used by 600+ integration partners.\nCut p99 latency on the catalogue service from 820ms to 140ms by replacing an N+1 read path.',
         },
       ],
       education: [
@@ -95,7 +95,7 @@ export const BLUEPRINTS: Blueprint[] = [
           location: 'Karnataka',
           start: '2015',
           end: '2019',
-          note: 'CGPA 8.7/10. Final year project on consensus behaviour under network partition.',
+          note: 'CGPA 8.7/10.',
         },
       ],
       projects: [
@@ -104,16 +104,8 @@ export const BLUEPRINTS: Blueprint[] = [
           name: 'Ratchet',
           link: 'github.com/arjunmehta/ratchet',
           description:
-            'An open-source rate limiter for Go services with a sliding-window Redis backend. 1.4k stars, used in production by three companies I know of.',
+            'An open-source rate limiter for Go services with a sliding-window Redis backend.',
           tech: 'Go, Redis, gRPC',
-        },
-        {
-          id: 'prj-2',
-          name: 'Schema Drift',
-          link: 'schemadrift.dev',
-          description:
-            'A CLI that diffs a live Postgres schema against migrations in version control and fails CI when they disagree.',
-          tech: 'TypeScript, PostgreSQL, GitHub Actions',
         },
       ],
       skills: [
@@ -124,14 +116,11 @@ export const BLUEPRINTS: Blueprint[] = [
         { id: 'skl-5', name: 'Kafka', level: 4 },
         { id: 'skl-6', name: 'Kubernetes', level: 4 },
         { id: 'skl-7', name: 'AWS', level: 4 },
-        { id: 'skl-8', name: 'Terraform', level: 3 },
-        { id: 'skl-9', name: 'Distributed systems design', level: 4 },
-        { id: 'skl-10', name: 'Observability (OpenTelemetry)', level: 4 },
+        { id: 'skl-8', name: 'Distributed systems design', level: 4 },
       ],
       languages: [
         { id: 'lng-1', name: 'English', level: 'Native / Bilingual' },
         { id: 'lng-2', name: 'Hindi', level: 'Native / Bilingual' },
-        { id: 'lng-3', name: 'Kannada', level: 'Conversational' },
       ],
       certifications: [
         {
@@ -140,24 +129,11 @@ export const BLUEPRINTS: Blueprint[] = [
           issuer: 'Amazon Web Services',
           date: '2023-06',
         },
-        {
-          id: 'crt-2',
-          name: 'Certified Kubernetes Application Developer (CKAD)',
-          issuer: 'Cloud Native Computing Foundation',
-          date: '2022-02',
-        },
       ],
-      publications: [
-        {
-          id: 'pub-1',
-          title: 'Idempotency keys are a product decision, not a database one',
-          meta: 'Northwind Engineering Blog, 2024',
-        },
-      ],
+      publications: [],
       interests: [
         { id: 'int-1', name: 'Open source' },
-        { id: 'int-2', name: 'Distributed systems papers' },
-        { id: 'int-3', name: 'Trail running' },
+        { id: 'int-2', name: 'Trail running' },
       ],
     },
   },
@@ -183,7 +159,7 @@ export const BLUEPRINTS: Blueprint[] = [
         linkedin: 'linkedin.com/in/priyanandakumar',
         github: '',
         summary:
-          'Product manager with 7 years in B2B SaaS, most of it on workflow tools that people are obliged to use rather than choose. I run discovery properly, write the tradeoff down, and would rather kill a feature in week two than ship it in month six.',
+          'Product manager with 7 years in B2B SaaS, mostly on workflow tools people are obliged to use rather than choose. I run discovery properly and write the tradeoff down.',
       },
       experience: [
         {
@@ -194,7 +170,7 @@ export const BLUEPRINTS: Blueprint[] = [
           start: '2022',
           end: 'Present',
           bullets:
-            'Own the workflow automation line — $14M ARR, 3 squads, 21 engineers and designers.\nRebuilt activation around a guided first task, lifting week-one activation from 31% to 58% and 90-day retention by 12 points.\nRan 18 rounds of customer discovery in a year; two planned Q3 features were cut on the evidence, saving roughly two quarters of build.\nSet the pricing and packaging for the enterprise tier now carrying 34% of new revenue.',
+            'Own the workflow automation line — $14M ARR, 3 squads, 21 engineers and designers.\nRebuilt activation around a guided first task, taking week-one activation from 31% to 58%.\nSet the pricing and packaging for the enterprise tier now carrying 34% of new revenue.',
         },
         {
           id: 'exp-2',
@@ -204,17 +180,7 @@ export const BLUEPRINTS: Blueprint[] = [
           start: '2019',
           end: '2022',
           bullets:
-            'Launched the self-serve reporting product from zero to 4,200 paying accounts in 18 months.\nInstrumented the funnel end to end, which turned a monthly guess-and-argue meeting into a weekly A/B cadence.\nCut time-to-first-report from 22 minutes to 4 by rewriting the template gallery around the five reports people actually built.',
-        },
-        {
-          id: 'exp-3',
-          role: 'Associate Product Manager',
-          company: 'Caraway Analytics',
-          location: 'Bengaluru',
-          start: '2018',
-          end: '2019',
-          bullets:
-            'Ran the integrations backlog and shipped connectors for Salesforce, HubSpot and Snowflake.',
+            'Launched the self-serve reporting product from zero to 4,200 paying accounts in 18 months.\nCut time-to-first-report from 22 minutes to 4 by rewriting the template gallery.',
         },
       ],
       education: [
@@ -225,7 +191,7 @@ export const BLUEPRINTS: Blueprint[] = [
           location: 'Hyderabad',
           start: '2016',
           end: '2018',
-          note: 'Dean’s list. Capstone on pricing elasticity in seat-based SaaS.',
+          note: 'Dean’s list.',
         },
         {
           id: 'edu-2',
@@ -254,13 +220,11 @@ export const BLUEPRINTS: Blueprint[] = [
         { id: 'skl-4', name: 'SQL and product analytics', level: 4 },
         { id: 'skl-5', name: 'Pricing and packaging', level: 4 },
         { id: 'skl-6', name: 'Stakeholder management', level: 5 },
-        { id: 'skl-7', name: 'Technical writing', level: 5 },
-        { id: 'skl-8', name: 'Amplitude, Mixpanel, Looker', level: 4 },
+        { id: 'skl-7', name: 'Amplitude, Mixpanel, Looker', level: 4 },
       ],
       languages: [
         { id: 'lng-1', name: 'English', level: 'Native / Bilingual' },
         { id: 'lng-2', name: 'Tamil', level: 'Native / Bilingual' },
-        { id: 'lng-3', name: 'Telugu', level: 'Professional Working' },
       ],
       certifications: [
         {
@@ -305,7 +269,7 @@ export const BLUEPRINTS: Blueprint[] = [
         linkedin: 'linkedin.com/in/snehaiyer',
         github: 'github.com/snehaiyer',
         summary:
-          'Data scientist with 6 years shipping models that stay shipped. Fraud and pricing mostly, with the unglamorous half — feature stores, drift monitors, retraining schedules — treated as part of the job rather than someone else’s.',
+          'Data scientist with 6 years shipping models that stay shipped. Fraud and pricing mostly, with feature stores, drift monitors and retraining treated as part of the job.',
       },
       experience: [
         {
@@ -316,7 +280,7 @@ export const BLUEPRINTS: Blueprint[] = [
           start: '2022',
           end: 'Present',
           bullets:
-            'Own the fraud detection stack scoring 2.3M transactions a day; caught fraud value up 38% at a 0.4pp lower false-positive rate.\nBuilt the feature store now backing 11 production models, cutting new-model time-to-first-prediction from 6 weeks to 9 days.\nStood up drift and performance monitoring that caught a silent upstream schema change 3 hours in rather than at the month-end review.\nRan the causal analysis behind a pricing change worth an estimated ₹19 crore in incremental annual margin.',
+            'Own the fraud stack scoring 2.3M transactions a day; caught fraud value up 38% at a 0.4pp lower false-positive rate.\nBuilt the feature store behind 11 production models, cutting time-to-first-prediction from 6 weeks to 9 days.\nRan the causal analysis behind a pricing change worth an estimated ₹19 crore in annual margin.',
         },
         {
           id: 'exp-2',
@@ -326,7 +290,7 @@ export const BLUEPRINTS: Blueprint[] = [
           start: '2019',
           end: '2022',
           bullets:
-            'Built a readmission-risk model deployed across 14 hospital partners, AUC 0.81 on held-out data.\nReplaced a hand-tuned rules engine for appointment no-shows with a gradient-boosted model, cutting unfilled slots by 23%.\nWrote the team’s experiment-review template, which ended a long habit of calling wins on underpowered tests.',
+            'Built a readmission-risk model deployed across 14 hospital partners, AUC 0.81 on held-out data.\nReplaced a rules engine for appointment no-shows with a gradient-boosted model, cutting unfilled slots by 23%.',
         },
       ],
       education: [
@@ -337,7 +301,7 @@ export const BLUEPRINTS: Blueprint[] = [
           location: 'Kolkata',
           start: '2017',
           end: '2019',
-          note: 'Thesis on calibration of tree ensembles under class imbalance.',
+          note: 'Thesis on calibration under class imbalance.',
         },
         {
           id: 'edu-2',
@@ -355,7 +319,7 @@ export const BLUEPRINTS: Blueprint[] = [
           name: 'Driftwatch',
           link: 'github.com/snehaiyer/driftwatch',
           description:
-            'A lightweight drift-detection library that compares live feature distributions against a training snapshot and alerts on divergence.',
+            'A drift-detection library that compares live feature distributions against a training snapshot.',
           tech: 'Python, Pandas, Prometheus',
         },
       ],
@@ -367,13 +331,11 @@ export const BLUEPRINTS: Blueprint[] = [
         { id: 'skl-5', name: 'Causal inference', level: 4 },
         { id: 'skl-6', name: 'Experiment design', level: 5 },
         { id: 'skl-7', name: 'Spark', level: 4 },
-        { id: 'skl-8', name: 'MLflow and model registry', level: 4 },
-        { id: 'skl-9', name: 'dbt and Airflow', level: 4 },
+        { id: 'skl-8', name: 'dbt and Airflow', level: 4 },
       ],
       languages: [
         { id: 'lng-1', name: 'English', level: 'Native / Bilingual' },
-        { id: 'lng-2', name: 'Hindi', level: 'Professional Working' },
-        { id: 'lng-3', name: 'Tamil', level: 'Native / Bilingual' },
+        { id: 'lng-2', name: 'Tamil', level: 'Native / Bilingual' },
       ],
       certifications: [
         {
@@ -394,11 +356,6 @@ export const BLUEPRINTS: Blueprint[] = [
           id: 'pub-1',
           title: 'Calibration beats accuracy when the threshold is a business decision',
           meta: 'PyData Delhi 2023 — conference talk',
-        },
-        {
-          id: 'pub-2',
-          title: 'A practical drift taxonomy for tabular models',
-          meta: 'Towards Data Science, 2022',
         },
       ],
       interests: [
@@ -429,7 +386,7 @@ export const BLUEPRINTS: Blueprint[] = [
         linkedin: 'linkedin.com/in/rohandeshpande',
         github: '',
         summary:
-          'Engineering leader with 14 years across product and platform, the last 5 running multi-team orgs. I have built groups from 8 people to 46, taken two platforms through a regulated audit, and I measure myself on whether the teams under me ship without me in the room.',
+          'Engineering leader with 14 years across product and platform, the last 5 running multi-team orgs. I measure myself on whether the teams under me ship without me in the room.',
       },
       experience: [
         {
@@ -440,7 +397,7 @@ export const BLUEPRINTS: Blueprint[] = [
           start: '2021',
           end: 'Present',
           bullets:
-            'Lead 46 engineers across 6 teams and a $7.2M annual budget; own platform, data and developer experience.\nTook change failure rate from 18% to 4% and deployment frequency from fortnightly to 40+ a week by funding a dedicated delivery team.\nDrove the platform consolidation that retired 3 overlapping services and removed $1.9M of annual infrastructure spend.\nBuilt and ran the levelling and promotion framework now used company-wide; regretted attrition fell from 19% to 7%.\nCarried the engineering half of a SOC 2 Type II audit with no material findings.',
+            'Lead 46 engineers across 6 teams and a $7.2M annual budget; own platform, data and developer experience.\nTook change failure rate from 18% to 4% and deployment frequency from fortnightly to 40+ a week.\nDrove the consolidation that retired 3 overlapping services and removed $1.9M of annual infrastructure spend.\nBuilt the levelling framework now used company-wide; regretted attrition fell from 19% to 7%.',
         },
         {
           id: 'exp-2',
@@ -450,7 +407,7 @@ export const BLUEPRINTS: Blueprint[] = [
           start: '2016',
           end: '2021',
           bullets:
-            'Grew a single team of 8 into three teams of 24, hiring 19 engineers and promoting 6 to senior.\nDelivered the multi-region migration that took the platform from 99.5% to 99.97% availability.\nIntroduced the incident review practice that the wider organisation later adopted as standard.',
+            'Grew a single team of 8 into three teams of 24, hiring 19 engineers and promoting 6 to senior.\nDelivered the multi-region migration that took the platform from 99.5% to 99.97% availability.',
         },
         {
           id: 'exp-3',
@@ -480,7 +437,7 @@ export const BLUEPRINTS: Blueprint[] = [
           name: 'Engineering Levelling Framework',
           link: '',
           description:
-            'Authored the company’s eight-level engineering ladder and the calibration process behind it; adopted across 3 business units.',
+            'Authored the company’s eight-level engineering ladder and the calibration process behind it.',
           tech: 'Org design, Calibration',
         },
       ],
@@ -490,13 +447,11 @@ export const BLUEPRINTS: Blueprint[] = [
         { id: 'skl-3', name: 'Budget and vendor management', level: 4 },
         { id: 'skl-4', name: 'Hiring and calibration', level: 5 },
         { id: 'skl-5', name: 'Operational excellence (DORA)', level: 5 },
-        { id: 'skl-6', name: 'Regulatory and audit readiness', level: 4 },
-        { id: 'skl-7', name: 'Executive communication', level: 5 },
+        { id: 'skl-6', name: 'Executive communication', level: 5 },
       ],
       languages: [
         { id: 'lng-1', name: 'English', level: 'Native / Bilingual' },
         { id: 'lng-2', name: 'Marathi', level: 'Native / Bilingual' },
-        { id: 'lng-3', name: 'Hindi', level: 'Native / Bilingual' },
       ],
       certifications: [
         {
@@ -541,7 +496,7 @@ export const BLUEPRINTS: Blueprint[] = [
         linkedin: 'linkedin.com/in/kavitaramachandran',
         github: '',
         summary:
-          'FP&A analyst with 6 years supporting revenue and cost centres at scale. I build models other people can audit, and I would rather explain a variance honestly in week one than defend a forecast for a quarter.',
+          'FP&A analyst with 6 years supporting revenue and cost centres at scale. I build models other people can audit, and I explain a variance honestly in week one.',
       },
       experience: [
         {
@@ -552,7 +507,7 @@ export const BLUEPRINTS: Blueprint[] = [
           start: '2022',
           end: 'Present',
           bullets:
-            'Own the annual operating plan and rolling 18-month forecast for a ₹840 crore revenue division.\nRebuilt the driver-based revenue model, cutting quarterly forecast error from 9.4% to 3.1%.\nAutomated the monthly close pack in Power BI, taking a 4-day manual assembly down to a 3-hour refresh.\nLed the cost review that identified ₹22 crore of annualised savings across procurement and logistics.\nPartner to three business unit heads on headcount, capex and pricing decisions.',
+            'Own the annual operating plan and rolling 18-month forecast for a ₹840 crore revenue division.\nRebuilt the driver-based revenue model, cutting quarterly forecast error from 9.4% to 3.1%.\nLed the cost review that identified ₹22 crore of annualised savings across procurement and logistics.',
         },
         {
           id: 'exp-2',
@@ -562,7 +517,7 @@ export const BLUEPRINTS: Blueprint[] = [
           start: '2019',
           end: '2022',
           bullets:
-            'Built three-statement and DCF models supporting 11 mid-market transactions worth ₹2,400 crore combined.\nProduced the quarterly board reporting pack for a portfolio of 8 companies.\nStandardised the diligence checklist now used across the deal team.',
+            'Built three-statement and DCF models supporting 11 mid-market transactions worth ₹2,400 crore.\nProduced the quarterly board reporting pack for a portfolio of 8 companies.',
         },
       ],
       education: [
@@ -582,7 +537,7 @@ export const BLUEPRINTS: Blueprint[] = [
           location: 'Mumbai',
           start: '2013',
           end: '2016',
-          note: 'First class with distinction.',
+          note: '',
         },
       ],
       projects: [
@@ -591,7 +546,7 @@ export const BLUEPRINTS: Blueprint[] = [
           name: 'Close Pack Automation',
           link: '',
           description:
-            'Replaced 14 linked workbooks with a single governed Power BI model, removing the month-end handover that had caused three restatements in two years.',
+            'Replaced 14 linked workbooks with one governed Power BI model, ending the month-end handover.',
           tech: 'Power BI, SQL, Excel',
         },
       ],
@@ -601,14 +556,12 @@ export const BLUEPRINTS: Blueprint[] = [
         { id: 'skl-3', name: 'Variance analysis', level: 5 },
         { id: 'skl-4', name: 'Advanced Excel', level: 5 },
         { id: 'skl-5', name: 'Power BI', level: 4 },
-        { id: 'skl-6', name: 'SQL', level: 3 },
-        { id: 'skl-7', name: 'SAP FICO', level: 4 },
-        { id: 'skl-8', name: 'IFRS and Ind AS', level: 4 },
+        { id: 'skl-6', name: 'SAP FICO', level: 4 },
+        { id: 'skl-7', name: 'IFRS and Ind AS', level: 4 },
       ],
       languages: [
         { id: 'lng-1', name: 'English', level: 'Native / Bilingual' },
         { id: 'lng-2', name: 'Hindi', level: 'Native / Bilingual' },
-        { id: 'lng-3', name: 'Tamil', level: 'Conversational' },
       ],
       certifications: [
         {
@@ -616,12 +569,6 @@ export const BLUEPRINTS: Blueprint[] = [
           name: 'CFA Level II Candidate',
           issuer: 'CFA Institute',
           date: '2024-05',
-        },
-        {
-          id: 'crt-2',
-          name: 'Financial Modelling and Valuation Analyst (FMVA)',
-          issuer: 'Corporate Finance Institute',
-          date: '2021-07',
         },
       ],
       publications: [],
@@ -653,7 +600,7 @@ export const BLUEPRINTS: Blueprint[] = [
         linkedin: 'linkedin.com/in/nikhilbhatt',
         github: '',
         summary:
-          'Growth marketer with 7 years running acquisition and lifecycle for subscription businesses. Comfortable in the ad account and in the analytics warehouse, and unusually happy to turn off a channel that is not paying for itself.',
+          'Growth marketer with 7 years running acquisition and lifecycle for subscription businesses. At home in the ad account and the analytics warehouse, and happy to turn off a channel that is not paying.',
       },
       experience: [
         {
@@ -664,7 +611,7 @@ export const BLUEPRINTS: Blueprint[] = [
           start: '2022',
           end: 'Present',
           bullets:
-            'Run a ₹9 crore annual budget across paid search, paid social, SEO and lifecycle; team of 5 plus two agencies.\nGrew qualified pipeline 2.4x in 18 months while holding blended CAC flat.\nRebuilt organic search around 40 intent-led pages, taking non-brand traffic from 22k to 91k sessions a month.\nCut trial-to-paid drop-off by 17% with a five-email lifecycle sequence built on product usage rather than time delay.\nReplaced last-click reporting with a multi-touch model that ended a two-year argument about channel credit.',
+            'Run a ₹9 crore annual budget across paid search, paid social, SEO and lifecycle; team of 5 plus two agencies.\nGrew qualified pipeline 2.4x in 18 months while holding blended CAC flat.\nRebuilt organic search around 40 intent-led pages, taking non-brand traffic from 22k to 91k sessions a month.',
         },
         {
           id: 'exp-2',
@@ -674,7 +621,7 @@ export const BLUEPRINTS: Blueprint[] = [
           start: '2018',
           end: '2022',
           bullets:
-            'Scaled paid acquisition from ₹40 lakh to ₹5.6 crore annual spend at a 3.8x blended ROAS.\nRan 60+ creative tests a year and built the brief template the studio still works from.\nLaunched the referral programme that now accounts for 11% of new customers.',
+            'Scaled paid acquisition from ₹40 lakh to ₹5.6 crore annual spend at a 3.8x blended ROAS.\nLaunched the referral programme that now accounts for 11% of new customers.',
         },
       ],
       education: [
@@ -703,7 +650,7 @@ export const BLUEPRINTS: Blueprint[] = [
           name: 'The Attribution Notebook',
           link: 'attributionnotebook.com',
           description:
-            'A working guide to multi-touch attribution for teams without a data scientist. 3,100 monthly readers.',
+            'A working guide to multi-touch attribution for teams without a data scientist.',
           tech: 'Writing, SQL, Looker Studio',
         },
       ],
@@ -715,12 +662,10 @@ export const BLUEPRINTS: Blueprint[] = [
         { id: 'skl-5', name: 'Marketing analytics and attribution', level: 4 },
         { id: 'skl-6', name: 'HubSpot and Salesforce', level: 4 },
         { id: 'skl-7', name: 'Budget management', level: 5 },
-        { id: 'skl-8', name: 'Copywriting', level: 4 },
       ],
       languages: [
         { id: 'lng-1', name: 'English', level: 'Native / Bilingual' },
-        { id: 'lng-2', name: 'Hindi', level: 'Native / Bilingual' },
-        { id: 'lng-3', name: 'Gujarati', level: 'Native / Bilingual' },
+        { id: 'lng-2', name: 'Gujarati', level: 'Native / Bilingual' },
       ],
       certifications: [
         {
@@ -771,7 +716,7 @@ export const BLUEPRINTS: Blueprint[] = [
         linkedin: 'linkedin.com/in/ananyarao',
         github: 'github.com/ananyarao',
         summary:
-          'Product designer with 7 years shaping B2B software end to end — research through shipped interface. I care about the boring parts: information density, empty states, and the seams between teams.',
+          'Product designer with 7 years shaping B2B software end to end. I care about the boring parts: information density, empty states, and the seams between teams.',
       },
       experience: [
         {
@@ -782,7 +727,7 @@ export const BLUEPRINTS: Blueprint[] = [
           start: '2022',
           end: 'Present',
           bullets:
-            'Rebuilt the onboarding flow, lifting activation from 34% to 61% in two quarters.\nEstablished the design system now used by 4 product teams and 30+ engineers.\nRan a quarterly research cadence that shifted the 2024 roadmap away from two planned features.\nTook the core product to WCAG 2.1 AA, closing 140 audit findings across 9 months.',
+            'Rebuilt onboarding, lifting activation from 34% to 61% in two quarters.\nEstablished the design system now used by 4 product teams and 30+ engineers.\nTook the core product to WCAG 2.1 AA, closing 140 audit findings in 9 months.',
         },
         {
           id: 'exp-2',
@@ -792,7 +737,7 @@ export const BLUEPRINTS: Blueprint[] = [
           start: '2019',
           end: '2022',
           bullets:
-            'Owned the analytics dashboard used daily by 12,000 customers.\nCut reported support tickets on billing by 41% after a pricing-page rewrite.\nMentored two junior designers through their first end-to-end launches.',
+            'Owned the analytics dashboard used daily by 12,000 customers.\nCut billing support tickets by 41% after rewriting the pricing page.',
         },
       ],
       education: [
@@ -803,7 +748,7 @@ export const BLUEPRINTS: Blueprint[] = [
           location: 'Ahmedabad',
           start: '2015',
           end: '2019',
-          note: 'Graduated with distinction. Thesis on error states in clinical software.',
+          note: '',
         },
       ],
       projects: [
@@ -812,16 +757,8 @@ export const BLUEPRINTS: Blueprint[] = [
           name: 'Fieldnote',
           link: 'fieldnote.app',
           description:
-            'An offline-first research notebook for field interviews. 4,000 monthly users, built and maintained solo.',
+            'An offline-first research notebook for field interviews. 4,000 monthly users, built solo.',
           tech: 'Figma, React, IndexedDB',
-        },
-        {
-          id: 'prj-2',
-          name: 'Density',
-          link: 'density.tools',
-          description:
-            'A small type-scale tool that shows how a layout breaks before you commit to it.',
-          tech: 'TypeScript, Canvas',
         },
       ],
       skills: [
@@ -831,13 +768,11 @@ export const BLUEPRINTS: Blueprint[] = [
         { id: 'skl-4', name: 'Prototyping', level: 4 },
         { id: 'skl-5', name: 'Figma', level: 5 },
         { id: 'skl-6', name: 'Accessibility (WCAG)', level: 4 },
-        { id: 'skl-7', name: 'HTML & CSS', level: 4 },
-        { id: 'skl-8', name: 'Workshop facilitation', level: 4 },
+        { id: 'skl-7', name: 'Workshop facilitation', level: 4 },
       ],
       languages: [
         { id: 'lng-1', name: 'English', level: 'Native / Bilingual' },
         { id: 'lng-2', name: 'Hindi', level: 'Native / Bilingual' },
-        { id: 'lng-3', name: 'Kannada', level: 'Professional Working' },
       ],
       certifications: [
         {
@@ -846,12 +781,6 @@ export const BLUEPRINTS: Blueprint[] = [
           issuer: 'Nielsen Norman Group',
           date: '2023-04',
         },
-        {
-          id: 'crt-2',
-          name: 'Accessibility Core Competencies (CPACC)',
-          issuer: 'IAAP',
-          date: '2021-09',
-        },
       ],
       publications: [
         {
@@ -859,16 +788,10 @@ export const BLUEPRINTS: Blueprint[] = [
           title: 'Designing for the fifteenth screen of the day',
           meta: 'Config India 2024 — conference talk',
         },
-        {
-          id: 'pub-2',
-          title: 'Empty states are a research artefact',
-          meta: 'Smashing Magazine, 2022',
-        },
       ],
       interests: [
         { id: 'int-1', name: 'Typography' },
-        { id: 'int-2', name: 'Long-distance cycling' },
-        { id: 'int-3', name: 'Letterpress printing' },
+        { id: 'int-2', name: 'Letterpress printing' },
       ],
     },
   },
@@ -894,7 +817,7 @@ export const BLUEPRINTS: Blueprint[] = [
         linkedin: 'linkedin.com/in/meerajoseph',
         github: '',
         summary:
-          'Critical care nurse with 8 years in tertiary ICUs, including 3 as charge nurse on a 22-bed unit. Ventilator and post-surgical management, family communication under pressure, and a standing interest in the quality work that keeps preventable events off the ward.',
+          'Critical care nurse with 8 years in tertiary ICUs, 3 of them as charge nurse on a 22-bed unit. Ventilator management, family communication under pressure, and the quality work that keeps preventable events off the ward.',
       },
       experience: [
         {
@@ -905,7 +828,7 @@ export const BLUEPRINTS: Blueprint[] = [
           start: '2021',
           end: 'Present',
           bullets:
-            'Lead a shift team of 9 nurses across a 22-bed medical ICU with a 1:2 acuity ratio.\nCo-led the CLABSI reduction bundle that took central-line infections from 2.4 to 0.6 per 1,000 line-days over 18 months.\nPrecept 4 to 6 new graduate nurses a year through the unit’s 12-week critical care orientation.\nSit on the hospital rapid response committee and review every unplanned ICU readmission.',
+            'Lead a shift team of 9 nurses across a 22-bed medical ICU with a 1:2 acuity ratio.\nCo-led the CLABSI bundle that took central-line infections from 2.4 to 0.6 per 1,000 line-days.\nPrecept 4 to 6 new graduate nurses a year through the unit’s 12-week critical care orientation.',
         },
         {
           id: 'exp-2',
@@ -915,7 +838,7 @@ export const BLUEPRINTS: Blueprint[] = [
           start: '2017',
           end: '2021',
           bullets:
-            'Managed post-operative cardiac and neurosurgical patients including ventilator weaning and vasoactive titration.\nServed as super-user for the EMR rollout, training 60+ nursing staff across three units.\nRecognised twice by the nursing directorate for family communication during end-of-life care.',
+            'Managed post-operative cardiac and neurosurgical patients, including ventilator weaning and vasoactive titration.\nServed as super-user for the EMR rollout, training 60+ nursing staff across three units.',
         },
       ],
       education: [
@@ -926,7 +849,7 @@ export const BLUEPRINTS: Blueprint[] = [
           location: 'Manipal',
           start: '2019',
           end: '2021',
-          note: 'Dissertation on early mobilisation protocols in ventilated patients.',
+          note: 'Dissertation on early mobilisation in ventilated patients.',
         },
         {
           id: 'edu-2',
@@ -935,33 +858,23 @@ export const BLUEPRINTS: Blueprint[] = [
           location: 'Kottayam',
           start: '2012',
           end: '2016',
-          note: 'First class.',
+          note: '',
         },
       ],
-      projects: [
-        {
-          id: 'prj-1',
-          name: 'Early Mobilisation Pathway',
-          link: '',
-          description:
-            'Designed and piloted a nurse-led mobilisation pathway for ventilated patients; median ICU length of stay on the pilot cohort fell by 1.4 days.',
-          tech: 'Quality improvement, PDSA cycles',
-        },
-      ],
+      // Left empty: a nursing resume rarely carries a projects section, and on
+      // a one-page sheet the clinical record and the licences earn the space.
+      projects: [],
       skills: [
         { id: 'skl-1', name: 'Critical care nursing', level: 5 },
         { id: 'skl-2', name: 'Ventilator management', level: 5 },
         { id: 'skl-3', name: 'Haemodynamic monitoring', level: 5 },
-        { id: 'skl-4', name: 'Care planning and documentation', level: 5 },
-        { id: 'skl-5', name: 'Patient and family education', level: 5 },
+        { id: 'skl-4', name: 'Patient and family education', level: 5 },
         { id: 'skl-6', name: 'Infection prevention', level: 4 },
-        { id: 'skl-7', name: 'Preceptorship and training', level: 4 },
-        { id: 'skl-8', name: 'EMR (Cerner, Epic)', level: 4 },
+        { id: 'skl-7', name: 'EMR (Cerner, Epic)', level: 4 },
       ],
       languages: [
         { id: 'lng-1', name: 'English', level: 'Native / Bilingual' },
         { id: 'lng-2', name: 'Malayalam', level: 'Native / Bilingual' },
-        { id: 'lng-3', name: 'Hindi', level: 'Professional Working' },
       ],
       certifications: [
         {
@@ -976,26 +889,8 @@ export const BLUEPRINTS: Blueprint[] = [
           issuer: 'American Heart Association',
           date: 'Valid to 2026-08',
         },
-        {
-          id: 'crt-3',
-          name: 'Basic Life Support (BLS)',
-          issuer: 'American Heart Association',
-          date: 'Valid to 2026-08',
-        },
-        {
-          id: 'crt-4',
-          name: 'Critical Care Registered Nurse (CCRN)',
-          issuer: 'AACN',
-          date: '2022-09',
-        },
       ],
-      publications: [
-        {
-          id: 'pub-1',
-          title: 'Nurse-led early mobilisation in a tertiary medical ICU: an 18-month review',
-          meta: 'Indian Journal of Critical Care Nursing, 2024',
-        },
-      ],
+      publications: [],
       interests: [
         { id: 'int-1', name: 'Clinical education' },
         { id: 'int-2', name: 'Choral singing' },

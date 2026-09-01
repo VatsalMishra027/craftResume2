@@ -12,8 +12,8 @@ const featured = TEMPLATE_CATEGORIES.map(
   (category) => TEMPLATES.find((template) => template.category === category)!,
 ).filter(Boolean);
 
-/** The hero stack turns through four layouts that look nothing like each other. */
-const bookIds = ['atlas', 'ledger', 'vertex', 'cascade'];
+/** The hero stack turns through six layouts that look nothing like each other. */
+const bookIds = ['atlas', 'ledger', 'cameo', 'vertex', 'cascade', 'orbit'];
 const bookTemplates = bookIds.map((id) => TEMPLATES.find((t) => t.id === id)!).filter(Boolean);
 
 const steps = [
@@ -38,18 +38,22 @@ const promises = [
   {
     title: 'No account, ever',
     body: 'No email, no password, no verification link. Open the editor and start typing.',
+    icon: '<path d="M8 1.8 2.6 4.2v4c0 3.2 2.3 5.4 5.4 6.2 3.1-.8 5.4-3 5.4-6.2v-4z"/><path d="m5.8 8 1.6 1.6L10.4 6.4"/>',
   },
   {
     title: 'Stays on your machine',
     body: 'Your details are saved in your own browser. Nothing is uploaded to a server.',
+    icon: '<rect x="2.2" y="7.2" width="11.6" height="6.6" rx="1.4"/><path d="M5 7.2V5a3 3 0 0 1 6 0v2.2"/>',
   },
   {
     title: 'Nothing is watermarked',
     body: 'The PDF carries your name and nothing else. No logo, no footer, no trial banner.',
+    icon: '<path d="M9 1.8H4.4a1 1 0 0 0-1 1v10.4a1 1 0 0 0 1 1h7.2a1 1 0 0 0 1-1V5.4z"/><path d="M9 1.8v3.6h3.6"/><path d="M5.9 9.4h4.2"/>',
   },
   {
     title: 'Real text, not a picture',
     body: 'The PDF is rendered as text, so applicant tracking systems can actually read it.',
+    icon: '<path d="M3 4.2h10M5.6 4.2v8.4M2.4 12.6h6.4"/><path d="M10.4 8.6h3.2M12 8.6v4"/>',
   },
 ];
 
@@ -157,7 +161,8 @@ const faqs = [
                   class="book-page"
                   data-book-page
                   data-name={template.name}
-                  data-state={index === 0 ? 'front' : index === 1 ? 'stack' : 'deep'}
+                  data-state={index === 0 ? 'front' : 'stack'}
+                  style={`--depth:${index}`}
                 >
                   <TemplateThumb templateId={template.id} />
                 </span>
@@ -167,7 +172,11 @@ const faqs = [
 
           <p class="book-caption text-xs text-ink-muted">
             <span class="font-medium text-ink" data-book-caption>{bookTemplates[0].name}</span>
-            <span class="text-ink-faint"> · tap to turn the page</span>
+            <span class="text-ink-faint">
+              &nbsp;·&nbsp;<span class="book-count" data-book-count
+                >1 / {bookTemplates.length}</span
+              >&nbsp;·&nbsp;tap to turn
+            </span>
           </p>
         </div>
       </div>
@@ -181,12 +190,14 @@ const faqs = [
           Three steps. Roughly ten minutes.
         </h2>
 
-        <ol class="mt-14 grid gap-px overflow-hidden rounded-card border border-line bg-line md:grid-cols-3">
+        <ol class="mt-14 grid gap-4 md:grid-cols-3">
           {
             steps.map((step) => (
-              <li class="bg-surface p-7">
-                <span class="font-mono text-xs text-clay">{step.n}</span>
-                <h3 class="mt-4 text-lg font-semibold tracking-[-0.015em]">{step.title}</h3>
+              <li class="step-card glass glass-edge rounded-card p-7">
+                <span class="step-number" aria-hidden="true">
+                  {step.n}
+                </span>
+                <h3 class="mt-1 text-lg font-semibold tracking-[-0.015em]">{step.title}</h3>
                 <p class="mt-2.5 text-sm leading-relaxed text-ink-muted">{step.body}</p>
               </li>
             ))
@@ -254,11 +265,23 @@ const faqs = [
           The parts other builders charge for.
         </h2>
 
-        <div class="mt-14 grid gap-x-10 gap-y-9 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {
             promises.map((item) => (
-              <div class="border-t border-line pt-5">
-                <h3 class="text-[15px] font-semibold tracking-[-0.01em]">{item.title}</h3>
+              <div class="promise-card glass glass-edge rounded-card p-6">
+                <span class="promise-icon" aria-hidden="true">
+                  <svg
+                    viewBox="0 0 16 16"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.25"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class="size-[1.15rem]"
+                    set:html={item.icon}
+                  />
+                </span>
+                <h3 class="mt-5 text-[15px] font-semibold tracking-[-0.01em]">{item.title}</h3>
                 <p class="mt-2 text-sm leading-relaxed text-ink-muted">{item.body}</p>
               </div>
             ))
@@ -306,17 +329,20 @@ const faqs = [
     <!-- Closing CTA -->
     <section class="border-t border-line">
       <div class="shell py-20">
-        <div class="rounded-card bg-ink px-8 py-16 text-center text-paper sm:px-16">
-          <h2 class="display mx-auto max-w-2xl text-[clamp(1.9rem,4.5vw,3rem)]">
-            Your next resume is about <span class="font-serif font-normal italic">ten minutes</span>
-            away.
+        <div class="cta-card rounded-card px-8 py-16 text-center sm:px-16">
+          {/* The space before "away" is written as a non-breaking space on
+              purpose: Astro trims the whitespace around a line break between
+              an element and the text after it, which closed the gap up. */}
+          <h2 class="display mx-auto max-w-3xl text-[clamp(2.2rem,5.2vw,3.5rem)]">
+            Your next resume is about <span class="font-serif font-normal italic">ten minutes</span
+            >&nbsp;away.
           </h2>
-          <p class="mx-auto mt-5 max-w-md text-[15px] leading-relaxed text-paper/70">
+          <p class="cta-sub mx-auto mt-5 max-w-md text-[15px] leading-relaxed">
             No account. No card. Close the tab whenever you like — your draft will be here.
           </p>
           <a
             href="/editor"
-            class="mt-9 inline-flex h-12 items-center rounded-full bg-paper px-8 text-[15px] font-medium text-ink transition-transform duration-200 ease-(--ease-out-soft) hover:-translate-y-0.5 active:translate-y-0"
+            class="cta-button mt-9 inline-flex h-12 items-center rounded-full px-8 text-[15px] font-medium transition-transform duration-200 ease-(--ease-out-soft) hover:-translate-y-0.5 active:translate-y-0"
           >
             Start building
           </a>
@@ -327,6 +353,169 @@ const faqs = [
 
   <Footer />
 </Layout>
+
+<style>
+  /* --- How it works -------------------------------------------------------
+     The step markers used to be 12px of monospace, which read as a footnote
+     rather than as the thing numbering the steps. They are now the largest
+     element in the card: Space Grotesk at display size, cut off at the
+     baseline by the card's own edge so the numerals feel set into the panel
+     rather than typed onto it.
+  --------------------------------------------------------------------------- */
+  .step-card {
+    position: relative;
+    overflow: hidden;
+    transition:
+      transform 300ms var(--ease-out-soft),
+      border-color 300ms ease,
+      box-shadow 300ms ease;
+  }
+
+  .step-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--color-line-strong);
+    box-shadow: var(--shadow-lift);
+  }
+
+  .step-number {
+    display: block;
+    font-family: var(--font-numeral);
+    font-size: clamp(2.75rem, 5vw, 3.5rem);
+    font-weight: 700;
+    letter-spacing: -0.05em;
+    line-height: 0.9;
+    font-variant-numeric: tabular-nums lining-nums;
+    background: linear-gradient(
+      160deg,
+      var(--color-clay),
+      color-mix(in srgb, var(--color-clay) 45%, var(--color-ink))
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* A second, much fainter copy of the numeral sitting behind the card's
+     corner. It is what stops the panel reading as a flat rectangle. */
+  .step-card::after {
+    content: "";
+    position: absolute;
+    right: -1.5rem;
+    bottom: -3.5rem;
+    width: 9rem;
+    height: 9rem;
+    border-radius: 50%;
+    background: radial-gradient(
+      circle at 30% 30%,
+      color-mix(in srgb, var(--color-clay) 14%, transparent),
+      transparent 70%
+    );
+    pointer-events: none;
+    transition: opacity 300ms ease;
+    opacity: 0.9;
+  }
+
+  .step-card:hover::after {
+    opacity: 1;
+  }
+
+  /* --- What you get ------------------------------------------------------- */
+  .promise-card {
+    transition:
+      transform 300ms var(--ease-out-soft),
+      border-color 300ms ease,
+      box-shadow 300ms ease;
+  }
+
+  .promise-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--color-line-strong);
+    box-shadow: var(--shadow-lift);
+  }
+
+  .promise-icon {
+    display: grid;
+    place-items: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.75rem;
+    color: var(--color-clay);
+    background: var(--color-clay-soft);
+    border: 1px solid color-mix(in srgb, var(--color-clay) 18%, transparent);
+    transition: transform 300ms var(--ease-out-soft);
+  }
+
+  .promise-card:hover .promise-icon {
+    transform: translateY(-1px) rotate(-4deg);
+  }
+
+  /* --- Closing panel ------------------------------------------------------
+     Light: an inverted ink panel. Dark: a raised surface with a lit edge —
+     an inverted panel there would be a sheet of white in the middle of a
+     dark page.
+  --------------------------------------------------------------------------- */
+  .cta-card {
+    background:
+      radial-gradient(
+        120% 140% at 50% -20%,
+        color-mix(in srgb, var(--color-ink) 88%, var(--color-clay)),
+        var(--color-ink) 62%
+      );
+    color: var(--color-paper);
+    border: 1px solid transparent;
+  }
+
+  .cta-sub {
+    color: color-mix(in srgb, var(--color-paper) 72%, transparent);
+  }
+
+  .cta-button {
+    background: var(--color-paper);
+    color: var(--color-ink);
+  }
+
+  :root[data-theme="dark"] .cta-card {
+    background:
+      radial-gradient(
+        120% 140% at 50% -20%,
+        color-mix(in srgb, var(--color-surface) 70%, var(--color-clay)),
+        var(--color-surface) 58%
+      );
+    color: var(--color-ink);
+    border-color: var(--color-line-strong);
+  }
+
+  :root[data-theme="dark"] .cta-sub {
+    color: var(--color-ink-muted);
+  }
+
+  :root[data-theme="dark"] .cta-button {
+    background: var(--color-ink);
+    color: var(--color-paper);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .cta-card {
+      background:
+        radial-gradient(
+          120% 140% at 50% -20%,
+          color-mix(in srgb, var(--color-surface) 70%, var(--color-clay)),
+          var(--color-surface) 58%
+        );
+      color: var(--color-ink);
+      border-color: var(--color-line-strong);
+    }
+
+    :root:not([data-theme="light"]) .cta-sub {
+      color: var(--color-ink-muted);
+    }
+
+    :root:not([data-theme="light"]) .cta-button {
+      background: var(--color-ink);
+      color: var(--color-paper);
+    }
+  }
+</style>
 
 <script>
   import { observeSheets } from '../lib/fit';

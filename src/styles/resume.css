@@ -103,7 +103,10 @@
 
 /* --- Sections ------------------------------------------------------------ */
 .rs-section {
-  margin-bottom: 6mm;
+  /* 5mm, not 6. With eight or nine sections on a single-column sheet the gaps
+     alone were costing a fifth of the page, which is what pushed an ordinary
+     record onto a second one. Still generous at 9.6pt. */
+  margin-bottom: 5mm;
   break-inside: avoid-page;
 }
 
@@ -626,10 +629,13 @@
    Scholar — serif CV. Education leads, publications are numbered.
    =========================================================================== */
 .t-scholar {
-  padding: 18mm 20mm;
+  /* The roomiest sheet here, and the one with the longest headings. Tightened
+     just enough that an ordinary record lands on one page instead of spilling
+     a couple of centimetres onto a second. */
+  padding: 15mm 18mm;
   font-family: "Instrument Serif", ui-serif, Georgia, serif;
-  font-size: 10.4pt;
-  line-height: 1.5;
+  font-size: 10.2pt;
+  line-height: 1.45;
 }
 
 .t-scholar .rs-header {
@@ -1561,16 +1567,29 @@
 }
 
 /* ===========================================================================
-   Sheet stack. The sheets share one 3D space; the next one lifts out of the
-   stack, passes over the front sheet and settles on top of it.
+   Sheet stack.
+
+   The sheets share one 3D space. Position in the stack is a single number —
+   `--depth`, written by the script — and the offset, tilt, shade, blur and
+   stacking order are all derived from it, so the same rules hold whether the
+   hero is turning through four templates or ten.
    =========================================================================== */
 .book {
   position: relative;
-  perspective: 2000px;
-  perspective-origin: 50% 45%;
+  perspective: 2400px;
+  perspective-origin: 50% 42%;
+  /* The stack is a <button>, and a button centres its text. Without this the
+     sheets inside inherit that and every bullet, heading and date on the
+     preview sits centred — which is not how any of these templates print. */
+  text-align: left;
 }
 
 .book-page {
+  --depth: 0;
+  /* Clamped so a deep stack fades and shrinks toward a limit instead of
+     marching off the side of the hero. */
+  --d: min(var(--depth), 4);
+
   position: absolute;
   inset: 0;
   transform-origin: center;
@@ -1583,50 +1602,48 @@
   box-shadow:
     0 1px 3px rgb(22 21 15 / 0.07),
     0 30px 70px -28px rgb(22 21 15 / 0.34);
+
+  /* The resting pose: the front sheet sits off-square, the way a page
+     actually lands on a desk, and each sheet behind is fanned a little
+     further right, up and back. */
+  transform: translate3d(
+      calc(var(--d) * 17px),
+      calc(var(--d) * -8px),
+      calc(var(--d) * -34px)
+    )
+    rotate(calc(-2.6deg + var(--d) * 1.55deg))
+    scale(calc(1 - var(--d) * 0.012));
+  z-index: calc(20 - var(--d));
+  opacity: calc(1 - var(--d) * 0.06);
+
   transition:
-    transform 720ms cubic-bezier(0.32, 0.72, 0.24, 1),
-    box-shadow 720ms ease;
+    transform 700ms cubic-bezier(0.33, 0.9, 0.22, 1),
+    opacity 700ms cubic-bezier(0.33, 0.9, 0.22, 1),
+    box-shadow 700ms ease;
   will-change: transform;
 }
 
-/* The sheet the reader is looking at. It rests off-square, the way a page
-   actually lands on a desk — the slant is what makes the stack read as paper
-   rather than as a screenshot pinned flat to the page. */
-.book-page[data-state="front"] {
-  transform: rotate(-2.6deg) translate3d(0, 0, 0);
-  z-index: 3;
-}
-
-/* Waiting underneath, fanned right and turned the other way so both sheets
-   show an edge instead of hiding behind one another. */
+/* Sheets further back cast less. */
 .book-page[data-state="stack"] {
-  transform: rotate(1.5deg) translate3d(24px, -10px, -30px);
-  z-index: 2;
   box-shadow:
     0 1px 2px rgb(22 21 15 / 0.05),
-    0 18px 40px -22px rgb(22 21 15 / 0.28);
-}
-
-.book-page[data-state="deep"] {
-  transform: rotate(3.6deg) translate3d(42px, -18px, -58px);
-  z-index: 1;
-  box-shadow:
-    0 1px 2px rgb(22 21 15 / 0.04),
-    0 14px 32px -20px rgb(22 21 15 / 0.22);
+    0 18px 40px -22px rgb(22 21 15 / 0.26);
 }
 
 /* Mid-move: out of the stack, clear of the sheet it is about to cover. From
-   here it is promoted to "front" and drops the rest of the way. */
+   here it is promoted to depth 0 and drops the rest of the way. */
 .book-page[data-state="rising"] {
-  transform: rotate(-1deg) translate3d(54px, -30px, 84px);
-  z-index: 4;
+  transform: translate3d(46px, -30px, 96px) rotate(-0.6deg) scale(1.012);
+  z-index: 30;
+  opacity: 1;
   box-shadow:
-    0 1px 3px rgb(22 21 15 / 0.08),
-    0 52px 78px -30px rgb(22 21 15 / 0.44);
+    0 2px 6px rgb(22 21 15 / 0.1),
+    0 56px 84px -32px rgb(22 21 15 / 0.46);
 }
 
 /* The paper picks up a little shade down its left edge as it passes over the
-   sheet below — the whole illusion. */
+   sheet below, and the sheets waiting behind sit in the shadow of the ones in
+   front — the whole illusion. */
 .book-page::after {
   content: "";
   position: absolute;
@@ -1635,12 +1652,12 @@
   pointer-events: none;
   background: linear-gradient(
     to right,
-    rgb(22 21 15 / 0.16),
-    rgb(22 21 15 / 0.03) 12%,
-    transparent 30%
+    rgb(22 21 15 / 0.18),
+    rgb(22 21 15 / 0.04) 14%,
+    transparent 32%
   );
-  opacity: 0;
-  transition: opacity 720ms ease;
+  opacity: calc(var(--d) * 0.16);
+  transition: opacity 700ms ease;
 }
 
 .book-page[data-state="rising"]::after {
@@ -1654,12 +1671,574 @@
   text-align: center;
 }
 
+/* The counter tells you the stack is longer than the two sheets you can see,
+   which is the point of showing six of them. */
+.book-count {
+  font-variant-numeric: tabular-nums;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .book-page {
     transition-duration: 1ms;
+    transition-delay: 0ms !important;
   }
 
   .book-page::after {
     display: none;
   }
+}
+
+/* ===========================================================================
+   Headshots.
+
+   One frame, five shapes. The picture is always object-fit: cover inside a
+   fixed box, so a portrait, a landscape snap and a square crop all come out
+   the same size on the page and the layout never shifts under the photo.
+   =========================================================================== */
+.rs-photo {
+  margin: 0;
+  padding: 0;
+  flex: none;
+  overflow: hidden;
+  background: var(--rs-accent-tint);
+  line-height: 0;
+}
+
+.rs-photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.rs-photo--square {
+  width: 29mm;
+  height: 29mm;
+  border-radius: 1.6mm;
+}
+
+.rs-photo--round {
+  width: 31mm;
+  height: 31mm;
+  border-radius: 50%;
+}
+
+.rs-photo--card {
+  width: 27mm;
+  height: 33mm;
+  border-radius: 1.6mm;
+}
+
+/* Previews on the marketing pages, where the sample resume has no picture. */
+.rs-photo--empty {
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--rs-accent) 12%, #fff);
+}
+
+.rs-photo-blank {
+  width: 62%;
+  height: 62%;
+  fill: color-mix(in srgb, var(--rs-accent) 38%, #fff);
+}
+
+/* ===========================================================================
+   Aperture — square portrait beside the masthead, one plain column below.
+   =========================================================================== */
+.t-aperture {
+  padding: 15mm 15mm;
+}
+
+.t-aperture .rs-header--photo {
+  display: flex;
+  align-items: center;
+  gap: 7mm;
+  padding-bottom: 5mm;
+  margin-bottom: 6mm;
+  border-bottom: 0.7mm solid var(--rs-accent);
+}
+
+.t-aperture .rs-header-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.t-aperture .rs-photo {
+  border: 0.5mm solid var(--rs-accent-line);
+}
+
+.t-aperture .rs-name {
+  font-size: 22pt;
+  font-weight: 700;
+  color: var(--rs-accent);
+}
+
+.t-aperture .rs-role {
+  font-size: 10.5pt;
+  font-weight: 500;
+  margin-top: 1.4mm;
+}
+
+.t-aperture .rs-contact {
+  margin-top: 3mm;
+}
+
+.t-aperture .rs-section-title {
+  border-bottom: 1px solid var(--rs-line);
+  padding-bottom: 1.5mm;
+}
+
+.t-aperture .rs-entry-title {
+  font-size: 10.2pt;
+}
+
+.t-aperture .rs-duo {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6mm;
+}
+
+/* ===========================================================================
+   Cameo — round portrait at the head of a colour rail.
+   =========================================================================== */
+.t-cameo {
+  padding: 0;
+  display: flex;
+  align-items: stretch;
+  /* Painted by the sheet so the rail colour survives a page break. */
+  background: linear-gradient(to right, var(--rs-accent-deep) 0 63mm, #fff 63mm);
+}
+
+.t-cameo .rs-rail {
+  width: 63mm;
+  flex: none;
+  box-sizing: border-box;
+  padding: 13mm 8mm;
+  color: var(--rs-on-accent);
+  text-align: center;
+}
+
+.t-cameo .rs-main {
+  flex: 1;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 14mm 13mm 14mm 11mm;
+}
+
+.t-cameo .rs-rail-head {
+  margin-bottom: 7mm;
+}
+
+.t-cameo .rs-rail .rs-photo {
+  margin: 0 auto 5mm;
+  border: 0.8mm solid color-mix(in srgb, #fff 55%, transparent);
+}
+
+.t-cameo .rs-rail .rs-name {
+  font-size: 16pt;
+  font-weight: 700;
+  color: var(--rs-on-accent);
+  line-height: 1.15;
+}
+
+.t-cameo .rs-rail .rs-role {
+  font-size: 9pt;
+  font-weight: 500;
+  color: var(--rs-on-accent-soft);
+  margin-top: 1.8mm;
+}
+
+.t-cameo .rs-rail .rs-section-title {
+  color: var(--rs-on-accent-faint);
+  border-bottom: 1px solid color-mix(in srgb, #fff 28%, transparent);
+  padding-bottom: 1.5mm;
+  margin-bottom: 2.8mm;
+}
+
+.t-cameo .rs-rail .rs-contact {
+  display: block;
+  margin: 0;
+  color: var(--rs-on-accent-soft);
+  text-align: left;
+}
+
+.t-cameo .rs-rail .rs-contact li {
+  display: flex;
+  align-items: flex-start;
+  gap: 2mm;
+  margin-bottom: 1.8mm;
+}
+
+.t-cameo .rs-rail .rs-contact li + li::before {
+  display: none;
+}
+
+.t-cameo .rs-rail .rs-meters,
+.t-cameo .rs-rail .rs-pairs,
+.t-cameo .rs-rail .rs-inline {
+  color: var(--rs-on-accent-soft);
+  text-align: left;
+}
+
+.t-cameo .rs-rail .rs-mini-title {
+  color: var(--rs-on-accent);
+  text-align: left;
+}
+
+.t-cameo .rs-rail .rs-mini-meta {
+  color: var(--rs-on-accent-faint);
+  opacity: 1;
+  text-align: left;
+}
+
+.t-cameo .rs-main .rs-section-title {
+  border-bottom: 1px solid var(--rs-line);
+  padding-bottom: 1.5mm;
+}
+
+.t-cameo .rs-main .rs-entry-title {
+  font-size: 10.2pt;
+}
+
+/* ===========================================================================
+   Anchor — portrait, name and mandate on one banded executive header.
+   =========================================================================== */
+.t-anchor {
+  padding: 0 15mm 15mm;
+}
+
+.t-anchor .rs-anchor-band {
+  display: flex;
+  align-items: center;
+  gap: 7mm;
+  /* Bleeds to the sheet edge on both sides without the sheet losing its own
+     padding for everything underneath. */
+  margin: 0 -15mm 7mm;
+  padding: 11mm 15mm;
+  background: var(--rs-accent-deep);
+  color: var(--rs-on-accent);
+}
+
+.t-anchor .rs-anchor-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.t-anchor .rs-anchor-band .rs-photo {
+  border: 0.8mm solid color-mix(in srgb, #fff 45%, transparent);
+}
+
+.t-anchor .rs-anchor-band .rs-name {
+  font-size: 22pt;
+  font-weight: 700;
+  color: var(--rs-on-accent);
+  letter-spacing: -0.015em;
+}
+
+.t-anchor .rs-anchor-band .rs-role {
+  font-size: 10.5pt;
+  font-weight: 500;
+  color: var(--rs-on-accent-soft);
+  margin-top: 1.6mm;
+}
+
+.t-anchor .rs-contact--onband {
+  margin-top: 3.4mm;
+  color: var(--rs-on-accent-soft);
+}
+
+.t-anchor .rs-contact--onband li + li::before {
+  background: color-mix(in srgb, #fff 45%, transparent);
+}
+
+.t-anchor .rs-section-title {
+  border-bottom: 1px solid var(--rs-line);
+  padding-bottom: 1.5mm;
+}
+
+.t-anchor .rs-section--band {
+  background: var(--rs-accent-tint);
+  border-left: 0.8mm solid var(--rs-accent);
+  padding: 4mm 5mm;
+}
+
+.t-anchor .rs-section--band .rs-section-title {
+  border-bottom: 0;
+  padding-bottom: 0;
+  margin-bottom: 2.4mm;
+}
+
+.t-anchor .rs-duo {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6mm;
+}
+
+.t-anchor .rs-entry-title {
+  font-size: 10.4pt;
+}
+
+/* ===========================================================================
+   Orbit — portrait card over two columns, contact chips across the top.
+   =========================================================================== */
+.t-orbit {
+  padding: 13mm 13mm;
+}
+
+.t-orbit .rs-orbit-head {
+  display: flex;
+  align-items: center;
+  gap: 6mm;
+}
+
+.t-orbit .rs-orbit-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.t-orbit .rs-photo {
+  border-radius: 2.4mm;
+  border: 0.5mm solid var(--rs-accent-line);
+}
+
+.t-orbit .rs-name {
+  font-size: 21pt;
+  font-weight: 700;
+  color: var(--rs-accent);
+  letter-spacing: -0.015em;
+}
+
+.t-orbit .rs-role {
+  font-size: 10pt;
+  font-weight: 600;
+  color: var(--rs-soft);
+  margin-top: 1.2mm;
+}
+
+.t-orbit .rs-summary {
+  margin-top: 2.6mm;
+  font-size: 9.2pt;
+}
+
+.t-orbit .rs-contact--strip {
+  margin: 5mm 0 0;
+  padding: 3mm 0;
+  border-top: 1px solid var(--rs-line);
+  border-bottom: 1px solid var(--rs-line);
+  gap: 1.5mm 3mm;
+}
+
+.t-orbit .rs-contact--strip li {
+  gap: 1.4mm;
+  font-size: 8.4pt;
+}
+
+.t-orbit .rs-contact--strip li + li::before {
+  display: none;
+}
+
+.t-orbit .rs-columns {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 9mm;
+  margin-top: 6mm;
+}
+
+.t-orbit .rs-col {
+  min-width: 0;
+}
+
+.t-orbit .rs-section-title {
+  color: var(--rs-accent);
+  border-bottom: 1px solid var(--rs-line);
+  padding-bottom: 1.4mm;
+}
+
+.t-orbit .rs-entry-title {
+  font-size: 10pt;
+}
+
+/* ===========================================================================
+   Prism — portrait tucked into a tinted panel, credentials underneath.
+   =========================================================================== */
+.t-prism {
+  padding: 0;
+  display: flex;
+  align-items: stretch;
+  background: linear-gradient(
+    to right,
+    var(--rs-accent-tint) 0 59.7mm,
+    var(--rs-accent-line) 59.7mm 60mm,
+    #fff 60mm
+  );
+}
+
+.t-prism .rs-rail {
+  width: 60mm;
+  flex: none;
+  box-sizing: border-box;
+  padding: 13mm 8mm;
+}
+
+.t-prism .rs-main {
+  flex: 1;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 14mm 13mm 14mm 10mm;
+}
+
+.t-prism .rs-prism-portrait {
+  margin-bottom: 6mm;
+}
+
+.t-prism .rs-prism-portrait .rs-photo {
+  width: 100%;
+  height: 46mm;
+  border-radius: 2mm;
+  border: 0.5mm solid var(--rs-accent-line);
+}
+
+.t-prism .rs-header {
+  border-bottom: 0;
+  padding-bottom: 0;
+  margin-bottom: 5mm;
+}
+
+.t-prism .rs-name {
+  font-size: 21pt;
+  font-weight: 700;
+  color: var(--rs-accent);
+  letter-spacing: -0.015em;
+}
+
+.t-prism .rs-role {
+  font-size: 10pt;
+  font-weight: 500;
+  color: var(--rs-soft);
+  margin-top: 1.4mm;
+}
+
+.t-prism .rs-section-title {
+  border-bottom: 1px solid var(--rs-accent-line);
+  padding-bottom: 1.4mm;
+}
+
+.t-prism .rs-rail .rs-contact {
+  display: block;
+  margin: 0;
+}
+
+.t-prism .rs-rail .rs-contact li {
+  display: flex;
+  align-items: flex-start;
+  gap: 2mm;
+  margin-bottom: 1.8mm;
+}
+
+.t-prism .rs-rail .rs-contact li + li::before {
+  display: none;
+}
+
+.t-prism .rs-main .rs-entry-title {
+  font-size: 10.2pt;
+}
+
+/* ===========================================================================
+   Cover letter.
+
+   The same sheet, the same accent and the same type as the resume it travels
+   with, set as a letter: a letterhead, a date, an inside address, a subject
+   line, and paragraphs with room to breathe.
+   =========================================================================== */
+.cover-letter {
+  /* Overrides whatever geometry the resume template asked for — a letter is
+     one column on a plain white page whichever layout it is paired with. */
+  display: block !important;
+  padding: 20mm 22mm !important;
+  background: #fff !important;
+  font-size: 10.2pt;
+  line-height: 1.6;
+}
+
+.cover-letter .cl-head {
+  padding-bottom: 5mm;
+  margin-bottom: 9mm;
+  border-bottom: 0.7mm solid var(--rs-accent);
+}
+
+.cover-letter .cl-name {
+  margin: 0;
+  font-size: 21pt;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  color: var(--rs-accent);
+}
+
+.cover-letter .cl-role {
+  margin: 1.6mm 0 0;
+  font-size: 10.5pt;
+  font-weight: 500;
+  color: var(--rs-muted);
+}
+
+.cover-letter .rs-contact {
+  margin-top: 3.4mm;
+  font-size: 8.8pt;
+}
+
+.cover-letter .cl-meta {
+  margin-bottom: 8mm;
+}
+
+.cover-letter .cl-date {
+  margin: 0 0 6mm;
+  color: var(--rs-muted);
+}
+
+.cover-letter .cl-address {
+  display: block;
+  font-style: normal;
+  color: var(--rs-soft);
+}
+
+.cover-letter .cl-address span {
+  display: block;
+}
+
+.cover-letter .cl-subject {
+  margin: 0 0 6mm;
+  font-weight: 600;
+  color: var(--rs-ink);
+}
+
+.cover-letter .cl-greeting {
+  margin: 0 0 5mm;
+}
+
+.cover-letter .cl-body p {
+  margin: 0 0 5mm;
+  color: var(--rs-soft);
+}
+
+/* The prompt standing in for an unwritten letter is set apart so nobody
+   mistakes it for text they have already typed. */
+.cover-letter .cl-body--empty p {
+  color: var(--rs-muted);
+  font-style: italic;
+}
+
+.cover-letter .cl-signoff {
+  margin-top: 10mm;
+}
+
+.cover-letter .cl-signoff p {
+  margin: 0;
+  color: var(--rs-soft);
+}
+
+.cover-letter .cl-signature {
+  margin-top: 12mm !important;
+  font-weight: 600;
+  color: var(--rs-ink);
 }

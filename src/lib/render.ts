@@ -7,9 +7,12 @@ import type {
   ProjectItem,
   PublicationItem,
   ResumeData,
+  SectionKey,
   SectionMeta,
   SkillItem,
 } from './types';
+import { SECTION_KEYS } from './types';
+import { EMPTY_COVER_LETTER } from './sample';
 import { resolveAccent, resolveTemplate } from './templates';
 
 /** All user content passes through here before it touches innerHTML. */
@@ -461,6 +464,44 @@ function interestInline(items: InterestItem[]): string {
     .join('')}</ul>`;
 }
 
+/* --- Headshot ------------------------------------------------------------- */
+
+/**
+ * Only a data: URL is ever drawn. The picture is read off the user's own disk
+ * and kept in their browser, so there is no remote source to honour — and
+ * refusing everything else means a crafted draft cannot turn the sheet into a
+ * beacon that calls out to a third party when it is opened.
+ */
+function photoSrc(data: ResumeData): string {
+  const raw = clean(data.basics.photo ?? '');
+  return /^data:image\/(png|jpeg|jpg|webp|gif);base64,[A-Za-z0-9+/=\s]+$/i.test(raw) ? raw : '';
+}
+
+/**
+ * Thumbnails have to show what the frame does even though the sample resume
+ * carries no picture, so they draw a silhouette in its place. Set per render,
+ * for the same reason as `headings`.
+ */
+let photoPlaceholder = false;
+
+const PHOTO_SILHOUETTE =
+  '<svg class="rs-photo-blank" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="24" r="11"/><path d="M8 62a24 24 0 0 1 48 0z"/></svg>';
+
+/**
+ * The frame, or nothing at all when there is no picture. `alt` is deliberately
+ * empty: the name is already the <h1> beside it, and a parser that meets a
+ * decorative image with no alt text simply walks past it.
+ */
+function photoBlock(data: ResumeData, cls = 'rs-photo'): string {
+  const src = photoSrc(data);
+  if (!src) {
+    return photoPlaceholder
+      ? `<figure class="${cls} rs-photo--empty" aria-hidden="true">${PHOTO_SILHOUETTE}</figure>`
+      : '';
+  }
+  return `<figure class="${cls}"${hook('basics|photo')}><img src="${esc(src)}" alt="" /></figure>`;
+}
+
 /** Two letters for the monogram disc; falls back to a single glyph. */
 function monogram(name: string): string {
   const parts = clean(name).split(/\s+/).filter(Boolean);
@@ -791,6 +832,146 @@ function renderHelix(data: ResumeData, allowLinks: boolean): string {
   ]);
 }
 
+/* ===========================================================================
+   Aperture — square portrait beside the masthead, one plain column below.
+   The photo sits in the header only; everything under it is the same ruled,
+   single-reading-order sheet a strict parser wants.
+   =========================================================================== */
+function renderAperture(data: ResumeData, allowLinks: boolean): string {
+  const header = `<header class="rs-header rs-header--photo"${opens('basics')}>${photoBlock(
+    data,
+    'rs-photo rs-photo--square',
+  )}<div class="rs-header-main">${nameBlock(data)}${contactList(data)}</div></header>`;
+
+  return compose([
+    header,
+    section('Professional Summary', summaryBlock(data.basics.summary), 'basics'),
+    section('Core Skills', skillGrid(data.skills), 'skills'),
+    section('Work Experience', experienceBlock(data.experience), 'experience'),
+    section('Education', educationBlock(data.education, true), 'education'),
+    section('Projects', projectsBlock(data.projects, false, allowLinks), 'projects'),
+    duo([
+      section('Certifications', certificationLines(data.certifications), 'certifications'),
+      section('Languages', languageInline(data.languages), 'languages'),
+    ]),
+    section('Publications & Talks', publicationBlock(data.publications, false), 'publications'),
+    section('Interests', interestInline(data.interests), 'interests'),
+  ]);
+}
+
+/* ===========================================================================
+   Cameo — round portrait at the head of a colour rail.
+   =========================================================================== */
+function renderCameo(data: ResumeData, allowLinks: boolean): string {
+  const rail = compose([
+    `<header class="rs-rail-head"${opens('basics')}>${photoBlock(
+      data,
+      'rs-photo rs-photo--round',
+    )}${nameBlock(data)}</header>`,
+    section('Contact', contactList(data, true), 'basics'),
+    section('Skills', skillMeters(data.skills), 'skills'),
+    section('Languages', languageRows(data.languages), 'languages'),
+    section('Certifications', certificationBlock(data.certifications), 'certifications'),
+    section('Interests', interestInline(data.interests), 'interests'),
+  ]);
+
+  const main = compose([
+    section('Profile', summaryBlock(data.basics.summary), 'basics'),
+    section('Experience', experienceBlock(data.experience), 'experience'),
+    section('Education', educationBlock(data.education, true), 'education'),
+    section('Projects', projectsBlock(data.projects, false, allowLinks), 'projects'),
+    section('Publications', publicationBlock(data.publications, false), 'publications'),
+  ]);
+
+  return `<aside class="rs-rail">${rail}</aside><div class="rs-main">${main}</div>`;
+}
+
+/* ===========================================================================
+   Anchor — portrait, name and mandate on one banded executive header.
+   =========================================================================== */
+function renderAnchor(data: ResumeData, allowLinks: boolean): string {
+  const contact = contactItems(data, true);
+  const band = `<header class="rs-anchor-band"${opens('basics')}>${photoBlock(
+    data,
+    'rs-photo rs-photo--round rs-photo--onband',
+  )}<div class="rs-anchor-main">${nameBlock(data)}${
+    contact.length ? `<ul class="rs-contact rs-contact--onband">${contact.join('')}</ul>` : ''
+  }</div></header>`;
+
+  return compose([
+    band,
+    section('Executive Summary', summaryBlock(data.basics.summary), 'basics'),
+    section('Core Competencies', skillGrid(data.skills), 'skills', 'rs-section--band'),
+    section('Professional Experience', experienceBlock(data.experience), 'experience'),
+    section('Education', educationBlock(data.education, true), 'education'),
+    section('Selected Initiatives', projectsBlock(data.projects, false, allowLinks), 'projects'),
+    duo([
+      section('Certifications', certificationLines(data.certifications), 'certifications'),
+      section('Languages', languageInline(data.languages), 'languages'),
+    ]),
+    section('Speaking & Publications', publicationBlock(data.publications, false), 'publications'),
+    section('Interests', interestInline(data.interests), 'interests'),
+  ]);
+}
+
+/* ===========================================================================
+   Orbit — portrait card over two columns, contact chips across the top.
+   =========================================================================== */
+function renderOrbit(data: ResumeData, allowLinks: boolean): string {
+  const contact = contactItems(data, true);
+
+  const head = `<header class="rs-orbit-head"${opens('basics')}>${photoBlock(
+    data,
+    'rs-photo rs-photo--card',
+  )}<div class="rs-orbit-main">${nameBlock(data)}${summaryBlock(data.basics.summary)}</div></header>${
+    contact.length ? `<ul class="rs-contact rs-contact--strip">${contact.join('')}</ul>` : ''
+  }`;
+
+  const left = compose([
+    section('Experience', experienceBlock(data.experience), 'experience'),
+    section('Projects', projectsBlock(data.projects, true, allowLinks), 'projects'),
+    section('Education', educationBlock(data.education, true), 'education'),
+  ]);
+
+  const right = compose([
+    section('Skills', skillChips(data.skills), 'skills'),
+    section('Certifications', certificationBlock(data.certifications), 'certifications'),
+    section('Languages', languageRows(data.languages), 'languages'),
+    section('Publications', publicationBlock(data.publications, false), 'publications'),
+    section('Interests', interestInline(data.interests), 'interests'),
+  ]);
+
+  return `${head}<div class="rs-columns"><div class="rs-col rs-col--main">${left}</div><div class="rs-col rs-col--side">${right}</div></div>`;
+}
+
+/* ===========================================================================
+   Prism — portrait tucked into a tinted panel, credentials underneath.
+   =========================================================================== */
+function renderPrism(data: ResumeData, allowLinks: boolean): string {
+  const rail = compose([
+    `<div class="rs-prism-portrait"${opens('basics')}>${photoBlock(
+      data,
+      'rs-photo rs-photo--square',
+    )}</div>`,
+    section('Contact', contactList(data, true), 'basics'),
+    section('Key Skills', skillChips(data.skills), 'skills'),
+    section('Languages', languageRows(data.languages), 'languages'),
+    section('Interests', interestInline(data.interests), 'interests'),
+  ]);
+
+  const main = compose([
+    `<header class="rs-header"${opens('basics')}>${nameBlock(data)}</header>`,
+    section('Profile', summaryBlock(data.basics.summary), 'basics'),
+    section('Experience', experienceBlock(data.experience), 'experience'),
+    section('Education', educationBlock(data.education, true), 'education'),
+    section('Certifications', certificationLines(data.certifications), 'certifications'),
+    section('Projects', projectsBlock(data.projects, false, allowLinks), 'projects'),
+    section('Publications', publicationBlock(data.publications, false), 'publications'),
+  ]);
+
+  return `<aside class="rs-rail">${rail}</aside><div class="rs-main">${main}</div>`;
+}
+
 export interface RenderOptions {
   /**
    * Thumbnails are decorative and often sit inside a link of their own, and
@@ -798,6 +979,12 @@ export interface RenderOptions {
    * there and URLs render as plain text.
    */
   links?: boolean;
+  /**
+   * Draw a silhouette where a photo layout's frame would go when the resume
+   * has no picture. For previews on the marketing pages, never for the sheet
+   * the user is actually going to print.
+   */
+  placeholderPhoto?: boolean;
 }
 
 /**
@@ -812,6 +999,7 @@ export function renderResume(
   const allowLinks = options.links !== false;
   headings = data.sections ?? {};
   sectionOrder = data.order ?? [];
+  photoPlaceholder = options.placeholderPhoto === true;
 
   switch (resolveTemplate(templateId)) {
     case 'ledger':
@@ -836,9 +1024,167 @@ export function renderResume(
       return renderPulse(data, allowLinks);
     case 'helix':
       return renderHelix(data, allowLinks);
+    case 'aperture':
+      return renderAperture(data, allowLinks);
+    case 'cameo':
+      return renderCameo(data, allowLinks);
+    case 'anchor':
+      return renderAnchor(data, allowLinks);
+    case 'orbit':
+      return renderOrbit(data, allowLinks);
+    case 'prism':
+      return renderPrism(data, allowLinks);
     default:
       return renderAtlas(data, allowLinks);
   }
+}
+
+/* ===========================================================================
+   What one template calls its sections, and the order it prints them in.
+
+   The editor's rail has to say "Core Competencies & Skills" on Ledger and
+   "Technical Skills" on Cascade, in each template's own running order. Rather
+   than keep a second table alongside seventeen render functions — which would
+   drift the first time a heading is reworded — the sheet is asked directly:
+   render the template once against a probe with one entry in every section,
+   then read the headings back off it in document order.
+   =========================================================================== */
+export interface SectionInfo {
+  key: SectionKey;
+  heading: string;
+}
+
+const PROBE: ResumeData = {
+  basics: {
+    fullName: 'A',
+    title: 'A',
+    email: 'a@a.co',
+    phone: 'a',
+    location: 'a',
+    website: '',
+    linkedin: '',
+    github: '',
+    summary: 'a',
+  },
+  experience: [{ id: 'p', role: 'a', company: 'a', location: '', start: '', end: '', bullets: 'a' }],
+  education: [{ id: 'p', degree: 'a', school: 'a', location: '', start: '', end: '', note: '' }],
+  projects: [{ id: 'p', name: 'a', link: '', description: 'a', tech: 'a' }],
+  skills: [{ id: 'p', name: 'a', level: 5 }],
+  languages: [{ id: 'p', name: 'a', level: 'a' }],
+  certifications: [{ id: 'p', name: 'a', issuer: 'a', date: 'a' }],
+  publications: [{ id: 'p', title: 'a', meta: 'a' }],
+  interests: [{ id: 'p', name: 'a' }],
+};
+
+const sectionInfoCache = new Map<string, SectionInfo[]>();
+
+/**
+ * Every section this template prints, in printed order, with the heading it
+ * gives each one. Browser only — it parses the rendered sheet. Returns an
+ * empty list where there is no DOM, and callers fall back to their defaults.
+ */
+export function templateSectionInfo(templateId: string): SectionInfo[] {
+  const id = resolveTemplate(templateId);
+  const cached = sectionInfoCache.get(id);
+  if (cached) return cached;
+  if (typeof DOMParser === 'undefined') return [];
+
+  // renderResume sets the module-level heading and order state; the probe must
+  // not leave its own behind for whatever render comes next.
+  const keptHeadings = headings;
+  const keptOrder = sectionOrder;
+  const html = renderResume(PROBE, id, { links: false });
+  headings = keptHeadings;
+  sectionOrder = keptOrder;
+
+  const doc = new DOMParser().parseFromString(`<body>${html}</body>`, 'text/html');
+  const seen = new Set<string>();
+  const out: SectionInfo[] = [];
+
+  doc.querySelectorAll<HTMLElement>('[data-e-open]').forEach((node) => {
+    const key = node.dataset.eOpen as SectionKey;
+    if (!SECTION_KEYS.includes(key) || seen.has(key)) return;
+    const title = node.querySelector('.rs-section-title')?.textContent?.trim();
+    if (!title) return;
+    seen.add(key);
+    out.push({ key, heading: title });
+  });
+
+  sectionInfoCache.set(id, out);
+  return out;
+}
+
+/* ===========================================================================
+   Cover letter.
+
+   One A4 sheet that borrows the resume's accent and type, so the two
+   documents read as one application. Deliberately plain: a letterhead, a
+   date, an inside address, a subject line, paragraphs, a sign-off.
+   =========================================================================== */
+function paragraphs(value: string): string[] {
+  return clean(value)
+    .split(/\n\s*\n/)
+    .map((block) => block.replace(/\s*\n\s*/g, ' ').trim())
+    .filter(Boolean);
+}
+
+export function renderCoverLetter(data: ResumeData): string {
+  const letter = data.coverLetter ?? EMPTY_COVER_LETTER;
+  const name = clean(data.basics.fullName);
+
+  const letterhead = `<header class="cl-head"${opens('basics')}>${
+    name
+      ? `<h1 class="cl-name"${hook('basics|fullName')}>${esc(name)}</h1>`
+      : '<h1 class="cl-name rs-placeholder">Your name</h1>'
+  }${
+    clean(data.basics.title)
+      ? `<p class="cl-role"${hook('basics|title')}>${esc(clean(data.basics.title))}</p>`
+      : ''
+  }${contactList(data)}</header>`;
+
+  const date = clean(letter.date)
+    ? `<p class="cl-date"${hook('cover|date')}>${esc(clean(letter.date))}</p>`
+    : '';
+
+  const addressLines = [
+    clean(letter.recipient) && `<span${hook('cover|recipient')}>${esc(clean(letter.recipient))}</span>`,
+    clean(letter.recipientTitle) &&
+      `<span${hook('cover|recipientTitle')}>${esc(clean(letter.recipientTitle))}</span>`,
+    clean(letter.company) && `<span${hook('cover|company')}>${esc(clean(letter.company))}</span>`,
+    clean(letter.companyAddress) &&
+      `<span${hook('cover|companyAddress')}>${esc(clean(letter.companyAddress))}</span>`,
+  ].filter(Boolean) as string[];
+
+  const address = addressLines.length
+    ? `<address class="cl-address">${addressLines.join('')}</address>`
+    : '';
+
+  const subject = clean(letter.role)
+    ? `<p class="cl-subject"${hook('cover|role')}>Re: ${esc(clean(letter.role))}</p>`
+    : '';
+
+  const greeting = clean(letter.greeting)
+    ? `<p class="cl-greeting"${hook('cover|greeting')}>${esc(clean(letter.greeting))}</p>`
+    : '';
+
+  const blocks = paragraphs(letter.body);
+  const body = blocks.length
+    ? `<div class="cl-body"${hook('cover|body')}>${blocks
+        .map((block) => `<p>${esc(block)}</p>`)
+        .join('')}</div>`
+    : `<div class="cl-body cl-body--empty"${hook('cover|body')}><p>Your letter goes here. Three short paragraphs is plenty: why this role, what you have actually done that proves you can do it, and what you would like to happen next.</p></div>`;
+
+  const signOff = `<div class="cl-signoff">${
+    clean(letter.signOff)
+      ? `<p${hook('cover|signOff')}>${esc(clean(letter.signOff))}</p>`
+      : ''
+  }${name ? `<p class="cl-signature"${hook('basics|fullName')}>${esc(name)}</p>` : ''}</div>`;
+
+  return `${letterhead}<div class="cl-meta">${date}${address}</div>${subject}${greeting}${body}${signOff}`;
+}
+
+export function letterClass(templateId: string): string {
+  return `resume-sheet cover-letter t-${resolveTemplate(templateId)}`;
 }
 
 export function sheetClass(templateId: string): string {

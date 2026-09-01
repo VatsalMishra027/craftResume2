@@ -1,6 +1,7 @@
-/** The six shelves the picker sorts layouts onto. Order is display order. */
+/** The seven shelves the picker sorts layouts onto. Order is display order. */
 export const TEMPLATE_CATEGORIES = [
   'ATS-Focused',
+  'With Photo',
   'Modern',
   'Executive',
   'Academic',
@@ -25,13 +26,24 @@ export interface TemplateMeta {
    * reading order but adds a rail or a tint. `styled` leans on colour.
    */
   ats: 'strict' | 'safe' | 'styled';
+  /**
+   * True when the layout has a frame reserved for a headshot. The photo is
+   * still optional — these layouts close the gap and re-flow when there is no
+   * picture — but only they will ever draw one.
+   */
+  photo?: boolean;
 }
 
 /* ---------------------------------------------------------------------------
    Every layout here is drawn from scratch for CraftResume out of ordinary
    resume conventions — ruled headings, a colour rail, a two-column split.
    None of them reproduce a proprietary template from another builder, so all
-   twelve are free to use, edit and download without attribution.
+   seventeen are free to use, edit and download without attribution.
+
+   The five photo layouts keep the headshot out of the reading order — it is
+   an <img> with an empty alt in a floated frame, never a background image and
+   never text baked into a picture — so a parser still walks name, contact,
+   summary, experience in that order.
 --------------------------------------------------------------------------- */
 export const TEMPLATES: TemplateMeta[] = [
   {
@@ -142,6 +154,58 @@ export const TEMPLATES: TemplateMeta[] = [
     category: 'Professional',
     ats: 'safe',
   },
+
+  /* --- With a headshot ---------------------------------------------------- */
+  {
+    id: 'aperture',
+    name: 'Aperture',
+    tagline: 'Square portrait beside the masthead, one plain column below.',
+    bestFor: 'Roles that ask for a photo but screen by machine',
+    layout: 'single',
+    category: 'With Photo',
+    ats: 'safe',
+    photo: true,
+  },
+  {
+    id: 'cameo',
+    name: 'Cameo',
+    tagline: 'Round portrait at the head of a colour rail.',
+    bestFor: 'Client-facing work, consulting, account management',
+    layout: 'sidebar',
+    category: 'With Photo',
+    ats: 'safe',
+    photo: true,
+  },
+  {
+    id: 'anchor',
+    name: 'Anchor',
+    tagline: 'Portrait, name and mandate on one banded executive header.',
+    bestFor: 'Directors, country heads, senior hires',
+    layout: 'single',
+    category: 'With Photo',
+    ats: 'safe',
+    photo: true,
+  },
+  {
+    id: 'orbit',
+    name: 'Orbit',
+    tagline: 'Portrait card over two columns, contact chips across the top.',
+    bestFor: 'Product, marketing, growth',
+    layout: 'split',
+    category: 'With Photo',
+    ats: 'safe',
+    photo: true,
+  },
+  {
+    id: 'prism',
+    name: 'Prism',
+    tagline: 'Portrait tucked into a tinted panel, credentials underneath.',
+    bestFor: 'Teaching, hospitality, healthcare, international applications',
+    layout: 'sidebar',
+    category: 'With Photo',
+    ats: 'safe',
+    photo: true,
+  },
 ];
 
 export const DEFAULT_TEMPLATE = 'atlas';
@@ -157,6 +221,14 @@ export function resolveTemplate(value: string | null | undefined): string {
 export function templateMeta(id: string): TemplateMeta {
   return TEMPLATES.find((t) => t.id === id) ?? TEMPLATES[0];
 }
+
+/** True when this layout has somewhere to put a headshot. */
+export function templateUsesPhoto(id: string): boolean {
+  return templateMeta(resolveTemplate(id)).photo === true;
+}
+
+/** The photo layouts, for the "add a picture" hint in the editor. */
+export const PHOTO_TEMPLATES = TEMPLATES.filter((t) => t.photo);
 
 /** Human label for the ATS rating, used on cards and in the editor menu. */
 export const ATS_LABEL: Record<TemplateMeta['ats'], string> = {

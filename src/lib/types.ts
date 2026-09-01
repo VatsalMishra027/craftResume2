@@ -8,6 +8,12 @@ export interface Basics {
   linkedin: string;
   github: string;
   summary: string;
+  /**
+   * A data: URL for the headshot, read straight off the user's disk and never
+   * uploaded. Only the photo templates draw it; the rest ignore it entirely,
+   * so a picture on file never leaks onto a strict-ATS layout.
+   */
+  photo?: string;
 }
 
 export interface ExperienceItem {
@@ -83,6 +89,27 @@ export interface SectionMeta {
   hidden?: boolean;
 }
 
+/**
+ * The cover letter that travels with the resume. It reuses the resume's own
+ * contact block and template, so the two documents arrive looking like one
+ * application rather than two unrelated files.
+ */
+export interface CoverLetter {
+  /** Who it is addressed to — "Hiring Manager" when the name is unknown. */
+  recipient: string;
+  recipientTitle: string;
+  company: string;
+  companyAddress: string;
+  /** The role being applied for, printed as the subject line. */
+  role: string;
+  /** Free text so "12 March 2026" and "2026-03-12" both survive verbatim. */
+  date: string;
+  greeting: string;
+  /** One paragraph per blank-line-separated block. */
+  body: string;
+  signOff: string;
+}
+
 export interface ResumeData {
   basics: Basics;
   experience: ExperienceItem[];
@@ -93,6 +120,8 @@ export interface ResumeData {
   certifications: CertificationItem[];
   publications: PublicationItem[];
   interests: InterestItem[];
+  /** Absent until the user opens the cover letter for the first time. */
+  coverLetter?: CoverLetter;
   /** Renamed or removed headings. Only holds the sections the user has touched. */
   sections?: Partial<Record<SectionKey, SectionMeta>>;
   /**
@@ -117,8 +146,8 @@ export const SECTION_KEYS = [
 
 export type SectionKey = (typeof SECTION_KEYS)[number];
 
-/** What the left rail lists, including the singleton at the top. */
-export type PanelKey = 'basics' | SectionKey;
+/** What the left rail lists: the two singletons plus every repeatable list. */
+export type PanelKey = 'basics' | 'cover' | SectionKey;
 
 export type AnyItem =
   | ExperienceItem

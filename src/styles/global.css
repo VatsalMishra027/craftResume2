@@ -4,6 +4,11 @@
    CraftResume design tokens
    Palette: warm paper + near-black ink + one restrained clay accent.
    Everything else is a neutral. Colour is a tool, not decoration.
+
+   Every colour is declared once here as the light value, then re-declared for
+   dark below. Nothing in the app hard-codes a hex, so one pair of blocks
+   re-themes the whole site — except the resume sheet, which is paper and
+   stays white in both.
 --------------------------------------------------------------------------- */
 @theme {
   --color-paper: #faf9f6;
@@ -25,6 +30,8 @@
     sans-serif;
   --font-serif: "Instrument Serif", ui-serif, Georgia, serif;
   --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, monospace;
+  /* Numerals with enough character to carry a step marker on their own. */
+  --font-numeral: "Space Grotesk", "Inter", ui-sans-serif, system-ui, sans-serif;
 
   --radius-card: 0.875rem;
 
@@ -32,6 +39,76 @@
   --shadow-page: 0 1px 3px rgb(22 21 15 / 0.06), 0 24px 60px -24px rgb(22 21 15 / 0.22);
 
   --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* --- Glass ---------------------------------------------------------------
+   How much of the page shows through, and how hard the blur works. Declared
+   as tokens so light and dark can tune them independently: a dark sheet of
+   glass needs a lower tint and a brighter edge to read as glass at all.
+--------------------------------------------------------------------------- */
+:root {
+  --glass-tint: 66%;
+  --glass-tint-strong: 82%;
+  --glass-blur: 20px;
+  --glass-edge: color-mix(in srgb, #fff 70%, transparent);
+  --glass-line: color-mix(in srgb, var(--color-line) 80%, transparent);
+  color-scheme: light;
+}
+
+/* The two ways a page ends up dark: the OS says so and the user has not
+   overridden it, or the user asked for it explicitly. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-paper: #15140f;
+    --color-paper-sunk: #100f0b;
+    --color-surface: #1d1b16;
+
+    --color-ink: #f6f4ec;
+    --color-ink-soft: #d2cdc0;
+    --color-ink-muted: #9c9689;
+    --color-ink-faint: #6f6a5f;
+
+    --color-line: #2c2922;
+    --color-line-strong: #413d34;
+
+    --color-clay: #e08a55;
+    --color-clay-soft: #33241a;
+
+    --shadow-lift: 0 1px 2px rgb(0 0 0 / 0.4), 0 12px 32px -12px rgb(0 0 0 / 0.6);
+    --shadow-page: 0 1px 3px rgb(0 0 0 / 0.5), 0 24px 60px -24px rgb(0 0 0 / 0.75);
+
+    --glass-tint: 58%;
+    --glass-tint-strong: 76%;
+    --glass-edge: color-mix(in srgb, #fff 12%, transparent);
+    --glass-line: color-mix(in srgb, var(--color-line-strong) 90%, transparent);
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --color-paper: #15140f;
+  --color-paper-sunk: #100f0b;
+  --color-surface: #1d1b16;
+
+  --color-ink: #f6f4ec;
+  --color-ink-soft: #d2cdc0;
+  --color-ink-muted: #9c9689;
+  --color-ink-faint: #6f6a5f;
+
+  --color-line: #2c2922;
+  --color-line-strong: #413d34;
+
+  --color-clay: #e08a55;
+  --color-clay-soft: #33241a;
+
+  --shadow-lift: 0 1px 2px rgb(0 0 0 / 0.4), 0 12px 32px -12px rgb(0 0 0 / 0.6);
+  --shadow-page: 0 1px 3px rgb(0 0 0 / 0.5), 0 24px 60px -24px rgb(0 0 0 / 0.75);
+
+  --glass-tint: 58%;
+  --glass-tint-strong: 76%;
+  --glass-edge: color-mix(in srgb, #fff 12%, transparent);
+  --glass-line: color-mix(in srgb, var(--color-line-strong) 90%, transparent);
+  color-scheme: dark;
 }
 
 @layer base {
@@ -47,6 +124,11 @@
     font-feature-settings: "cv11", "ss01";
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
+    /* The theme can change mid-session; the swap should read as a dimmer
+       rather than a flash. */
+    transition:
+      background-color 320ms var(--ease-out-soft),
+      color 320ms var(--ease-out-soft);
   }
 
   ::selection {
@@ -72,6 +154,21 @@
   button:disabled,
   [role="button"][aria-disabled="true"] {
     cursor: not-allowed;
+  }
+
+  /* Someone who has asked for less motion gets none of the decorative kind. */
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }
 
@@ -106,6 +203,56 @@
 
 @utility hairline {
   border-bottom: 1px solid var(--color-line);
+}
+
+/* --- Glass ----------------------------------------------------------------
+   A pane the page shows through. `glass` is the general-purpose sheet used
+   for cards and floating controls; `glass-bar` is the thinner, more
+   transparent version the header and the editor's top bar sit on, where the
+   content scrolling underneath is the point.
+--------------------------------------------------------------------------- */
+@utility glass {
+  background: color-mix(in srgb, var(--color-surface) var(--glass-tint-strong), transparent);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.5);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.5);
+  border: 1px solid var(--glass-line);
+}
+
+@utility glass-bar {
+  background: color-mix(in srgb, var(--color-paper) var(--glass-tint), transparent);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.7);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.7);
+}
+
+/* The hairline of light along the top edge that makes a pane read as glass
+   rather than as a flat translucent rectangle. */
+@utility glass-edge {
+  position: relative;
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset-inline: 0;
+    top: 0;
+    height: 1px;
+    background: linear-gradient(
+      to right,
+      transparent,
+      var(--glass-edge) 18%,
+      var(--glass-edge) 82%,
+      transparent
+    );
+    pointer-events: none;
+  }
+}
+
+/* Nothing behind the glass means nothing to blur, so where the browser cannot
+   do it the pane goes nearly opaque instead of nearly invisible. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  :root {
+    --glass-tint: 96%;
+    --glass-tint-strong: 98%;
+  }
 }
 
 /* --- Print: the resume page is the only thing that reaches paper --------- */
@@ -161,4 +308,14 @@
   .resume-sheet:last-child {
     break-after: auto;
   }
+}
+
+/* The printable root is empty and out of the way until the moment it is
+   printed. It must not use the `hidden` attribute to get there: Tailwind's
+   preflight hides `[hidden]` with `!important` from inside a cascade layer,
+   and an important declaration in a layer beats an unlayered one — so the
+   print rule above could never turn it back on, and every download came out
+   as a blank sheet. A plain class has no such fight to lose. */
+.print-root {
+  display: none;
 }

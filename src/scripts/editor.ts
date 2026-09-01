@@ -1,5 +1,13 @@
-import { renderResume, sheetClass, sheetStyle } from '../lib/render';
 import {
+  letterClass,
+  renderCoverLetter,
+  renderResume,
+  sheetClass,
+  sheetStyle,
+  templateSectionInfo,
+} from '../lib/render';
+import {
+  EMPTY_COVER_LETTER,
   EMPTY_RESUME,
   SPLIT_DEFAULT,
   clampSplit,
@@ -14,11 +22,26 @@ import {
   saveTemplate,
   uid,
 } from '../lib/store';
-import { resolveAccent, resolveTemplate } from '../lib/templates';
+import { resolveAccent, resolveTemplate, templateUsesPhoto } from '../lib/templates';
 import { getBlueprint } from '../lib/blueprints';
+import {
+  buildDocx,
+  buildPlainText,
+  copyText,
+  downloadBlob,
+  exportFilename,
+} from '../lib/export';
+import type { ExportSection } from '../lib/export';
 import { fitSheet } from '../lib/fit';
 import { SECTION_KEYS as SECTIONS } from '../lib/types';
-import type { AnyItem, PanelKey, ResumeData, SectionKey, SectionMeta } from '../lib/types';
+import type {
+  AnyItem,
+  CoverLetter,
+  PanelKey,
+  ResumeData,
+  SectionKey,
+  SectionMeta,
+} from '../lib/types';
 
 const CONTROL =
   'mt-1.5 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-ink-faint transition-colors duration-150 hover:border-line-strong focus:border-ink focus:outline-none';
@@ -214,6 +237,13 @@ export function initEditor(): void {
   let template = params.has('template') ? resolveTemplate(params.get('template')) : loadTemplate();
   let accent = params.has('accent') ? resolveAccent(params.get('accent')).id : loadAccent();
   let panel: PanelKey = 'basics';
+  /** Which of the two documents the preview is showing. */
+  let doc: 'resume' | 'cover' = 'resume';
+
+  /** The letter, created on first use rather than carried by every draft. */
+  function letter(): CoverLetter {
+    return (data.coverLetter ??= { ...EMPTY_COVER_LETTER });
+  }
 
   /**
    * `?blueprint=` opens the editor on a complete resume written for one job
@@ -230,6 +260,13 @@ export function initEditor(): void {
 
     if (replace) {
       data = structuredClone(blueprint.data);
+      // A blueprint is a resume, not a letter — but it knows the job title it
+      // was written for, which is the one line of the letter worth filling in
+      // for someone rather than leaving blank.
+      data.coverLetter = {
+        ...EMPTY_COVER_LETTER,
+        role: data.basics.title,
+      };
       if (!params.has('template')) template = resolveTemplate(blueprint.template);
       if (!params.has('accent')) accent = resolveAccent(blueprint.accent).id;
       saveResume(data);
@@ -251,8 +288,17 @@ export function initEditor(): void {
     window.clearTimeout(saveTimer);
     if (statusEl) statusEl.textContent = 'Saving…';
     saveTimer = window.setTimeout(() => {
-      saveResume(data);
-      if (statusEl) statusEl.textContent = 'Saved to this browser';
+      const result = saveResume(data);
+      if (!statusEl) return;
+
+      if (result === 'saved') {
+        statusEl.textContent = 'Saved to this browser';
+      } else if (result === 'saved-without-photo') {
+        // The words are safe; the picture was what did not fit.
+        statusEl.textContent = 'Saved — photo too large to store';
+      } else {
+        statusEl.textContent = 'Could not save to this browser';
+      }
     }, 400);
   }
 
@@ -265,28 +311,60 @@ export function initEditor(): void {
     // A 2px tolerance stops a sheet that exactly fills page one reading as two.
     const pages = Math.max(1, Math.ceil((preview!.scrollHeight - 2) / A4_HEIGHT_PX));
     previewFit!.classList.toggle('is-multipage', pages > 1);
-    pageNoteEl?.classList.toggle('hidden', pages === 1);
+    // The "keep it to one page" note is about the resume. A letter that runs
+    // to a second page is a different problem and not one to nag about here.
+    pageNoteEl?.classList.toggle('hidden', pages === 1 || doc !== 'resume');
     if (pageCountEl) {
       pageCountEl.textContent = `${pages} ${pages === 1 ? 'page' : 'pages'} · A4`;
     }
   }
 
   function paintPreview(): void {
-    preview!.className = `${sheetClass(template)} resume-sheet--live`;
+    const cls = doc === 'cover' ? letterClass(template) : sheetClass(template);
+    preview!.className = `${cls} resume-sheet--live`;
     preview!.setAttribute('style', sheetStyle(accent));
-    preview!.innerHTML = renderResume(data, template);
+    preview!.innerHTML =
+      doc === 'cover' ? renderCoverLetter(data) : renderResume(data, template);
     fitSheet(previewFit!);
     reportPageCount();
   }
 
-  // --- Static basics fields ----------------------------------------------
+  // --- Which document is on screen ---------------------------------------
+  const docButtons = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-doc]'));
+
+  function setDoc(next: 'resume' | 'cover'): void {
+    if (doc === next) return;
+    doc = next;
+    docButtons.forEach((button) => {
+      button.setAttribute('aria-pressed', String(button.dataset.doc === next));
+    });
+    paintPreview();
+  }
+
+  docButtons.forEach((button) => {
+    button.addEventListener('click', () => {
+      const next = button.dataset.doc === 'cover' ? 'cover' : 'resume';
+      setDoc(next);
+      // The switch is above the sheet, so it should take the form with it.
+      showPanel(next === 'cover' ? 'cover' : 'basics');
+    });
+  });
+
+  // --- Static fields: personal info and the cover letter -------------------
   function hydrateStaticFields(): void {
     form!
       .querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('[data-field]')
       .forEach((el) => {
-        const key = el.dataset.field!.replace('basics.', '') as keyof ResumeData['basics'];
+        const field = el.dataset.field!;
+        if (field.startsWith('cover.')) {
+          const key = field.slice(6) as keyof CoverLetter;
+          el.value = letter()[key] ?? '';
+          return;
+        }
+        const key = field.replace('basics.', '') as keyof ResumeData['basics'];
         el.value = data.basics[key] ?? '';
       });
+    syncPhoto();
   }
 
   // --- Repeatable sections ------------------------------------------------
@@ -326,6 +404,123 @@ export function initEditor(): void {
     SECTIONS.forEach(renderSection);
   }
 
+  /* --- Headshot -------------------------------------------------------------
+     The file is read with FileReader and redrawn through a canvas before it
+     is stored: a 4MB phone photo would not fit in localStorage, and a resume
+     never needs more than a few hundred pixels of headshot. Nothing leaves
+     the browser at any point.
+  --------------------------------------------------------------------------- */
+  const photoInput = document.querySelector<HTMLInputElement>('[data-photo-input]');
+  const photoPreview = document.querySelector<HTMLElement>('[data-photo-preview]');
+  const photoRemove = document.querySelector<HTMLElement>('[data-photo-remove]');
+  const photoHint = document.querySelector<HTMLElement>('[data-photo-hint]');
+  const photoButtonLabel = document.querySelector<HTMLElement>('[data-photo-button-label]');
+
+  /** Longest edge of the stored picture, in pixels. */
+  const PHOTO_MAX_EDGE = 560;
+  /** Refuse anything absurd before decoding it. */
+  const PHOTO_MAX_BYTES = 12 * 1024 * 1024;
+
+  const DEFAULT_PHOTO_HINT = photoHint?.innerHTML ?? '';
+
+  function syncPhoto(): void {
+    const src = data.basics.photo ?? '';
+
+    if (photoPreview) {
+      const existing = photoPreview.querySelector('img');
+      if (src) {
+        if (existing) existing.src = src;
+        else {
+          const img = document.createElement('img');
+          img.src = src;
+          img.alt = '';
+          photoPreview.appendChild(img);
+        }
+      } else {
+        existing?.remove();
+      }
+    }
+
+    if (photoRemove) photoRemove.hidden = !src;
+    if (photoButtonLabel) photoButtonLabel.textContent = src ? 'Replace photo' : 'Choose a photo';
+
+    // Say so plainly when there is a picture on file that this layout will
+    // not draw, rather than letting the user wonder where it went.
+    if (photoHint && DEFAULT_PHOTO_HINT) {
+      photoHint.innerHTML =
+        src && !templateUsesPhoto(template)
+          ? 'Saved, but this layout does not show a photo. Pick one of the five <strong class="font-medium">With Photo</strong> templates to put it on the page.'
+          : DEFAULT_PHOTO_HINT;
+    }
+  }
+
+  /** Decodes, scales down and re-encodes the picture as a compact data URL. */
+  async function shrinkPhoto(file: File): Promise<string> {
+    const source = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result ?? ''));
+      reader.onerror = () => reject(new Error('The file could not be read.'));
+      reader.readAsDataURL(file);
+    });
+
+    const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error('That file is not an image this browser can open.'));
+      img.src = source;
+    });
+
+    const longest = Math.max(image.naturalWidth, image.naturalHeight) || 1;
+    const scale = Math.min(1, PHOTO_MAX_EDGE / longest);
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+    canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('This browser could not process the image.');
+    // JPEG has no transparency, so a PNG cut-out would otherwise come out on
+    // black. Paint the paper underneath first.
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+    return canvas.toDataURL('image/jpeg', 0.86);
+  }
+
+  photoInput?.addEventListener('change', async () => {
+    const file = photoInput.files?.[0];
+    // The picker resets either way, so choosing the same file twice still fires.
+    photoInput.value = '';
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      window.alert('Choose an image file — JPG, PNG or WebP.');
+      return;
+    }
+    if (file.size > PHOTO_MAX_BYTES) {
+      window.alert('That image is very large. Please choose one under 12MB.');
+      return;
+    }
+
+    try {
+      data.basics.photo = await shrinkPhoto(file);
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : 'That image could not be read.');
+      return;
+    }
+
+    syncPhoto();
+    paintPreview();
+    markSaved();
+  });
+
+  photoRemove?.addEventListener('click', () => {
+    data.basics.photo = '';
+    syncPhoto();
+    paintPreview();
+    markSaved();
+  });
+
   // --- Section rail -------------------------------------------------------
   const railButtons = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-goto]'));
   const panelEls = Array.from(form.querySelectorAll<HTMLElement>('[data-panel]'));
@@ -338,6 +533,9 @@ export function initEditor(): void {
     railButtons.forEach((button) => {
       button.setAttribute('aria-current', String(button.dataset.goto === next));
     });
+    // Opening the letter's fields shows the letter; opening anything else
+    // brings the resume back. The preview always shows what is being edited.
+    setDoc(next === 'cover' ? 'cover' : 'resume');
     form!.scrollTop = 0;
   }
 
@@ -364,6 +562,37 @@ export function initEditor(): void {
     defaultTitles.set(key, row.querySelector('[data-rail-label]')?.textContent?.trim() ?? key);
   });
 
+  /* --- The rail follows the template --------------------------------------
+     Each layout has its own wording and its own running order: what Ledger
+     calls "Core Competencies & Skills" is "Technical Skills" on Cascade and
+     just "Skills" on Atlas. Rather than keep a table of that alongside every
+     render function, the sheet is asked what it prints — see
+     templateSectionInfo — and the rail is built from the answer, so it can
+     never disagree with the page beside it.
+  --------------------------------------------------------------------------- */
+  let templateTitles = new Map<SectionKey, string>();
+  let templateOrder: SectionKey[] = [...SECTIONS];
+
+  function readTemplateSections(): void {
+    const info = templateSectionInfo(template);
+    templateTitles = new Map(info.map((entry) => [entry.key, entry.heading]));
+    // A section the layout does not print keeps its default place at the end.
+    templateOrder = [
+      ...info.map((entry) => entry.key),
+      ...SECTIONS.filter((key) => !info.some((entry) => entry.key === key)),
+    ];
+  }
+
+  /** The heading this section prints under right now, rename included. */
+  function headingFor(key: SectionKey): string {
+    return (
+      data.sections?.[key]?.label?.trim() ||
+      templateTitles.get(key) ||
+      defaultTitles.get(key) ||
+      key
+    );
+  }
+
   const sectionMenus = Array.from(document.querySelectorAll<HTMLElement>('[data-section-panel]'));
   const sectionMenuButtons = Array.from(
     document.querySelectorAll<HTMLElement>('[data-section-menu]'),
@@ -384,9 +613,9 @@ export function initEditor(): void {
     if (!Object.keys(data.sections).length) delete data.sections;
   }
 
-  /** The order in force: the user's arrangement, or the app's default. */
+  /** The order in force: the user's arrangement, or the template's own. */
   function currentOrder(): SectionKey[] {
-    return data.order?.length ? [...data.order] : [...SECTIONS];
+    return data.order?.length ? [...data.order] : [...templateOrder];
   }
 
   /**
@@ -416,24 +645,38 @@ export function initEditor(): void {
     });
   }
 
-  function moveSection(key: SectionKey, delta: number): void {
+  /**
+   * `keyboard` says how the move was asked for, and it decides what happens to
+   * focus afterwards.
+   *
+   * Moving a row detaches and re-appends it, which drops focus. Putting focus
+   * back is right for a keyboard user — it is how a section gets walked up the
+   * list with repeated presses — but wrong for a mouse user: restoring focus
+   * programmatically counts as :focus-visible, which pinned the hover controls
+   * open on a row the pointer had already left. So the mouse path deliberately
+   * leaves focus off the button and lets the strip go with the pointer.
+   */
+  function moveSection(key: SectionKey, delta: number, keyboard = false): void {
     const order = currentOrder();
     const from = order.indexOf(key);
     const to = from + delta;
     if (from < 0 || to < 0 || to >= order.length) return;
 
     order.splice(to, 0, ...order.splice(from, 1));
-    // Back at the default is the same as never having arranged anything.
-    if (order.every((entry, i) => entry === SECTIONS[i])) delete data.order;
+    // Back at the template's own order is the same as never having arranged
+    // anything, and storing nothing lets a later template switch take over.
+    if (order.every((entry, i) => entry === templateOrder[i])) delete data.order;
     else data.order = order;
 
     syncSectionOrder();
     paintPreview();
     markSaved();
 
-    // Moving the row detaches it, which drops focus. Put it back on the button
-    // that was pressed so the section can be walked up the list with repeated
-    // presses — or on its opposite once this one has run out of travel.
+    if (!keyboard) return;
+
+    // Keyboard only: put focus back on the button that was pressed so the
+    // section can be walked up the list with repeated presses — or on its
+    // opposite once this one has run out of travel.
     const row = railRows.get(key);
     const moved = row?.querySelector<HTMLButtonElement>(
       `[data-section-move][data-direction="${delta < 0 ? 'up' : 'down'}"]`,
@@ -450,7 +693,7 @@ export function initEditor(): void {
       if (!row) return;
 
       const meta = data.sections?.[key];
-      const label = meta?.label?.trim() || defaultTitles.get(key) || key;
+      const label = headingFor(key);
       const hidden = meta?.hidden === true;
 
       const labelEl = row.querySelector<HTMLElement>('[data-rail-label]');
@@ -492,14 +735,6 @@ export function initEditor(): void {
     menu.style.top = `${top}px`;
   }
 
-  /** The heading exactly as the sheet is printing it, template wording and all. */
-  function currentHeading(key: SectionKey): string {
-    const override = data.sections?.[key]?.label?.trim();
-    if (override) return override;
-    const live = preview!.querySelector<HTMLElement>(`[data-e-open="${key}"] .rs-section-title`);
-    return live?.textContent?.trim() || defaultTitles.get(key) || '';
-  }
-
   function startRename(key: SectionKey): void {
     const row = railRows.get(key);
     if (!row || row.dataset.renaming === 'true') return;
@@ -507,8 +742,10 @@ export function initEditor(): void {
     const input = document.createElement('input');
     input.type = 'text';
     input.className = 'rail-rename';
-    input.value = currentHeading(key);
-    input.placeholder = defaultTitles.get(key) ?? '';
+    // Seeded with the heading the sheet is printing right now, template
+    // wording and all, so renaming starts from what is on the page.
+    input.value = headingFor(key);
+    input.placeholder = templateTitles.get(key) ?? defaultTitles.get(key) ?? '';
     input.setAttribute('aria-label', `Heading for ${defaultTitles.get(key) ?? key}`);
 
     row.dataset.renaming = 'true';
@@ -561,11 +798,16 @@ export function initEditor(): void {
   });
 
   document.querySelectorAll<HTMLElement>('[data-section-move]').forEach((button) => {
-    button.addEventListener('click', () => {
+    button.addEventListener('click', (event) => {
       closeSectionMenus();
+      // A click from Enter or Space reports no click count; a real press has
+      // one. That is the cleanest signal for which input actually moved this.
+      const keyboard = (event as MouseEvent).detail === 0;
+      if (!keyboard) button.blur();
       moveSection(
         button.dataset.sectionMove as SectionKey,
         button.dataset.direction === 'up' ? -1 : 1,
+        keyboard,
       );
     });
   });
@@ -617,6 +859,9 @@ export function initEditor(): void {
             el.value.trim() || `${SECTION_LABELS[section].singular} ${index + 1}`;
         }
       }
+    } else if (el.dataset.field?.startsWith('cover.')) {
+      const key = el.dataset.field.slice(6) as keyof CoverLetter;
+      letter()[key] = el.value;
     } else if (el.dataset.field?.startsWith('basics.')) {
       const key = el.dataset.field.replace('basics.', '') as keyof ResumeData['basics'];
       data.basics[key] = el.value;
@@ -681,8 +926,20 @@ export function initEditor(): void {
     const parts = address.split('|');
 
     if (parts[0] === 'basics') {
+      // The letter borrows the resume's name and contact block, so a click on
+      // its letterhead has to leave the letter and open Personal Info.
       showPanel('basics');
+      if (parts[1] === 'photo') {
+        photoInput?.focus();
+        return;
+      }
       focusControl(form!.querySelector<HTMLElement>(`[data-field="basics.${parts[1]}"]`));
+      return;
+    }
+
+    if (parts[0] === 'cover') {
+      showPanel('cover');
+      focusControl(form!.querySelector<HTMLElement>(`[data-field="cover.${parts[1]}"]`));
       return;
     }
 
@@ -789,6 +1046,13 @@ export function initEditor(): void {
       template = resolveTemplate(button.dataset.template);
       saveTemplate(template);
       syncTemplateButtons();
+      // Headings and running order belong to the layout, so switching one
+      // re-labels and re-orders the rail to match the new sheet. A resume the
+      // user has arranged by hand keeps their order.
+      readTemplateSections();
+      syncSectionHeadings();
+      syncSectionOrder();
+      syncPhoto();
       paintPreview();
       closeMenus();
     });
@@ -890,16 +1154,89 @@ export function initEditor(): void {
     markSaved();
   });
 
-  // --- Download -----------------------------------------------------------
+  /* --- Download -------------------------------------------------------------
+     Three ways out of the editor and one switch that applies to all of them.
+     Everything is produced here in the browser; nothing is uploaded.
+  --------------------------------------------------------------------------- */
   const originalTitle = document.title;
+  const includeCoverInput = document.querySelector<HTMLInputElement>('[data-include-cover]');
+  const copyLabel = document.querySelector<HTMLElement>('[data-copy-label]');
+
+  function includeCover(): boolean {
+    return includeCoverInput?.checked === true;
+  }
+
+  /** Sections in printed order, skipping the ones taken off the sheet. */
+  function exportSections(): ExportSection[] {
+    return currentOrder()
+      .filter((key) => data.sections?.[key]?.hidden !== true)
+      .map((key) => ({ key, heading: headingFor(key) }));
+  }
+
+  function documentName(): string {
+    return data.basics.fullName.trim();
+  }
+
+  function printDocuments(): void {
+    const style = sheetStyle(accent);
+    const sheets = [
+      `<div class="${sheetClass(template)}" style="${style}">${renderResume(data, template)}</div>`,
+    ];
+    if (includeCover()) {
+      sheets.push(
+        `<div class="${letterClass(template)}" style="${style}">${renderCoverLetter(data)}</div>`,
+      );
+    }
+    printRoot!.innerHTML = sheets.join('');
+
+    // Browsers seed the "Save as PDF" filename from the document title.
+    const name = documentName();
+    const label = includeCover() ? 'Resume and cover letter' : 'Resume';
+    document.title = name ? `${name} — ${label}` : label;
+    window.print();
+  }
+
+  function downloadWord(): void {
+    const blob = buildDocx(data, {
+      sections: exportSections(),
+      accent: resolveAccent(accent).hex,
+      coverLetter: includeCover(),
+    });
+    downloadBlob(blob, exportFilename(data, 'docx'));
+  }
+
+  let copyTimer: number | undefined;
+
+  async function copyEverything(): Promise<void> {
+    const text = buildPlainText(data, {
+      sections: exportSections(),
+      accent: resolveAccent(accent).hex,
+      coverLetter: includeCover(),
+    });
+    const ok = await copyText(text);
+
+    if (copyLabel) {
+      window.clearTimeout(copyTimer);
+      copyLabel.textContent = ok ? 'Copied to the clipboard' : 'Could not copy — select and copy';
+      copyTimer = window.setTimeout(() => {
+        copyLabel.textContent = 'Copy all the text';
+      }, 2200);
+    }
+  }
 
   document.querySelectorAll<HTMLElement>('[data-download]').forEach((button) => {
     button.addEventListener('click', () => {
-      printRoot!.innerHTML = `<div class="${sheetClass(template)}" style="${sheetStyle(accent)}">${renderResume(data, template)}</div>`;
-      // Browsers seed the "Save as PDF" filename from the document title.
-      const name = data.basics.fullName.trim();
-      document.title = name ? `${name} — Resume` : 'Resume';
-      window.print();
+      const kind = button.dataset.download;
+      if (kind === 'docx') {
+        downloadWord();
+        closeMenus();
+      } else if (kind === 'copy') {
+        // The menu stays open so the "Copied" confirmation is actually seen.
+        void copyEverything();
+      } else {
+        printDocuments();
+        closeMenus();
+      }
     });
   });
 
@@ -929,7 +1266,21 @@ export function initEditor(): void {
     button.addEventListener('click', () => setView(button.dataset.view!));
   });
 
+  // --- Cover letter helpers -----------------------------------------------
+  document.querySelector<HTMLElement>('[data-letter-date]')?.addEventListener('click', () => {
+    letter().date = new Date().toLocaleDateString(undefined, {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
+    const field = form.querySelector<HTMLInputElement>('[data-field="cover.date"]');
+    if (field) field.value = letter().date;
+    paintPreview();
+    markSaved();
+  });
+
   // --- Boot ---------------------------------------------------------------
+  readTemplateSections();
   hydrateStaticFields();
   renderAllSections();
   syncSectionHeadings();
@@ -939,6 +1290,12 @@ export function initEditor(): void {
   showPanel('basics');
   applySplit();
   paintPreview();
+
+  // Someone who has already written a letter almost certainly wants it in the
+  // download, so the switch starts on when there is one. It is still theirs
+  // to turn off.
+  if (includeCoverInput) includeCoverInput.checked = !!data.coverLetter?.body.trim();
+
   new ResizeObserver(() => fitSheet(previewFit)).observe(previewFit);
   if (statusEl) statusEl.textContent = 'Saved to this browser';
 }

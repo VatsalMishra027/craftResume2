@@ -1,5 +1,6 @@
 import type {
   CertificationItem,
+  CoverLetter,
   EducationItem,
   ExperienceItem,
   InterestItem,
@@ -12,7 +13,7 @@ import type {
   SkillItem,
 } from './types';
 import { SECTION_KEYS } from './types';
-import { EMPTY_RESUME, SAMPLE_RESUME } from './sample';
+import { EMPTY_COVER_LETTER, EMPTY_RESUME, SAMPLE_RESUME } from './sample';
 import { DEFAULT_ACCENT, DEFAULT_TEMPLATE, resolveAccent, resolveTemplate } from './templates';
 
 const DATA_KEY = 'craftresume:data:v2';
@@ -20,6 +21,7 @@ const LEGACY_DATA_KEY = 'craftresume:data:v1';
 const TEMPLATE_KEY = 'craftresume:template:v1';
 const ACCENT_KEY = 'craftresume:accent:v1';
 const SPLIT_KEY = 'craftresume:split:v1';
+const THEME_KEY = 'craftresume:theme:v1';
 
 export function uid(prefix: string): string {
   return `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
@@ -99,6 +101,32 @@ function sectionOrder(raw: unknown): SectionKey[] | undefined {
 }
 
 /**
+ * A headshot, if what is stored is one. Only a data: URL survives — a resume
+ * restored from storage must not be able to make the page fetch a remote
+ * image, and the upload path never produces anything else.
+ */
+function photo(value: unknown): string {
+  const raw = str(value).trim();
+  return /^data:image\/(png|jpeg|jpg|webp|gif);base64,/i.test(raw) ? raw : '';
+}
+
+/** The cover letter, filled out to a complete shape from whatever is stored. */
+function coverLetter(raw: unknown): CoverLetter {
+  const c = isRecord(raw) ? raw : {};
+  return {
+    recipient: str(c.recipient),
+    recipientTitle: str(c.recipientTitle),
+    company: str(c.company),
+    companyAddress: str(c.companyAddress),
+    role: str(c.role),
+    date: str(c.date),
+    greeting: str(c.greeting),
+    body: str(c.body),
+    signOff: str(c.signOff),
+  };
+}
+
+/**
  * Rebuilds a known-good shape from whatever is in storage. Anything missing or
  * of the wrong type falls back to empty rather than throwing at render time.
  */
@@ -118,6 +146,7 @@ function normalise(raw: unknown): ResumeData {
       linkedin: str(basics.linkedin),
       github: str(basics.github),
       summary: str(basics.summary),
+      photo: photo(basics.photo),
     },
     experience: arr(raw.experience).map((item): ExperienceItem => {
       const e = isRecord(item) ? item : {};
@@ -180,6 +209,7 @@ function normalise(raw: unknown): ResumeData {
       const i = isRecord(item) ? item : {};
       return { id: str(i.id) || uid('int'), name: str(i.name) };
     }),
+    coverLetter: coverLetter(raw.coverLetter),
     sections: sectionMeta(raw.sections),
     order: sectionOrder(raw.order),
   };
@@ -209,11 +239,31 @@ export function hasSavedResume(): boolean {
   }
 }
 
-export function saveResume(data: ResumeData): void {
+/**
+ * What a save did. A headshot is by far the biggest thing in the draft, so it
+ * is the one field that can push a resume past the browser's storage quota —
+ * when that happens the words are kept and the picture is dropped, and the
+ * editor says so rather than silently losing the last hour of typing.
+ */
+export type SaveResult = 'saved' | 'saved-without-photo' | 'failed';
+
+export function saveResume(data: ResumeData): SaveResult {
   try {
     localStorage.setItem(DATA_KEY, JSON.stringify(data));
+    return 'saved';
+  } catch {
+    // Fall through and try again without the picture.
+  }
+
+  if (!data.basics.photo) return 'failed';
+
+  try {
+    const lean: ResumeData = { ...data, basics: { ...data.basics, photo: '' } };
+    localStorage.setItem(DATA_KEY, JSON.stringify(lean));
+    return 'saved-without-photo';
   } catch {
     // Private-browsing quota errors must not break editing.
+    return 'failed';
   }
 }
 
@@ -276,6 +326,37 @@ export function saveSplit(value: number): void {
   }
 }
 
+/* ---------------------------------------------------------------------------
+   Light / dark.
+
+   Three states, not two: "system" is the default and follows the OS, and the
+   two explicit choices override it until the user picks system again.
+--------------------------------------------------------------------------- */
+export type Theme = 'system' | 'light' | 'dark';
+
+export function resolveTheme(value: string | null | undefined): Theme {
+  return value === 'light' || value === 'dark' ? value : 'system';
+}
+
+export function loadTheme(): Theme {
+  try {
+    return resolveTheme(localStorage.getItem(THEME_KEY));
+  } catch {
+    return 'system';
+  }
+}
+
+export function saveTheme(theme: Theme): void {
+  try {
+    if (theme === 'system') localStorage.removeItem(THEME_KEY);
+    else localStorage.setItem(THEME_KEY, theme);
+  } catch {
+    // Ignore — the choice still applies for this session.
+  }
+}
+
+export { THEME_KEY };
+
 export function clearAll(): ResumeData {
   try {
     localStorage.removeItem(DATA_KEY);
@@ -286,4 +367,4 @@ export function clearAll(): ResumeData {
   return structuredClone(EMPTY_RESUME);
 }
 
-export { EMPTY_RESUME, SAMPLE_RESUME };
+export { EMPTY_COVER_LETTER, EMPTY_RESUME, SAMPLE_RESUME };
