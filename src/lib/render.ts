@@ -14,6 +14,7 @@ import type {
 import { SECTION_KEYS } from './types';
 import { EMPTY_COVER_LETTER } from './sample';
 import { resolveAccent, resolveTemplate } from './templates';
+import { resolveFont, resolveFontSize } from './fonts';
 
 /** All user content passes through here before it touches innerHTML. */
 function esc(value: string): string {
@@ -478,26 +479,53 @@ function photoSrc(data: ResumeData): string {
 }
 
 /**
- * Thumbnails have to show what the frame does even though the sample resume
- * carries no picture, so they draw a silhouette in its place. Set per render,
- * for the same reason as `headings`.
+ * The stand-in portrait.
+ *
+ * A photo layout with an empty frame is not the layout — the header re-flows,
+ * the column widths change, and the sheet in the editor stops being the sheet
+ * that was picked in the gallery. So every photo template always draws a
+ * portrait: the user's own once there is one, and this generated one until
+ * then. It is deliberately an illustration rather than a stock photograph of
+ * a real person — nobody's face ends up on someone else's resume — and it is
+ * tinted from the sheet's own accent, so it belongs to whichever template is
+ * drawing it.
  */
-let photoPlaceholder = false;
-
-const PHOTO_SILHOUETTE =
-  '<svg class="rs-photo-blank" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="24" r="11"/><path d="M8 62a24 24 0 0 1 48 0z"/></svg>';
+const PHOTO_PLACEHOLDER = [
+  // No <defs>, no gradients, no clip paths — nothing here carries an `id`.
+  // The templates gallery paints seventeen sheets onto one document, and a
+  // duplicated SVG id means every avatar on the page silently resolves to the
+  // first sheet's colours. Flat shapes tinted through CSS have no such
+  // problem, and the frame's own overflow does the clipping.
+  '<svg class="rs-photo-avatar" viewBox="0 0 120 120" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">',
+  '<rect class="rs-av-bg" width="120" height="120"/>',
+  '<circle class="rs-av-glow" cx="60" cy="46" r="42"/>',
+  // Shoulders and collar — the bust that makes it read as a headshot crop.
+  '<path class="rs-av-body" d="M18 120c0-19.2 11.6-30.4 25.4-34.6h33.2C90.4 89.6 102 100.8 102 120z"/>',
+  '<path class="rs-av-shirt" d="M52.8 85.4h14.4l-2 9.2-5.2 5.6-5.2-5.6z"/>',
+  // Neck, then the head over it.
+  '<path class="rs-av-skin" d="M52.4 72h15.2v16.6c0 3.4-3.4 5.8-7.6 5.8s-7.6-2.4-7.6-5.8z"/>',
+  '<ellipse class="rs-av-skin" cx="60" cy="52" rx="19.4" ry="22.4"/>',
+  // Hair: a crown and two short sides, which is as much detail as 29mm holds.
+  '<path class="rs-av-hair" d="M60 25.6c12.4 0 20.6 8 20.6 19.4 0 4.6-.9 8-2.2 10.6l-2.5-12.3c-9.4 1.6-22.9 1-31.6-4.2l-3 16.4c-1.3-2.6-2-6-2-10.5 0-11.4 8.3-19.4 20.7-19.4z"/>',
+  '<path class="rs-av-line" d="M50.4 47.6h7.2M62.4 47.6h7.2M55.4 62.6c1.4 1.7 3 2.5 4.6 2.5s3.2-.8 4.6-2.5"/>',
+  '<circle class="rs-av-eye" cx="54" cy="53.4" r="1.9"/>',
+  '<circle class="rs-av-eye" cx="66" cy="53.4" r="1.9"/>',
+  '</svg>',
+].join('');
 
 /**
- * The frame, or nothing at all when there is no picture. `alt` is deliberately
- * empty: the name is already the <h1> beside it, and a parser that meets a
- * decorative image with no alt text simply walks past it.
+ * The frame. Always drawn on the layouts that have one — with the user's
+ * picture if there is one, and the stand-in portrait if there is not.
+ *
+ * `alt` on a real photo is deliberately empty: the name is already the <h1>
+ * beside it, and a parser that meets a decorative image with no alt text
+ * simply walks past it. The stand-in is inline SVG marked aria-hidden, so it
+ * is not in the reading order at all.
  */
 function photoBlock(data: ResumeData, cls = 'rs-photo'): string {
   const src = photoSrc(data);
   if (!src) {
-    return photoPlaceholder
-      ? `<figure class="${cls} rs-photo--empty" aria-hidden="true">${PHOTO_SILHOUETTE}</figure>`
-      : '';
+    return `<figure class="${cls} rs-photo--stub"${hook('basics|photo')}>${PHOTO_PLACEHOLDER}</figure>`;
   }
   return `<figure class="${cls}"${hook('basics|photo')}><img src="${esc(src)}" alt="" /></figure>`;
 }
@@ -979,12 +1007,6 @@ export interface RenderOptions {
    * there and URLs render as plain text.
    */
   links?: boolean;
-  /**
-   * Draw a silhouette where a photo layout's frame would go when the resume
-   * has no picture. For previews on the marketing pages, never for the sheet
-   * the user is actually going to print.
-   */
-  placeholderPhoto?: boolean;
 }
 
 /**
@@ -999,7 +1021,6 @@ export function renderResume(
   const allowLinks = options.links !== false;
   headings = data.sections ?? {};
   sectionOrder = data.order ?? [];
-  photoPlaceholder = options.placeholderPhoto === true;
 
   switch (resolveTemplate(templateId)) {
     case 'ledger':
@@ -1191,8 +1212,27 @@ export function sheetClass(templateId: string): string {
   return `resume-sheet t-${resolveTemplate(templateId)}`;
 }
 
-/** Inline custom properties, so one stylesheet serves every accent. */
-export function sheetStyle(accentId: string): string {
+/** How the sheet is typeset, on top of its accent. */
+export interface SheetType {
+  font?: string | null;
+  size?: string | null;
+}
+
+/**
+ * Inline custom properties, so one stylesheet serves every accent and every
+ * typeface. `--rs-font` is emitted only when a face has actually been chosen:
+ * leaving it off is what lets a template keep the type it was designed with.
+ */
+export function sheetStyle(accentId: string, type: SheetType = {}): string {
   const accent = resolveAccent(accentId);
-  return `--rs-accent:${accent.hex};--rs-accent-hi:${accent.hi}`;
+  const font = resolveFont(type.font);
+  const size = resolveFontSize(type.size);
+  return [
+    `--rs-accent:${accent.hex}`,
+    `--rs-accent-hi:${accent.hi}`,
+    font.stack ? `--rs-font:${font.stack}` : '',
+    `--rs-scale:${size.scale}`,
+  ]
+    .filter(Boolean)
+    .join(';');
 }

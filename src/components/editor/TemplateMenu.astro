@@ -1,0 +1,70 @@
+---
+/**
+ * The layout picker. Identical in both editors — a resume and its cover letter
+ * are typeset as one application, so they share the template as well as the
+ * accent and the type.
+ */
+import { ATS_LABEL, templatesByCategory } from '../../lib/templates';
+---
+
+<div class="relative" data-menu="template">
+  <button type="button" data-menu-button aria-expanded="false" class="bar-button">
+    <svg viewBox="0 0 16 16" fill="none" class="size-3.5 text-ink-muted" aria-hidden="true">
+      <path
+        d="M8 1.8 14.2 5 8 8.2 1.8 5zM1.8 8l6.2 3.2L14.2 8M1.8 11l6.2 3.2L14.2 11"
+        stroke="currentColor"
+        stroke-width="1.2"
+        stroke-linecap="round"
+        stroke-linejoin="round"></path>
+    </svg>
+    <span class="hidden sm:inline" data-template-label>Atlas</span>
+    <span class="text-ink-faint" aria-hidden="true">▾</span>
+  </button>
+
+  <div
+    data-menu-panel
+    hidden
+    class="menu-panel absolute left-0 top-11 z-40 max-h-[min(32rem,70vh)] w-[19rem] overflow-y-auto overscroll-contain p-1.5"
+  >
+    {
+      templatesByCategory().map((group) => (
+        <div>
+          <p class="menu-group">{group.category}</p>
+          {group.items.map((template) => (
+            <button
+              type="button"
+              data-template={template.id}
+              data-template-name={template.name}
+              aria-pressed="false"
+              class="menu-item flex w-full items-start gap-2.5 text-left"
+            >
+              <span
+                class="mt-1 size-3.5 flex-none rounded-full border border-line-strong"
+                data-template-tick
+              />
+              <span class="min-w-0 flex-1">
+                <span class="flex items-baseline gap-2">
+                  <span class="text-[13px] font-semibold tracking-[-0.01em]">{template.name}</span>
+                  <span class="ml-auto flex-none text-[10px] text-ink-muted">
+                    {ATS_LABEL[template.ats]}
+                  </span>
+                </span>
+                <span class="mt-0.5 block text-[11px] leading-snug text-ink-muted">
+                  {template.tagline}
+                </span>
+              </span>
+            </button>
+          ))}
+        </div>
+      ))
+    }
+
+    <a
+      href="/templates?tab=roles"
+      class="mt-2 flex items-center justify-between gap-2 rounded-lg border-t border-line-strong px-2.5 pt-2.5 pb-1.5 text-[11px] font-medium text-ink-muted transition-colors duration-150 hover:text-ink"
+    >
+      Browse role blueprints
+      <span aria-hidden="true">→</span>
+    </a>
+  </div>
+</div>

@@ -1,11 +1,10 @@
 ---
 /**
- * Light / dark / system, as one button that cycles.
+ * Light / dark, as one button that flips between them.
  *
- * A three-state switch rather than two: "system" is the default and follows
- * the OS, and it has to stay reachable — someone who tried dark and changed
- * their mind should be able to hand the decision back rather than being stuck
- * with a manual choice for good.
+ * Two states and nothing else. The sun means "you are in light, and clicking
+ * turns it dark"; the moon says the reverse. There is no third icon to decode
+ * and no mode where the page can change on its own.
  */
 interface Props {
   class?: string;
@@ -37,13 +36,7 @@ const { class: className = '' } = Astro.props;
       stroke-linejoin="round"></path>
   </svg>
 
-  <svg viewBox="0 0 16 16" fill="none" class="size-4" aria-hidden="true" data-theme-icon="system">
-    <rect x="1.8" y="3" width="12.4" height="8.4" rx="1.2" stroke="currentColor" stroke-width="1.3"
-    ></rect>
-    <path d="M5.4 13.8h5.2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"></path>
-  </svg>
-
-  <span class="sr-only" data-theme-label>System theme</span>
+  <span class="sr-only" data-theme-label>Light theme</span>
 </button>
 
 <style>
@@ -70,8 +63,8 @@ const { class: className = '' } = Astro.props;
     border-color: var(--color-line-strong);
   }
 
-  /* All three icons occupy the same cell; the active one is the only one
-     drawn, so the button never changes size as the theme cycles. */
+  /* Both icons occupy the same cell; the active one is the only one drawn, so
+     the button never changes size as the theme flips. */
   .theme-toggle svg {
     grid-area: 1 / 1;
     opacity: 0;
@@ -82,8 +75,7 @@ const { class: className = '' } = Astro.props;
   }
 
   .theme-toggle[data-state="light"] [data-theme-icon="light"],
-  .theme-toggle[data-state="dark"] [data-theme-icon="dark"],
-  .theme-toggle[data-state="system"] [data-theme-icon="system"] {
+  .theme-toggle[data-state="dark"] [data-theme-icon="dark"] {
     opacity: 1;
     transform: scale(1) rotate(0deg);
   }

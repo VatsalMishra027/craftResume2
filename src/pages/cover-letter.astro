@@ -1,0 +1,267 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Logo from '../components/Logo.astro';
+import ThemeToggle from '../components/ThemeToggle.astro';
+import Field from '../components/editor/Field.astro';
+import TemplateMenu from '../components/editor/TemplateMenu.astro';
+import AccentMenu from '../components/editor/AccentMenu.astro';
+import TypeMenu from '../components/editor/TypeMenu.astro';
+import DocSwitch from '../components/editor/DocSwitch.astro';
+import DownloadMenu from '../components/editor/DownloadMenu.astro';
+import '../styles/resume.css';
+import '../styles/editor.css';
+
+/**
+ * A letter is one document, not a stack of sections — so the rail walks its
+ * three parts in the order they are written rather than listing things to
+ * reorder.
+ */
+const panels = [
+  { key: 'sender', title: 'Your details', icon: 'user' },
+  { key: 'recipient', title: 'Addressed to', icon: 'building' },
+  { key: 'letter', title: 'The letter', icon: 'letter' },
+] as const;
+
+const icons: Record<string, string> = {
+  user: '<circle cx="8" cy="5.4" r="2.6"/><path d="M2.8 13.6a5.2 5.2 0 0 1 10.4 0"/>',
+  building:
+    '<rect x="3" y="2.4" width="10" height="11.2" rx="1"/><path d="M5.6 5.2h1.6M8.8 5.2h1.6M5.6 8h1.6M8.8 8h1.6M6.8 13.6v-2.8h2.4v2.8"/>',
+  letter: '<rect x="2" y="3.4" width="12" height="9.2" rx="1.2"/><path d="m2.4 4.4 5.6 4 5.6-4"/>',
+};
+---
+
+<Layout
+  title="Cover letter — CraftResume"
+  description="Write a cover letter that matches your resume — same template, same accent, same type. Free, no account, nothing uploaded."
+  bare
+>
+  <div class="flex h-dvh flex-col">
+    <!-- Top bar -->
+    <header
+      class="editor-bar glass-bar glass-edge flex h-14 flex-none items-center justify-between gap-3 px-3 sm:px-5"
+    >
+      <div class="flex items-center gap-4">
+        <Logo class="[&>span:last-child]:hidden sm:[&>span:last-child]:inline" />
+
+        <div class="flex items-center gap-1.5">
+          <TemplateMenu />
+          <AccentMenu />
+          <TypeMenu />
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2.5">
+        <DocSwitch active="cover" />
+
+        <span class="hidden text-xs text-ink-faint lg:inline" data-save-status>
+          Saved to this browser
+        </span>
+
+        <ThemeToggle />
+        <DownloadMenu doc="cover" />
+      </div>
+    </header>
+
+    <!-- Three panes: part rail · form · preview -->
+    <div data-view-root data-active-view="edit" class="editor-grid min-h-0 flex-1">
+      <nav class="pane-rail border-line bg-paper lg:border-r" aria-label="Letter">
+        <p class="rail-heading">Letter</p>
+        <ul class="rail-list">
+          {
+            panels.map((panel) => (
+              <li class="rail-row" data-rail={panel.key}>
+                <button type="button" data-goto={panel.key} aria-current="false" class="rail-item">
+                  <svg
+                    viewBox="0 0 16 16"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class="size-4 flex-none text-ink-muted"
+                    aria-hidden="true"
+                    set:html={icons[panel.icon]}
+                  />
+                  <span class="rail-label truncate">{panel.title}</span>
+                </button>
+              </li>
+            ))
+          }
+        </ul>
+      </nav>
+
+      <!-- Form -->
+      <section
+        data-editor-form
+        class="pane-edit min-h-0 overflow-y-auto border-line bg-paper"
+        aria-label="Cover letter"
+      >
+        <div class="mx-auto max-w-2xl px-4 pt-7 pb-28 sm:px-6 lg:pb-10">
+          <!-- Who it is from -->
+          <section data-panel="sender" hidden>
+            <h2 class="panel-title">Your details</h2>
+            <p class="mt-2 max-w-prose text-xs leading-relaxed text-ink-muted">
+              The letterhead. These are the same details your resume prints, so editing them here
+              changes both documents — which is the point: an application whose two files disagree
+              about your phone number is worse than one that only had a resume.
+            </p>
+
+            <div class="mt-5 grid gap-3 sm:grid-cols-2">
+              <Field label="Full name" field="basics.fullName" placeholder="Ananya Rao" />
+              <Field label="Job title" field="basics.title" placeholder="Senior Product Designer" />
+              <Field label="Email" field="basics.email" type="email" placeholder="you@email.com" />
+              <Field label="Phone" field="basics.phone" placeholder="+91 98200 41122" />
+              <Field label="Location" field="basics.location" placeholder="Bengaluru, India" />
+              <Field label="Website" field="basics.website" placeholder="yourname.com" />
+              <Field
+                label="LinkedIn"
+                field="basics.linkedin"
+                placeholder="linkedin.com/in/yourname"
+              />
+              <Field label="GitHub" field="basics.github" placeholder="github.com/yourname" />
+            </div>
+          </section>
+
+          <!-- Who it is to -->
+          <section data-panel="recipient" hidden>
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <h2 class="panel-title">Addressed to</h2>
+              <button type="button" data-letter-date class="cover-action">Use today’s date</button>
+            </div>
+
+            <p class="mt-2 max-w-prose text-xs leading-relaxed text-ink-muted">
+              A name beats “Hiring Manager” whenever you can find one. Everything here is optional —
+              leave a line blank and it is simply not printed.
+            </p>
+
+            <div class="mt-5 grid gap-3 sm:grid-cols-2">
+              <Field
+                label="Role applied for"
+                field="cover.role"
+                placeholder="Senior Product Designer"
+                hint="Printed as the subject line."
+              />
+              <Field label="Date" field="cover.date" placeholder="12 March 2026" />
+              <Field label="Addressed to" field="cover.recipient" placeholder="Hiring Manager" />
+              <Field label="Their title" field="cover.recipientTitle" placeholder="Head of Design" />
+              <Field label="Company" field="cover.company" placeholder="Northwind Systems" />
+              <Field
+                label="Company location"
+                field="cover.companyAddress"
+                placeholder="Bengaluru, India"
+              />
+            </div>
+          </section>
+
+          <!-- What it says -->
+          <section data-panel="letter" hidden>
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <h2 class="panel-title">The letter</h2>
+              <button type="button" data-letter-reset class="cover-action">Start over</button>
+            </div>
+
+            <div class="letter-hint mt-4">
+              Three short paragraphs is the length people actually read.
+              <strong>Why this role</strong> —
+              <strong>what you have done that proves you can do it</strong> —
+              <strong>what you would like to happen next</strong>. Leave a blank line between them.
+            </div>
+
+            <div class="mt-5 grid gap-3 sm:grid-cols-2">
+              <Field
+                label="Greeting"
+                field="cover.greeting"
+                class="sm:col-span-2"
+                placeholder="Dear Hiring Manager,"
+              />
+              <Field
+                label="Letter"
+                field="cover.body"
+                rows={16}
+                class="sm:col-span-2"
+                placeholder="Why this role. What you have done that proves you can do it. What you would like to happen next."
+                hint="A blank line starts a new paragraph."
+              />
+              <Field label="Sign-off" field="cover.signOff" placeholder="Sincerely," />
+            </div>
+
+            <div class="mt-10 border-t border-line pt-6">
+              <p class="max-w-md text-xs leading-relaxed text-ink-faint">
+                Stored in this browser only, alongside your resume. Nothing is uploaded.
+              </p>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <!-- Drag to give either side more room. -->
+      <div
+        data-splitter
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Resize the editing panel"
+        tabindex="0"
+        title="Drag to resize · arrow keys to nudge · double-click to reset"
+        class="pane-splitter"
+      >
+        <span class="pane-splitter-grip" aria-hidden="true"></span>
+      </div>
+
+      <!-- Live preview -->
+      <section class="pane-preview min-h-0 overflow-y-auto bg-paper-sunk" aria-label="Live preview">
+        <div class="mx-auto w-full max-w-[900px] px-4 pt-7 pb-28 sm:px-8 lg:pb-10">
+          <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <p class="text-xs text-ink-faint" data-page-count>Live preview · A4</p>
+            <p class="hidden text-xs text-ink-faint sm:block">
+              Double-click anything on the page to edit it
+            </p>
+          </div>
+
+          <div class="sheet-fit sheet-fit--flow rounded-sm shadow-page" data-sheet-fit="flow">
+            <div data-preview class="resume-sheet cover-letter resume-sheet--live t-atlas"></div>
+          </div>
+
+          <p
+            class="mt-4 hidden text-center text-[11px] leading-relaxed text-ink-faint"
+            data-page-note
+          >
+            The dashed line marks the end of page one. A cover letter belongs on a single page.
+          </p>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- Below the split-view breakpoint the two panes share the screen. -->
+  <div
+    class="glass fixed bottom-5 left-1/2 z-30 flex -translate-x-1/2 rounded-full p-1 shadow-lift lg:hidden"
+    role="group"
+    aria-label="Panel"
+  >
+    <button
+      type="button"
+      data-view="edit"
+      aria-pressed="true"
+      class="rounded-full bg-surface px-5 py-2 text-xs font-medium text-ink shadow-sm transition-colors"
+    >
+      Edit
+    </button>
+    <button
+      type="button"
+      data-view="preview"
+      aria-pressed="false"
+      class="rounded-full px-5 py-2 text-xs font-medium text-ink-muted transition-colors"
+    >
+      Preview
+    </button>
+  </div>
+
+  <!-- Populated only at print time, at true A4 size. -->
+  <div class="print-root"></div>
+</Layout>
+
+<script>
+  import { initCoverEditor } from '../scripts/cover';
+
+  initCoverEditor();
+</script>

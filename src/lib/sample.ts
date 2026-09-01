@@ -32,10 +32,16 @@ export const SAMPLE_COVER_LETTER: CoverLetter = {
 /**
  * Prefilled content so a new editor never opens on an empty page.
  *
- * Deliberately kept to one A4 sheet on every layout — two roles, one
- * qualification, one project, and short lines throughout. A sample that spills
- * onto a second page teaches the wrong lesson about how long a resume should
- * be, and it means the first thing a new user has to do is delete things.
+ * Enough of a record to show what a finished resume looks like — three roles
+ * with real numbers in the bullets, a qualification, a project, skills,
+ * languages and a certification — and no more than that. Every one of the
+ * seventeen layouts has to hold this on a single A4 sheet, which is the
+ * constraint that decides what goes in: a sample that spills onto a second
+ * page teaches the wrong lesson about how long a resume should be, and it
+ * means the first thing a new user does is delete things.
+ *
+ * The measured tightest layouts are Anchor, Scholar and Beacon; check those
+ * before adding anything here.
  */
 export const SAMPLE_RESUME: ResumeData = {
   basics: {
@@ -80,7 +86,7 @@ export const SAMPLE_RESUME: ResumeData = {
       location: 'Ahmedabad',
       start: '2015',
       end: '2019',
-      note: '',
+      note: 'Graduated with distinction. Thesis on interfaces for dense operational data.',
     },
   ],
   projects: [

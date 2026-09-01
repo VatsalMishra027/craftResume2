@@ -3,12 +3,13 @@ import Logo from './Logo.astro';
 import ThemeToggle from './ThemeToggle.astro';
 
 interface Props {
-  active?: 'templates' | 'how' | null;
+  active?: 'templates' | 'cover' | 'how' | null;
 }
 const { active = null } = Astro.props;
 
 const links = [
   { href: '/templates', label: 'Templates', key: 'templates' },
+  { href: '/cover-letter', label: 'Cover letter', key: 'cover' },
   { href: '/#how', label: 'How it works', key: 'how' },
 ];
 ---

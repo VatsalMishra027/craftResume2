@@ -52,39 +52,21 @@
   --glass-blur: 20px;
   --glass-edge: color-mix(in srgb, #fff 70%, transparent);
   --glass-line: color-mix(in srgb, var(--color-line) 80%, transparent);
+
+  /* Floating panels — the download menu, the template picker, a rail menu.
+     They sit over the white resume sheet, so how much of it shows through is
+     the difference between a readable menu and an unreadable one. Light can
+     afford real glass; dark cannot, because pale sheet showing through dark
+     glass washes out every label on it. */
+  --menu-surface: color-mix(in srgb, var(--color-surface) 92%, transparent);
+  --menu-hover: var(--color-paper-sunk);
+  --menu-blur: 20px;
   color-scheme: light;
 }
 
-/* The two ways a page ends up dark: the OS says so and the user has not
-   overridden it, or the user asked for it explicitly. */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --color-paper: #15140f;
-    --color-paper-sunk: #100f0b;
-    --color-surface: #1d1b16;
-
-    --color-ink: #f6f4ec;
-    --color-ink-soft: #d2cdc0;
-    --color-ink-muted: #9c9689;
-    --color-ink-faint: #6f6a5f;
-
-    --color-line: #2c2922;
-    --color-line-strong: #413d34;
-
-    --color-clay: #e08a55;
-    --color-clay-soft: #33241a;
-
-    --shadow-lift: 0 1px 2px rgb(0 0 0 / 0.4), 0 12px 32px -12px rgb(0 0 0 / 0.6);
-    --shadow-page: 0 1px 3px rgb(0 0 0 / 0.5), 0 24px 60px -24px rgb(0 0 0 / 0.75);
-
-    --glass-tint: 58%;
-    --glass-tint-strong: 76%;
-    --glass-edge: color-mix(in srgb, #fff 12%, transparent);
-    --glass-line: color-mix(in srgb, var(--color-line-strong) 90%, transparent);
-    color-scheme: dark;
-  }
-}
-
+/* Dark is one of two explicit states, never something the OS decides on its
+   own: the layout stamps `data-theme` on the root before the first paint, so
+   this is the only place a dark palette is declared. */
 :root[data-theme="dark"] {
   --color-paper: #15140f;
   --color-paper-sunk: #100f0b;
@@ -108,6 +90,16 @@
   --glass-tint-strong: 76%;
   --glass-edge: color-mix(in srgb, #fff 12%, transparent);
   --glass-line: color-mix(in srgb, var(--color-line-strong) 90%, transparent);
+
+  /* Near-solid, and a paler surface than the page behind it, so a menu opened
+     over the white sheet reads as a panel in front of it rather than a smear
+     of the page underneath. */
+  --menu-surface: #26241d;
+  /* On a dark panel the highlight has to be lighter than the panel. Reusing
+     `paper-sunk` here would darken the row the pointer is on, which reads as
+     the item switching itself off. */
+  --menu-hover: #35322a;
+  --menu-blur: 6px;
   color-scheme: dark;
 }
 
@@ -252,6 +244,7 @@
   :root {
     --glass-tint: 96%;
     --glass-tint-strong: 98%;
+    --menu-surface: var(--color-surface);
   }
 }
 

@@ -15,6 +15,12 @@ import type {
 import { SECTION_KEYS } from './types';
 import { EMPTY_COVER_LETTER, EMPTY_RESUME, SAMPLE_RESUME } from './sample';
 import { DEFAULT_ACCENT, DEFAULT_TEMPLATE, resolveAccent, resolveTemplate } from './templates';
+import {
+  DEFAULT_FONT,
+  DEFAULT_FONT_SIZE,
+  resolveFont,
+  resolveFontSize,
+} from './fonts';
 
 const DATA_KEY = 'craftresume:data:v2';
 const LEGACY_DATA_KEY = 'craftresume:data:v1';
@@ -22,6 +28,8 @@ const TEMPLATE_KEY = 'craftresume:template:v1';
 const ACCENT_KEY = 'craftresume:accent:v1';
 const SPLIT_KEY = 'craftresume:split:v1';
 const THEME_KEY = 'craftresume:theme:v1';
+const FONT_KEY = 'craftresume:font:v1';
+const FONT_SIZE_KEY = 'craftresume:fontsize:v1';
 
 export function uid(prefix: string): string {
   return `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
@@ -329,33 +337,85 @@ export function saveSplit(value: number): void {
 /* ---------------------------------------------------------------------------
    Light / dark.
 
-   Three states, not two: "system" is the default and follows the OS, and the
-   two explicit choices override it until the user picks system again.
+   Two states and no third one: the app is either light or dark, and whichever
+   it is, it is a choice this browser has stored. A first visit takes its
+   opening guess from the operating system, then that guess is written down —
+   from that point on the OS flipping at sunset never moves the page under
+   someone who has already decided.
 --------------------------------------------------------------------------- */
-export type Theme = 'system' | 'light' | 'dark';
+export type Theme = 'light' | 'dark';
 
 export function resolveTheme(value: string | null | undefined): Theme {
-  return value === 'light' || value === 'dark' ? value : 'system';
+  return value === 'dark' ? 'dark' : 'light';
+}
+
+/** The stored choice, or null when this browser has never made one. */
+export function storedTheme(): Theme | null {
+  try {
+    const raw = localStorage.getItem(THEME_KEY);
+    return raw === 'dark' || raw === 'light' ? raw : null;
+  } catch {
+    return null;
+  }
+}
+
+/** What the OS would prefer, for the one visit before a choice exists. */
+export function systemTheme(): Theme {
+  return typeof window !== 'undefined' &&
+    window.matchMedia('(prefers-color-scheme: dark)').matches
+    ? 'dark'
+    : 'light';
 }
 
 export function loadTheme(): Theme {
-  try {
-    return resolveTheme(localStorage.getItem(THEME_KEY));
-  } catch {
-    return 'system';
-  }
+  return storedTheme() ?? systemTheme();
 }
 
 export function saveTheme(theme: Theme): void {
   try {
-    if (theme === 'system') localStorage.removeItem(THEME_KEY);
-    else localStorage.setItem(THEME_KEY, theme);
+    localStorage.setItem(THEME_KEY, resolveTheme(theme));
   } catch {
     // Ignore — the choice still applies for this session.
   }
 }
 
-export { THEME_KEY };
+/* ---------------------------------------------------------------------------
+   Sheet typography. Shared by both editors on purpose: a resume and its cover
+   letter that arrive in two different typefaces read as two applications.
+--------------------------------------------------------------------------- */
+export function loadFont(): string {
+  try {
+    return resolveFont(localStorage.getItem(FONT_KEY)).id;
+  } catch {
+    return DEFAULT_FONT;
+  }
+}
+
+export function saveFont(id: string): void {
+  try {
+    localStorage.setItem(FONT_KEY, resolveFont(id).id);
+  } catch {
+    // Ignore.
+  }
+}
+
+export function loadFontSize(): string {
+  try {
+    return resolveFontSize(localStorage.getItem(FONT_SIZE_KEY)).id;
+  } catch {
+    return DEFAULT_FONT_SIZE;
+  }
+}
+
+export function saveFontSize(id: string): void {
+  try {
+    localStorage.setItem(FONT_SIZE_KEY, resolveFontSize(id).id);
+  } catch {
+    // Ignore.
+  }
+}
+
+export { THEME_KEY, FONT_KEY, FONT_SIZE_KEY };
 
 export function clearAll(): ResumeData {
   try {

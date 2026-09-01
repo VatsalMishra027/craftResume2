@@ -27,14 +27,20 @@
   --rs-muted: color-mix(in srgb, var(--rs-accent) 12%, #6b665c);
   --rs-line: color-mix(in srgb, var(--rs-accent) 14%, #d8d4c9);
 
+  /* Typography the user owns. `--rs-font` is written onto the sheet only when
+     a face has been chosen, so the fallback below is what each template was
+     designed with; `--rs-scale` multiplies every type size on the page at
+     once, which keeps a layout's hierarchy intact as it grows or tightens. */
+  --rs-scale: 1;
+
   width: 210mm;
   min-height: 297mm;
   padding: 16mm 15mm;
   box-sizing: border-box;
   background: #fff;
   color: var(--rs-ink);
-  font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
-  font-size: 9.6pt;
+  font-family: var(--rs-font, "Inter", ui-sans-serif, system-ui, sans-serif);
+  font-size: calc(9.6pt * var(--rs-scale, 1));
   line-height: 1.45;
   overflow-wrap: break-word;
 }
@@ -47,7 +53,7 @@
 
 /* --- Header -------------------------------------------------------------- */
 .rs-name {
-  font-size: 21pt;
+  font-size: calc(21pt * var(--rs-scale, 1));
   font-weight: 600;
   letter-spacing: -0.02em;
   line-height: 1.1;
@@ -55,7 +61,7 @@
 }
 
 .rs-role {
-  font-size: 10.5pt;
+  font-size: calc(10.5pt * var(--rs-scale, 1));
   font-weight: 500;
   color: var(--rs-muted);
   margin: 1.5mm 0 0;
@@ -66,7 +72,7 @@
   flex-wrap: wrap;
   gap: 1mm 4mm;
   margin: 4mm 0 0;
-  font-size: 8.6pt;
+  font-size: calc(8.6pt * var(--rs-scale, 1));
   color: var(--rs-soft);
   list-style: none;
   padding: 0;
@@ -103,10 +109,13 @@
 
 /* --- Sections ------------------------------------------------------------ */
 .rs-section {
-  /* 5mm, not 6. With eight or nine sections on a single-column sheet the gaps
-     alone were costing a fifth of the page, which is what pushed an ordinary
-     record onto a second one. Still generous at 9.6pt. */
-  margin-bottom: 5mm;
+  /* 4.4mm, down from 6 and then 5. With eight or nine sections on a
+     single-column sheet the gaps alone were costing a fifth of the page, which
+     is what pushed an ordinary record onto a second one — and the sample the
+     editor opens with is a full record, so the tightest layouts (Anchor,
+     Scholar, Meridian) have to hold it with room to spare. Still generous at
+     9.6pt. */
+  margin-bottom: 4.4mm;
   break-inside: avoid-page;
 }
 
@@ -115,7 +124,7 @@
 }
 
 .rs-section-title {
-  font-size: 8.2pt;
+  font-size: calc(8.2pt * var(--rs-scale, 1));
   font-weight: 700;
   letter-spacing: 0.13em;
   text-transform: uppercase;
@@ -129,7 +138,7 @@
 }
 
 .rs-entry {
-  margin-bottom: 4.5mm;
+  margin-bottom: 4mm;
   break-inside: avoid;
 }
 
@@ -145,7 +154,7 @@
 }
 
 .rs-entry-title {
-  font-size: 10pt;
+  font-size: calc(10pt * var(--rs-scale, 1));
   font-weight: 600;
   margin: 0;
 }
@@ -158,13 +167,13 @@
 }
 
 .rs-entry-org {
-  font-size: 9.4pt;
+  font-size: calc(9.4pt * var(--rs-scale, 1));
   color: var(--rs-soft);
   margin: 0.6mm 0 0;
 }
 
 .rs-entry-where {
-  font-size: 8.6pt;
+  font-size: calc(8.6pt * var(--rs-scale, 1));
   color: var(--rs-muted);
   margin: 0.6mm 0 0;
   white-space: nowrap;
@@ -176,13 +185,13 @@
 }
 
 .rs-entry-note {
-  font-size: 9pt;
+  font-size: calc(9pt * var(--rs-scale, 1));
   color: var(--rs-muted);
   margin: 1mm 0 0;
 }
 
 .rs-entry-meta {
-  font-size: 8.4pt;
+  font-size: calc(8.4pt * var(--rs-scale, 1));
   color: var(--rs-muted);
   white-space: nowrap;
   flex: none;
@@ -223,7 +232,7 @@
   justify-content: space-between;
   align-items: baseline;
   gap: 3mm;
-  font-size: 8.6pt;
+  font-size: calc(8.6pt * var(--rs-scale, 1));
 }
 
 .rs-meter-value {
@@ -258,13 +267,13 @@
 
 .rs-dotrow-name {
   display: block;
-  font-size: 8.8pt;
+  font-size: calc(8.8pt * var(--rs-scale, 1));
   color: var(--rs-soft);
 }
 
 .rs-dotrow-level {
   display: block;
-  font-size: 8pt;
+  font-size: calc(8pt * var(--rs-scale, 1));
   font-style: italic;
   color: var(--rs-accent);
   border-bottom: 1px dotted var(--rs-line);
@@ -275,7 +284,7 @@
   list-style: none;
   margin: 0;
   padding: 0;
-  font-size: 8.6pt;
+  font-size: calc(8.6pt * var(--rs-scale, 1));
 }
 
 .rs-pairs li {
@@ -323,7 +332,7 @@
 }
 
 .rs-chips li {
-  font-size: 7.6pt;
+  font-size: calc(7.6pt * var(--rs-scale, 1));
   color: var(--rs-muted);
   background: var(--rs-accent-tint);
   border-radius: 2px;
@@ -331,7 +340,7 @@
 }
 
 .rs-tech {
-  font-size: 8.4pt;
+  font-size: calc(8.4pt * var(--rs-scale, 1));
   font-style: italic;
   color: var(--rs-muted);
   margin: 1mm 0 0;
@@ -339,7 +348,7 @@
 
 /* Skills as chips. Same vocabulary as the project tech tags, one size up. */
 .rs-chips--skills li {
-  font-size: 8.2pt;
+  font-size: calc(8.2pt * var(--rs-scale, 1));
   color: var(--rs-soft);
   padding: 0.8mm 2mm;
   border-radius: 3px;
@@ -353,7 +362,7 @@
   list-style: none;
   margin: 0;
   padding: 0;
-  font-size: 8.8pt;
+  font-size: calc(8.8pt * var(--rs-scale, 1));
   color: var(--rs-soft);
 }
 
@@ -388,13 +397,13 @@
 }
 
 .rs-mini-title {
-  font-size: 8.8pt;
+  font-size: calc(8.8pt * var(--rs-scale, 1));
   font-weight: 600;
   margin: 0;
 }
 
 .rs-mini-meta {
-  font-size: 8.2pt;
+  font-size: calc(8.2pt * var(--rs-scale, 1));
   opacity: 0.72;
   margin: 0.4mm 0 0;
 }
@@ -436,7 +445,7 @@
   display: flex;
   align-items: center;
   gap: 2mm;
-  font-size: 8.8pt;
+  font-size: calc(8.8pt * var(--rs-scale, 1));
   color: var(--rs-soft);
   margin-bottom: 1.6mm;
 }
@@ -468,7 +477,7 @@
 }
 
 .rs-project-link {
-  font-size: 8pt;
+  font-size: calc(8pt * var(--rs-scale, 1));
 }
 
 /* Empty-state placeholder shown only in the live preview. */
@@ -510,13 +519,13 @@
 }
 
 .t-atlas .rs-rail .rs-name {
-  font-size: 17pt;
+  font-size: calc(17pt * var(--rs-scale, 1));
   font-weight: 700;
   color: var(--rs-on-accent);
 }
 
 .t-atlas .rs-rail .rs-role {
-  font-size: 9.2pt;
+  font-size: calc(9.2pt * var(--rs-scale, 1));
   font-weight: 600;
   color: var(--rs-on-accent-soft);
   margin-top: 2mm;
@@ -564,7 +573,7 @@
 }
 
 .t-atlas .rs-main .rs-entry-title {
-  font-size: 10.2pt;
+  font-size: calc(10.2pt * var(--rs-scale, 1));
 }
 
 /* ===========================================================================
@@ -575,7 +584,7 @@
 }
 
 .t-ledger .rs-name {
-  font-size: 19pt;
+  font-size: calc(19pt * var(--rs-scale, 1));
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.01em;
@@ -583,7 +592,7 @@
 }
 
 .t-ledger .rs-role {
-  font-size: 10pt;
+  font-size: calc(10pt * var(--rs-scale, 1));
   font-weight: 600;
   color: var(--rs-soft);
   margin-top: 1mm;
@@ -633,8 +642,8 @@
      just enough that an ordinary record lands on one page instead of spilling
      a couple of centimetres onto a second. */
   padding: 15mm 18mm;
-  font-family: "Instrument Serif", ui-serif, Georgia, serif;
-  font-size: 10.2pt;
+  font-family: var(--rs-font, "Instrument Serif", ui-serif, Georgia, serif);
+  font-size: calc(10.2pt * var(--rs-scale, 1));
   line-height: 1.45;
 }
 
@@ -646,7 +655,7 @@
 }
 
 .t-scholar .rs-doctype {
-  font-size: 16pt;
+  font-size: calc(16pt * var(--rs-scale, 1));
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -655,25 +664,25 @@
 }
 
 .t-scholar .rs-name {
-  font-size: 15pt;
+  font-size: calc(15pt * var(--rs-scale, 1));
   font-weight: 400;
   letter-spacing: 0;
 }
 
 .t-scholar .rs-role {
-  font-size: 10pt;
+  font-size: calc(10pt * var(--rs-scale, 1));
   color: var(--rs-soft);
   margin-top: 1mm;
 }
 
 .t-scholar .rs-contact {
   justify-content: center;
-  font-size: 9pt;
+  font-size: calc(9pt * var(--rs-scale, 1));
   margin-top: 2.4mm;
 }
 
 .t-scholar .rs-section-title {
-  font-size: 10pt;
+  font-size: calc(10pt * var(--rs-scale, 1));
   letter-spacing: 0.08em;
   border-bottom: 1px solid var(--rs-line);
   padding-bottom: 1.2mm;
@@ -691,7 +700,7 @@
 }
 
 .t-scholar .rs-entry-title {
-  font-size: 10.6pt;
+  font-size: calc(10.6pt * var(--rs-scale, 1));
   font-weight: 700;
 }
 
@@ -701,8 +710,8 @@
 }
 
 .t-scholar .rs-tech {
-  font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
-  font-size: 8.4pt;
+  font-family: var(--rs-font, "Inter", ui-sans-serif, system-ui, sans-serif);
+  font-size: calc(8.4pt * var(--rs-scale, 1));
 }
 
 /* ===========================================================================
@@ -744,13 +753,13 @@
 }
 
 .t-vertex .rs-masthead .rs-name {
-  font-size: 20pt;
+  font-size: calc(20pt * var(--rs-scale, 1));
   font-weight: 700;
   color: var(--rs-on-accent);
 }
 
 .t-vertex .rs-masthead .rs-role {
-  font-size: 10pt;
+  font-size: calc(10pt * var(--rs-scale, 1));
   font-weight: 700;
   font-style: italic;
   color: var(--rs-accent-hi);
@@ -758,7 +767,7 @@
 }
 
 .t-vertex .rs-masthead .rs-summary {
-  font-size: 8.4pt;
+  font-size: calc(8.4pt * var(--rs-scale, 1));
   line-height: 1.55;
   color: var(--rs-on-accent-soft);
   margin-top: 3.4mm;
@@ -768,7 +777,7 @@
   display: block;
   margin: 0;
   text-align: right;
-  font-size: 8.4pt;
+  font-size: calc(8.4pt * var(--rs-scale, 1));
 }
 
 .t-vertex .rs-masthead-side .rs-contact li {
@@ -808,7 +817,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 15pt;
+  font-size: calc(15pt * var(--rs-scale, 1));
   font-weight: 700;
   letter-spacing: 0.02em;
 }
@@ -838,7 +847,7 @@
   display: flex;
   align-items: center;
   gap: 2.4mm;
-  font-size: 8.4pt;
+  font-size: calc(8.4pt * var(--rs-scale, 1));
   letter-spacing: 0.11em;
   color: var(--rs-ink);
   margin-bottom: 3.4mm;
@@ -892,7 +901,7 @@
   display: block;
   font-weight: 700;
   font-style: italic;
-  font-size: 8.4pt;
+  font-size: calc(8.4pt * var(--rs-scale, 1));
   color: var(--rs-accent);
   margin-bottom: 1.2mm;
 }
@@ -924,7 +933,7 @@
    =========================================================================== */
 .t-beacon {
   padding: 14mm 16mm;
-  font-size: 10pt;
+  font-size: calc(10pt * var(--rs-scale, 1));
   /* Deliberately unmixed: this template never tints its body ink. */
   --rs-ink: #14140f;
   --rs-soft: #2f2c26;
@@ -939,14 +948,14 @@
 }
 
 .t-beacon .rs-name {
-  font-size: 20pt;
+  font-size: calc(20pt * var(--rs-scale, 1));
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.02em;
 }
 
 .t-beacon .rs-role {
-  font-size: 10.5pt;
+  font-size: calc(10.5pt * var(--rs-scale, 1));
   font-weight: 600;
   color: var(--rs-soft);
   margin-top: 1.2mm;
@@ -954,7 +963,7 @@
 
 .t-beacon .rs-contact {
   margin-top: 2.6mm;
-  font-size: 9pt;
+  font-size: calc(9pt * var(--rs-scale, 1));
   color: var(--rs-soft);
 }
 
@@ -963,7 +972,7 @@
 }
 
 .t-beacon .rs-section-title {
-  font-size: 9.4pt;
+  font-size: calc(9.4pt * var(--rs-scale, 1));
   letter-spacing: 0.1em;
   color: var(--rs-ink);
   border-bottom: 1px solid var(--rs-accent);
@@ -972,7 +981,7 @@
 }
 
 .t-beacon .rs-entry-title {
-  font-size: 10.4pt;
+  font-size: calc(10.4pt * var(--rs-scale, 1));
   font-weight: 700;
 }
 
@@ -1005,7 +1014,7 @@
 }
 
 .t-meridian .rs-name {
-  font-size: 19pt;
+  font-size: calc(19pt * var(--rs-scale, 1));
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -1013,7 +1022,7 @@
 }
 
 .t-meridian .rs-role {
-  font-size: 9.6pt;
+  font-size: calc(9.6pt * var(--rs-scale, 1));
   font-weight: 600;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -1047,7 +1056,7 @@
 }
 
 .t-meridian .rs-entry-title {
-  font-size: 10.4pt;
+  font-size: calc(10.4pt * var(--rs-scale, 1));
   font-weight: 700;
 }
 
@@ -1087,12 +1096,12 @@
 }
 
 .t-summit .rs-name {
-  font-size: 21pt;
+  font-size: calc(21pt * var(--rs-scale, 1));
   font-weight: 700;
 }
 
 .t-summit .rs-role {
-  font-size: 9.6pt;
+  font-size: calc(9.6pt * var(--rs-scale, 1));
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -1141,12 +1150,12 @@
 }
 
 .t-cascade .rs-name {
-  font-size: 22pt;
+  font-size: calc(22pt * var(--rs-scale, 1));
   font-weight: 700;
 }
 
 .t-cascade .rs-role {
-  font-size: 10.4pt;
+  font-size: calc(10.4pt * var(--rs-scale, 1));
   font-weight: 500;
   color: var(--rs-accent);
   margin-top: 1.4mm;
@@ -1219,12 +1228,12 @@
 }
 
 .t-lattice .rs-name {
-  font-size: 19pt;
+  font-size: calc(19pt * var(--rs-scale, 1));
   font-weight: 700;
 }
 
 .t-lattice .rs-role {
-  font-size: 9.4pt;
+  font-size: calc(9.4pt * var(--rs-scale, 1));
   font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -1255,7 +1264,7 @@
 }
 
 .t-lattice .rs-section-title {
-  font-size: 8pt;
+  font-size: calc(8pt * var(--rs-scale, 1));
   letter-spacing: 0.16em;
   border-bottom: 1px solid var(--rs-accent-line);
   padding-bottom: 1.2mm;
@@ -1303,13 +1312,13 @@
 }
 
 .t-harbor .rs-name {
-  font-size: 20pt;
+  font-size: calc(20pt * var(--rs-scale, 1));
   font-weight: 600;
   color: var(--rs-accent);
 }
 
 .t-harbor .rs-role {
-  font-size: 10pt;
+  font-size: calc(10pt * var(--rs-scale, 1));
   font-weight: 500;
   color: var(--rs-soft);
   margin-top: 1.4mm;
@@ -1366,7 +1375,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16pt;
+  font-size: calc(16pt * var(--rs-scale, 1));
   font-weight: 700;
   letter-spacing: 0.02em;
 }
@@ -1376,13 +1385,13 @@
 }
 
 .t-pulse .rs-band .rs-name {
-  font-size: 21pt;
+  font-size: calc(21pt * var(--rs-scale, 1));
   font-weight: 700;
   color: var(--rs-on-accent);
 }
 
 .t-pulse .rs-band .rs-role {
-  font-size: 9.6pt;
+  font-size: calc(9.6pt * var(--rs-scale, 1));
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -1391,7 +1400,7 @@
 }
 
 .t-pulse .rs-band .rs-summary {
-  font-size: 8.4pt;
+  font-size: calc(8.4pt * var(--rs-scale, 1));
   line-height: 1.55;
   color: var(--rs-on-accent-soft);
   margin-top: 3mm;
@@ -1410,7 +1419,7 @@
   border: 1px solid var(--rs-line);
   border-radius: 999px;
   padding: 0.8mm 2.8mm;
-  font-size: 7.8pt;
+  font-size: calc(7.8pt * var(--rs-scale, 1));
 }
 
 .t-pulse .rs-contact--strip li + li::before {
@@ -1439,7 +1448,7 @@
 }
 
 .t-pulse .rs-section-title {
-  font-size: 8.2pt;
+  font-size: calc(8.2pt * var(--rs-scale, 1));
   letter-spacing: 0.16em;
   border-bottom: 1px solid var(--rs-accent-line);
   padding-bottom: 1.4mm;
@@ -1460,12 +1469,12 @@
 }
 
 .t-helix .rs-name {
-  font-size: 20pt;
+  font-size: calc(20pt * var(--rs-scale, 1));
   font-weight: 700;
 }
 
 .t-helix .rs-role {
-  font-size: 10pt;
+  font-size: calc(10pt * var(--rs-scale, 1));
   font-weight: 600;
   letter-spacing: 0.06em;
   color: var(--rs-accent);
@@ -1473,7 +1482,7 @@
 }
 
 .t-helix .rs-section-title {
-  font-size: 8.4pt;
+  font-size: calc(8.4pt * var(--rs-scale, 1));
   letter-spacing: 0.12em;
   border-left: 2.4pt solid var(--rs-accent);
   padding-left: 2.4mm;
@@ -1729,17 +1738,57 @@
   border-radius: 1.6mm;
 }
 
-/* Previews on the marketing pages, where the sample resume has no picture. */
-.rs-photo--empty {
-  display: grid;
-  place-items: center;
-  background: color-mix(in srgb, var(--rs-accent) 12%, #fff);
+/* --- The stand-in portrait ------------------------------------------------
+   Drawn whenever a photo layout has no picture of its own, so the frame is
+   never an empty hole and the sheet in the editor is the sheet that was
+   picked in the gallery. Every colour is mixed from the sheet's accent, which
+   is why one illustration suits all five photo templates.
+--------------------------------------------------------------------------- */
+.rs-photo--stub {
+  background: color-mix(in srgb, var(--rs-accent) 10%, #fff);
 }
 
-.rs-photo-blank {
-  width: 62%;
-  height: 62%;
-  fill: color-mix(in srgb, var(--rs-accent) 38%, #fff);
+.rs-photo-avatar {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.rs-av-bg {
+  fill: color-mix(in srgb, var(--rs-accent) 30%, #fff);
+}
+
+/* A pool of light behind the head, standing in for a gradient we cannot use
+   without an id to reference it by. */
+.rs-av-glow {
+  fill: color-mix(in srgb, var(--rs-accent) 14%, #fff);
+}
+
+.rs-av-body {
+  fill: color-mix(in srgb, var(--rs-accent) 82%, #fff);
+}
+
+.rs-av-shirt {
+  fill: color-mix(in srgb, var(--rs-accent) 12%, #fff);
+}
+
+.rs-av-skin {
+  fill: color-mix(in srgb, var(--rs-accent) 13%, #f6e2d2);
+}
+
+.rs-av-hair {
+  fill: color-mix(in srgb, var(--rs-accent) 74%, #241c14);
+}
+
+.rs-av-line {
+  fill: none;
+  stroke: color-mix(in srgb, var(--rs-accent) 46%, #6b4a37);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.rs-av-eye {
+  fill: color-mix(in srgb, var(--rs-accent) 52%, #3a2b20);
 }
 
 /* ===========================================================================
@@ -1768,13 +1817,13 @@
 }
 
 .t-aperture .rs-name {
-  font-size: 22pt;
+  font-size: calc(22pt * var(--rs-scale, 1));
   font-weight: 700;
   color: var(--rs-accent);
 }
 
 .t-aperture .rs-role {
-  font-size: 10.5pt;
+  font-size: calc(10.5pt * var(--rs-scale, 1));
   font-weight: 500;
   margin-top: 1.4mm;
 }
@@ -1789,7 +1838,7 @@
 }
 
 .t-aperture .rs-entry-title {
-  font-size: 10.2pt;
+  font-size: calc(10.2pt * var(--rs-scale, 1));
 }
 
 .t-aperture .rs-duo {
@@ -1835,14 +1884,14 @@
 }
 
 .t-cameo .rs-rail .rs-name {
-  font-size: 16pt;
+  font-size: calc(16pt * var(--rs-scale, 1));
   font-weight: 700;
   color: var(--rs-on-accent);
   line-height: 1.15;
 }
 
 .t-cameo .rs-rail .rs-role {
-  font-size: 9pt;
+  font-size: calc(9pt * var(--rs-scale, 1));
   font-weight: 500;
   color: var(--rs-on-accent-soft);
   margin-top: 1.8mm;
@@ -1897,7 +1946,7 @@
 }
 
 .t-cameo .rs-main .rs-entry-title {
-  font-size: 10.2pt;
+  font-size: calc(10.2pt * var(--rs-scale, 1));
 }
 
 /* ===========================================================================
@@ -1929,14 +1978,14 @@
 }
 
 .t-anchor .rs-anchor-band .rs-name {
-  font-size: 22pt;
+  font-size: calc(22pt * var(--rs-scale, 1));
   font-weight: 700;
   color: var(--rs-on-accent);
   letter-spacing: -0.015em;
 }
 
 .t-anchor .rs-anchor-band .rs-role {
-  font-size: 10.5pt;
+  font-size: calc(10.5pt * var(--rs-scale, 1));
   font-weight: 500;
   color: var(--rs-on-accent-soft);
   margin-top: 1.6mm;
@@ -1975,7 +2024,7 @@
 }
 
 .t-anchor .rs-entry-title {
-  font-size: 10.4pt;
+  font-size: calc(10.4pt * var(--rs-scale, 1));
 }
 
 /* ===========================================================================
@@ -2002,14 +2051,14 @@
 }
 
 .t-orbit .rs-name {
-  font-size: 21pt;
+  font-size: calc(21pt * var(--rs-scale, 1));
   font-weight: 700;
   color: var(--rs-accent);
   letter-spacing: -0.015em;
 }
 
 .t-orbit .rs-role {
-  font-size: 10pt;
+  font-size: calc(10pt * var(--rs-scale, 1));
   font-weight: 600;
   color: var(--rs-soft);
   margin-top: 1.2mm;
@@ -2017,7 +2066,7 @@
 
 .t-orbit .rs-summary {
   margin-top: 2.6mm;
-  font-size: 9.2pt;
+  font-size: calc(9.2pt * var(--rs-scale, 1));
 }
 
 .t-orbit .rs-contact--strip {
@@ -2030,7 +2079,7 @@
 
 .t-orbit .rs-contact--strip li {
   gap: 1.4mm;
-  font-size: 8.4pt;
+  font-size: calc(8.4pt * var(--rs-scale, 1));
 }
 
 .t-orbit .rs-contact--strip li + li::before {
@@ -2055,7 +2104,7 @@
 }
 
 .t-orbit .rs-entry-title {
-  font-size: 10pt;
+  font-size: calc(10pt * var(--rs-scale, 1));
 }
 
 /* ===========================================================================
@@ -2105,14 +2154,14 @@
 }
 
 .t-prism .rs-name {
-  font-size: 21pt;
+  font-size: calc(21pt * var(--rs-scale, 1));
   font-weight: 700;
   color: var(--rs-accent);
   letter-spacing: -0.015em;
 }
 
 .t-prism .rs-role {
-  font-size: 10pt;
+  font-size: calc(10pt * var(--rs-scale, 1));
   font-weight: 500;
   color: var(--rs-soft);
   margin-top: 1.4mm;
@@ -2140,7 +2189,7 @@
 }
 
 .t-prism .rs-main .rs-entry-title {
-  font-size: 10.2pt;
+  font-size: calc(10.2pt * var(--rs-scale, 1));
 }
 
 /* ===========================================================================
@@ -2156,7 +2205,7 @@
   display: block !important;
   padding: 20mm 22mm !important;
   background: #fff !important;
-  font-size: 10.2pt;
+  font-size: calc(10.2pt * var(--rs-scale, 1));
   line-height: 1.6;
 }
 
@@ -2168,7 +2217,7 @@
 
 .cover-letter .cl-name {
   margin: 0;
-  font-size: 21pt;
+  font-size: calc(21pt * var(--rs-scale, 1));
   font-weight: 700;
   letter-spacing: -0.02em;
   line-height: 1.1;
@@ -2177,14 +2226,14 @@
 
 .cover-letter .cl-role {
   margin: 1.6mm 0 0;
-  font-size: 10.5pt;
+  font-size: calc(10.5pt * var(--rs-scale, 1));
   font-weight: 500;
   color: var(--rs-muted);
 }
 
 .cover-letter .rs-contact {
   margin-top: 3.4mm;
-  font-size: 8.8pt;
+  font-size: calc(8.8pt * var(--rs-scale, 1));
 }
 
 .cover-letter .cl-meta {

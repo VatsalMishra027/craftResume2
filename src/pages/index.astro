@@ -494,27 +494,9 @@ const faqs = [
     color: var(--color-paper);
   }
 
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) .cta-card {
-      background:
-        radial-gradient(
-          120% 140% at 50% -20%,
-          color-mix(in srgb, var(--color-surface) 70%, var(--color-clay)),
-          var(--color-surface) 58%
-        );
-      color: var(--color-ink);
-      border-color: var(--color-line-strong);
-    }
-
-    :root:not([data-theme="light"]) .cta-sub {
-      color: var(--color-ink-muted);
-    }
-
-    :root:not([data-theme="light"]) .cta-button {
-      background: var(--color-ink);
-      color: var(--color-paper);
-    }
-  }
+  /* No OS-preference twin for the block above: the root always carries an
+     explicit `data-theme`, written before the first paint, so `[data-theme]`
+     is the only thing a dark rule ever has to match. */
 </style>
 
 <script>

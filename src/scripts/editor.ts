@@ -13,16 +13,21 @@ import {
   clampSplit,
   hasSavedResume,
   loadAccent,
+  loadFont,
+  loadFontSize,
   loadResume,
   loadSplit,
   loadTemplate,
   saveAccent,
+  saveFont,
+  saveFontSize,
   saveResume,
   saveSplit,
   saveTemplate,
   uid,
 } from '../lib/store';
 import { resolveAccent, resolveTemplate, templateUsesPhoto } from '../lib/templates';
+import { initTypeMenu } from './type-menu';
 import { getBlueprint } from '../lib/blueprints';
 import {
   buildDocx,
@@ -34,14 +39,7 @@ import {
 import type { ExportSection } from '../lib/export';
 import { fitSheet } from '../lib/fit';
 import { SECTION_KEYS as SECTIONS } from '../lib/types';
-import type {
-  AnyItem,
-  CoverLetter,
-  PanelKey,
-  ResumeData,
-  SectionKey,
-  SectionMeta,
-} from '../lib/types';
+import type { AnyItem, PanelKey, ResumeData, SectionKey, SectionMeta } from '../lib/types';
 
 const CONTROL =
   'mt-1.5 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-ink-faint transition-colors duration-150 hover:border-line-strong focus:border-ink focus:outline-none';
@@ -237,13 +235,8 @@ export function initEditor(): void {
   let template = params.has('template') ? resolveTemplate(params.get('template')) : loadTemplate();
   let accent = params.has('accent') ? resolveAccent(params.get('accent')).id : loadAccent();
   let panel: PanelKey = 'basics';
-  /** Which of the two documents the preview is showing. */
-  let doc: 'resume' | 'cover' = 'resume';
-
-  /** The letter, created on first use rather than carried by every draft. */
-  function letter(): CoverLetter {
-    return (data.coverLetter ??= { ...EMPTY_COVER_LETTER });
-  }
+  let font = loadFont();
+  let fontSize = loadFontSize();
 
   /**
    * `?blueprint=` opens the editor on a complete resume written for one job
@@ -261,8 +254,9 @@ export function initEditor(): void {
     if (replace) {
       data = structuredClone(blueprint.data);
       // A blueprint is a resume, not a letter — but it knows the job title it
-      // was written for, which is the one line of the letter worth filling in
-      // for someone rather than leaving blank.
+      // was written for, which is the one line worth filling in for someone
+      // rather than leaving blank. The cover letter editor picks it up from
+      // here the next time it is opened.
       data.coverLetter = {
         ...EMPTY_COVER_LETTER,
         role: data.basics.title,
@@ -288,6 +282,12 @@ export function initEditor(): void {
     window.clearTimeout(saveTimer);
     if (statusEl) statusEl.textContent = 'Saving…';
     saveTimer = window.setTimeout(() => {
+      // The cover letter belongs to the other editor, and both editors write
+      // the one stored draft. Take the letter as it stands now rather than the
+      // copy this page loaded, or a keystroke here would silently roll back a
+      // letter written in another tab — and it keeps the "include the cover
+      // letter" download honest about what that letter currently says.
+      data.coverLetter = loadResume().coverLetter;
       const result = saveResume(data);
       if (!statusEl) return;
 
@@ -311,57 +311,30 @@ export function initEditor(): void {
     // A 2px tolerance stops a sheet that exactly fills page one reading as two.
     const pages = Math.max(1, Math.ceil((preview!.scrollHeight - 2) / A4_HEIGHT_PX));
     previewFit!.classList.toggle('is-multipage', pages > 1);
-    // The "keep it to one page" note is about the resume. A letter that runs
-    // to a second page is a different problem and not one to nag about here.
-    pageNoteEl?.classList.toggle('hidden', pages === 1 || doc !== 'resume');
+    pageNoteEl?.classList.toggle('hidden', pages === 1);
     if (pageCountEl) {
       pageCountEl.textContent = `${pages} ${pages === 1 ? 'page' : 'pages'} · A4`;
     }
   }
 
+  function sheetType(): { font: string; size: string } {
+    return { font, size: fontSize };
+  }
+
   function paintPreview(): void {
-    const cls = doc === 'cover' ? letterClass(template) : sheetClass(template);
-    preview!.className = `${cls} resume-sheet--live`;
-    preview!.setAttribute('style', sheetStyle(accent));
-    preview!.innerHTML =
-      doc === 'cover' ? renderCoverLetter(data) : renderResume(data, template);
+    preview!.className = `${sheetClass(template)} resume-sheet--live`;
+    preview!.setAttribute('style', sheetStyle(accent, sheetType()));
+    preview!.innerHTML = renderResume(data, template);
     fitSheet(previewFit!);
     reportPageCount();
   }
 
-  // --- Which document is on screen ---------------------------------------
-  const docButtons = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-doc]'));
-
-  function setDoc(next: 'resume' | 'cover'): void {
-    if (doc === next) return;
-    doc = next;
-    docButtons.forEach((button) => {
-      button.setAttribute('aria-pressed', String(button.dataset.doc === next));
-    });
-    paintPreview();
-  }
-
-  docButtons.forEach((button) => {
-    button.addEventListener('click', () => {
-      const next = button.dataset.doc === 'cover' ? 'cover' : 'resume';
-      setDoc(next);
-      // The switch is above the sheet, so it should take the form with it.
-      showPanel(next === 'cover' ? 'cover' : 'basics');
-    });
-  });
-
-  // --- Static fields: personal info and the cover letter -------------------
+  // --- Static fields: personal info ---------------------------------------
   function hydrateStaticFields(): void {
     form!
       .querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('[data-field]')
       .forEach((el) => {
-        const field = el.dataset.field!;
-        if (field.startsWith('cover.')) {
-          const key = field.slice(6) as keyof CoverLetter;
-          el.value = letter()[key] ?? '';
-          return;
-        }
-        const key = field.replace('basics.', '') as keyof ResumeData['basics'];
+        const key = el.dataset.field!.replace('basics.', '') as keyof ResumeData['basics'];
         el.value = data.basics[key] ?? '';
       });
     syncPhoto();
@@ -533,9 +506,6 @@ export function initEditor(): void {
     railButtons.forEach((button) => {
       button.setAttribute('aria-current', String(button.dataset.goto === next));
     });
-    // Opening the letter's fields shows the letter; opening anything else
-    // brings the resume back. The preview always shows what is being edited.
-    setDoc(next === 'cover' ? 'cover' : 'resume');
     form!.scrollTop = 0;
   }
 
@@ -859,9 +829,6 @@ export function initEditor(): void {
             el.value.trim() || `${SECTION_LABELS[section].singular} ${index + 1}`;
         }
       }
-    } else if (el.dataset.field?.startsWith('cover.')) {
-      const key = el.dataset.field.slice(6) as keyof CoverLetter;
-      letter()[key] = el.value;
     } else if (el.dataset.field?.startsWith('basics.')) {
       const key = el.dataset.field.replace('basics.', '') as keyof ResumeData['basics'];
       data.basics[key] = el.value;
@@ -926,20 +893,12 @@ export function initEditor(): void {
     const parts = address.split('|');
 
     if (parts[0] === 'basics') {
-      // The letter borrows the resume's name and contact block, so a click on
-      // its letterhead has to leave the letter and open Personal Info.
       showPanel('basics');
       if (parts[1] === 'photo') {
         photoInput?.focus();
         return;
       }
       focusControl(form!.querySelector<HTMLElement>(`[data-field="basics.${parts[1]}"]`));
-      return;
-    }
-
-    if (parts[0] === 'cover') {
-      showPanel('cover');
-      focusControl(form!.querySelector<HTMLElement>(`[data-field="cover.${parts[1]}"]`));
       return;
     }
 
@@ -1082,6 +1041,23 @@ export function initEditor(): void {
     });
   });
 
+  /* --- Typeface and text size ----------------------------------------------
+     Stored globally rather than on the resume, so the cover letter written in
+     the other editor is set in the same type without either editor having to
+     know about the other.
+  --------------------------------------------------------------------------- */
+  initTypeMenu({
+    font: () => font,
+    size: () => fontSize,
+    onChange: (nextFont, nextSize) => {
+      font = nextFont;
+      fontSize = nextSize;
+      saveFont(font);
+      saveFontSize(fontSize);
+      paintPreview();
+    },
+  });
+
   // --- Resizable split ----------------------------------------------------
   const splitter = document.querySelector<HTMLElement>('[data-splitter]');
   const formPane = form;
@@ -1178,7 +1154,7 @@ export function initEditor(): void {
   }
 
   function printDocuments(): void {
-    const style = sheetStyle(accent);
+    const style = sheetStyle(accent, sheetType());
     const sheets = [
       `<div class="${sheetClass(template)}" style="${style}">${renderResume(data, template)}</div>`,
     ];
@@ -1264,19 +1240,6 @@ export function initEditor(): void {
 
   viewButtons.forEach((button) => {
     button.addEventListener('click', () => setView(button.dataset.view!));
-  });
-
-  // --- Cover letter helpers -----------------------------------------------
-  document.querySelector<HTMLElement>('[data-letter-date]')?.addEventListener('click', () => {
-    letter().date = new Date().toLocaleDateString(undefined, {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    });
-    const field = form.querySelector<HTMLInputElement>('[data-field="cover.date"]');
-    if (field) field.value = letter().date;
-    paintPreview();
-    markSaved();
   });
 
   // --- Boot ---------------------------------------------------------------

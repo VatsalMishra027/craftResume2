@@ -1,0 +1,744 @@
+/* ---------------------------------------------------------------------------
+   Editor chrome.
+
+   The furniture around a document: the section rail, the three-pane grid, the
+   floating menus, the download list, the photo controls. Shared by the resume
+   editor and the cover letter editor rather than scoped inside either — the
+   two are the same workbench with a different document on it, and a menu that
+   reads well in one has to read well in the other.
+--------------------------------------------------------------------------- */
+/* --split is the form pane's width in rem; the splitter writes to it. */
+.editor-grid {
+  --rail: 12.5rem;
+  --split: 27rem;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.pane-rail {
+  overflow-x: auto;
+  overflow-y: hidden;
+  border-bottom: 1px solid var(--color-line);
+}
+
+.rail-heading {
+  display: none;
+}
+
+.rail-list {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.5rem 0.75rem;
+  min-width: max-content;
+}
+
+.rail-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.125rem;
+}
+
+.rail-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1 1 auto;
+  min-width: 0;
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.7rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-ink-soft);
+  white-space: nowrap;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease;
+}
+
+.rail-item:hover {
+  background: var(--color-paper-sunk);
+}
+
+.rail-item[aria-current="true"] {
+  background: var(--color-paper-sunk);
+  color: var(--color-ink);
+  font-weight: 600;
+}
+
+.rail-item[aria-current="true"] svg {
+  color: var(--color-ink);
+}
+
+.rail-count {
+  margin-left: auto;
+  font-size: 0.6875rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-ink-faint);
+  padding-left: 0.5rem;
+  transition: opacity 150ms ease;
+}
+
+.rail-count:empty {
+  display: none;
+}
+
+/* A section the user has taken off the sheet still lists here, so the
+   content is not lost and one click puts the heading back. */
+.rail-row[data-hidden="true"] .rail-item {
+  color: var(--color-ink-faint);
+}
+
+.rail-row[data-hidden="true"] .rail-label {
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+
+/* Move up · move down · rename or remove. One cluster so the three read as
+   one set of controls for the row rather than three unrelated glyphs. */
+.rail-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.0625rem;
+  flex: none;
+}
+
+.rail-btn {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 0.375rem;
+  color: var(--color-ink-faint);
+  transition:
+    background-color 120ms ease,
+    color 120ms ease,
+    opacity 120ms ease;
+}
+
+.rail-btn:hover,
+.rail-btn[aria-expanded="true"] {
+  background: var(--color-line);
+  color: var(--color-ink);
+}
+
+/* The page's focus ring is sized for full-width controls; on a 24px button
+   in a 200px rail it reads as a box drawn around the icon. Tighten it. */
+.rail-btn:focus-visible {
+  outline-offset: 1px;
+}
+
+/* At the ends of the list there is nowhere to go. The button stays put so
+   the cluster does not reflow, but it stops looking like it will do
+   something — and the cursor says so too. */
+.rail-btn:disabled {
+  opacity: 0.25;
+}
+
+.rail-btn:disabled:hover {
+  background: none;
+  color: var(--color-ink-faint);
+}
+
+/* Where there is a pointer the controls stay out of the layout until wanted,
+   so a long section name keeps the whole row to itself at rest, and they
+   take the count's place rather than crowding it. The strip carries the
+   row's own hover colour, so the name passes cleanly underneath instead of
+   colliding with the icons. On touch there is no hover to wait for, so they
+   sit in the row and both fit. */
+@media (hover: hover) {
+  .rail-actions {
+    position: absolute;
+    right: 0.25rem;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0;
+    pointer-events: none;
+    padding-left: 1.5rem;
+    border-radius: 0.375rem;
+    background: linear-gradient(
+      to right,
+      color-mix(in srgb, var(--color-paper-sunk), transparent 100%),
+      var(--color-paper-sunk) 1.5rem
+    );
+    transition: opacity 150ms ease;
+  }
+
+  /* `:focus-visible`, not `:focus-within`. Clicking "move up" leaves focus
+     on the button — and under :focus-within the arrows then stayed on
+     screen after the pointer had left the row, which is not what a hover
+     affordance should do. A mouse click does not raise :focus-visible, so
+     the strip now disappears with the pointer, while a keyboard user
+     tabbing through still keeps the controls they are aiming at. */
+  .rail-row:hover .rail-actions,
+  .rail-row:has(:focus-visible) .rail-actions,
+  .rail-row:has(.rail-btn[aria-expanded="true"]) .rail-actions {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .rail-row:hover .rail-count,
+  .rail-row:has(:focus-visible) .rail-count,
+  .rail-row:has(.rail-btn[aria-expanded="true"]) .rail-count {
+    opacity: 0;
+  }
+}
+
+/* Fixed, and placed by script: the rail scrolls in both layouts, and an
+   absolutely positioned menu would be clipped by it. */
+.rail-menu {
+  position: fixed;
+  z-index: 50;
+  width: 13.75rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--color-line);
+  background: var(--color-paper);
+  padding: 0.3125rem;
+  box-shadow: var(--shadow-lift);
+}
+
+.rail-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.5rem;
+  text-align: left;
+  font-size: 0.8125rem;
+  line-height: 1.25;
+  color: var(--color-ink);
+  transition:
+    background-color 150ms ease,
+    color 150ms ease;
+}
+
+.rail-menu-item:hover {
+  background: var(--menu-hover);
+}
+
+.rail-menu-item:focus-visible {
+  outline-offset: -1px;
+}
+
+.rail-menu-icon {
+  width: 0.9375rem;
+  height: 0.9375rem;
+  flex: none;
+  color: var(--color-ink-muted);
+  transition: color 150ms ease;
+}
+
+.rail-menu-item:hover .rail-menu-icon {
+  color: inherit;
+}
+
+.rail-menu-item[data-section-toggle]:hover {
+  color: var(--color-clay);
+  background: var(--color-clay-soft);
+}
+
+/* Taking a section off the sheet is the one destructive thing in the menu,
+   so it sits below a rule rather than looking like a peer of "rename". */
+.rail-menu-item[data-section-toggle] {
+  margin-top: 0.25rem;
+  border-top: 1px solid var(--color-line);
+  padding-top: 0.5625rem;
+  border-radius: 0.5rem;
+}
+
+/* The eye is crossed out while the section is on the sheet, because that is
+   what the click will do to it; once it is off, the plain eye offers it back. */
+.rail-row[data-hidden="true"] [data-toggle-slash] {
+  display: none;
+}
+
+.rail-row[data-renaming="true"] .rail-item,
+.rail-row[data-renaming="true"] .rail-actions {
+  display: none;
+}
+
+/* Global: the input is built by the editor script at rename time, so it never
+   carries this component's scoping attribute and a scoped rule misses it. */
+.rail-rename {
+  width: 100%;
+  min-width: 0;
+  border-radius: 0.5rem;
+  border: 1px solid var(--color-ink);
+  background: var(--color-surface);
+  /* Matches .rail-item's box, so the row does not jump on the way in. */
+  padding: 0.5rem 0.7rem;
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.15;
+  color: var(--color-ink);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-ink), transparent 92%);
+}
+
+.rail-rename:focus {
+  outline: none;
+}
+
+.panel-title {
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+
+.pane-splitter {
+  display: none;
+}
+
+/* One pane at a time below the split-view breakpoint. */
+@media (width < 64rem) {
+  [data-active-view="edit"] .pane-preview,
+  [data-active-view="preview"] .pane-edit,
+  [data-active-view="preview"] .pane-rail {
+    display: none;
+  }
+}
+
+@media (width >= 64rem) {
+  .editor-grid {
+    grid-template-rows: minmax(0, 1fr);
+    grid-template-columns: var(--rail) var(--split) 0.5rem minmax(0, 1fr);
+  }
+
+  .pane-rail {
+    overflow-x: hidden;
+    overflow-y: auto;
+    border-bottom: 0;
+    padding: 1.5rem 0.75rem;
+  }
+
+  .rail-heading {
+    display: block;
+    padding: 0 0.7rem 0.6rem;
+    font-size: 0.625rem;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--color-ink-faint);
+  }
+
+  .rail-list {
+    display: block;
+    padding: 0;
+    min-width: 0;
+  }
+
+  .rail-list li + li {
+    margin-top: 0.125rem;
+  }
+
+  .pane-splitter {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: col-resize;
+    background: var(--color-line);
+    transition: background-color 150ms ease;
+    touch-action: none;
+  }
+
+  .pane-splitter:hover,
+  .pane-splitter:focus-visible,
+  .pane-splitter[data-dragging="true"] {
+    background: var(--color-line-strong);
+    outline: none;
+  }
+
+  .pane-splitter-grip {
+    width: 2px;
+    height: 2.25rem;
+    border-radius: 999px;
+    background: var(--color-ink-faint);
+    opacity: 0;
+    transition: opacity 150ms ease;
+  }
+
+  .pane-splitter:hover .pane-splitter-grip,
+  .pane-splitter:focus-visible .pane-splitter-grip,
+  .pane-splitter[data-dragging="true"] .pane-splitter-grip {
+    opacity: 1;
+  }
+
+  /* While dragging, the pointer must not select text or hit the iframe-ish
+     preview surface. */
+  body[data-resizing="true"] {
+    cursor: col-resize;
+    user-select: none;
+  }
+}
+
+/* --- Chrome --------------------------------------------------------------
+   The top bar is glass so the preview scrolling under it stays visible at
+   the edge, which is what tells you the sheet is a document and the bar is
+   an overlay on top of it.
+--------------------------------------------------------------------------- */
+.editor-bar {
+  position: relative;
+  z-index: 30;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-line) 60%, transparent);
+}
+
+/* Every floating panel in the editor is cut from the same glass — but the
+   thing behind these panels is a white A4 sheet, not the page background. In
+   dark mode that sheet coming through the glass lifted the panel toward white
+   and left the labels on it barely darker than their own background, which is
+   why `--menu-surface` goes near-solid there. Light keeps the real glass. */
+[data-menu-panel],
+.rail-menu,
+.dl-menu {
+  border-radius: 0.75rem;
+  background: var(--menu-surface);
+  backdrop-filter: blur(var(--menu-blur)) saturate(1.5);
+  -webkit-backdrop-filter: blur(var(--menu-blur)) saturate(1.5);
+  border: 1px solid var(--glass-line);
+}
+
+/* --- Top bar controls ----------------------------------------------------- */
+.bar-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 2.25rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--color-line-strong);
+  padding: 0 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-ink);
+  white-space: nowrap;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease;
+}
+
+.bar-button:hover,
+.bar-button[aria-expanded="true"] {
+  background: var(--menu-hover);
+}
+
+/* --- Menu panels ---------------------------------------------------------- */
+.menu-panel {
+  border-radius: 0.75rem;
+  box-shadow: var(--shadow-lift);
+}
+
+.menu-group {
+  padding: 0.5rem 0.625rem 0.25rem;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+}
+
+.menu-item {
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.625rem;
+  transition: background-color 150ms ease;
+}
+
+.menu-item:hover {
+  background: var(--menu-hover);
+}
+
+.menu-item[aria-pressed="true"] {
+  background: var(--menu-hover);
+}
+
+/* --- Text size chips ------------------------------------------------------ */
+.size-chip {
+  display: grid;
+  justify-items: center;
+  gap: 0.0625rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--color-line-strong);
+  padding: 0.375rem 0.125rem 0.3125rem;
+  color: var(--color-ink-soft);
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease;
+}
+
+.size-chip:hover {
+  background: var(--menu-hover);
+  color: var(--color-ink);
+}
+
+.size-chip[aria-pressed="true"] {
+  background: var(--color-ink);
+  border-color: var(--color-ink);
+  color: var(--color-paper);
+}
+
+/* The glyph is the control: each chip shows "Aa" at the size it will set, so
+   the row is a specimen rather than five numbers. */
+.size-chip-glyph {
+  font-weight: 600;
+  line-height: 1;
+}
+
+.size-chip:nth-child(1) .size-chip-glyph {
+  font-size: 0.6875rem;
+}
+.size-chip:nth-child(2) .size-chip-glyph {
+  font-size: 0.75rem;
+}
+.size-chip:nth-child(3) .size-chip-glyph {
+  font-size: 0.8125rem;
+}
+.size-chip:nth-child(4) .size-chip-glyph {
+  font-size: 0.9375rem;
+}
+.size-chip:nth-child(5) .size-chip-glyph {
+  font-size: 1.0625rem;
+}
+
+.size-chip-label {
+  font-size: 0.5625rem;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.75;
+}
+
+/* --- Document switch -----------------------------------------------------
+   Two links, not two view states: each document has a page of its own.
+--------------------------------------------------------------------------- */
+.doc-switch {
+  display: inline-flex;
+  padding: 0.1875rem;
+  border-radius: 999px;
+  border: 1px solid var(--glass-line);
+  background: color-mix(in srgb, var(--color-surface) 60%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.doc-switch a {
+  border-radius: 999px;
+  padding: 0.3125rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-ink-muted);
+  white-space: nowrap;
+  transition:
+    background-color 200ms ease,
+    color 200ms ease;
+}
+
+.doc-switch a:hover {
+  color: var(--color-ink);
+}
+
+.doc-switch a[aria-current="page"] {
+  background: var(--color-ink);
+  color: var(--color-paper);
+}
+
+/* --- Download menu ------------------------------------------------------- */
+.dl-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  width: 100%;
+  border-radius: 0.625rem;
+  padding: 0.625rem 0.6875rem;
+  text-align: left;
+  transition: background-color 150ms ease;
+}
+
+.dl-item:hover {
+  background: var(--menu-hover);
+}
+
+.dl-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 1.75rem;
+  height: 1.75rem;
+  margin-top: 0.0625rem;
+  border-radius: 0.5rem;
+  color: var(--color-ink-soft);
+  background: var(--menu-hover);
+  border: 1px solid var(--color-line-strong);
+}
+
+.dl-item:hover .dl-icon {
+  color: var(--color-ink);
+  border-color: var(--color-line-strong);
+}
+
+.dl-text {
+  min-width: 0;
+}
+
+.dl-title {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--color-ink);
+}
+
+.dl-note {
+  display: block;
+  margin-top: 0.125rem;
+  font-size: 0.6875rem;
+  line-height: 1.4;
+  font-weight: 400;
+  /* Muted, not faint. This is the smallest type in the editor and it sits on
+     a floating panel; on the dark palette `ink-faint` on `menu-surface` is
+     under 4:1, which is what made the download menu unreadable. */
+  color: var(--color-ink-muted);
+}
+
+/* The one thing in the menu that is a setting rather than an action, so it
+   sits below a rule instead of reading as a fourth format. */
+.dl-switch {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+  border-top: 1px solid var(--color-line-strong);
+  padding: 0.6875rem 0.6875rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-ink);
+}
+
+.dl-switch input {
+  margin-top: 0.125rem;
+  accent-color: var(--color-ink);
+  width: 0.875rem;
+  height: 0.875rem;
+  flex: none;
+}
+
+/* --- Cover letter panel -------------------------------------------------- */
+.cover-action {
+  flex: none;
+  border-radius: 999px;
+  border: 1px solid var(--color-line);
+  padding: 0.375rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-ink);
+  transition:
+    background-color 200ms ease,
+    border-color 200ms ease;
+}
+
+.cover-action:hover {
+  background: var(--color-paper-sunk);
+  border-color: var(--color-line-strong);
+}
+
+/* --- Photo --------------------------------------------------------------- */
+.photo-preview {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 4.5rem;
+  height: 4.5rem;
+  overflow: hidden;
+  border-radius: 0.75rem;
+  border: 1px solid var(--color-line);
+  background: var(--color-paper-sunk);
+  color: var(--color-ink-faint);
+}
+
+.photo-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Hidden the moment there is a real picture to show instead. */
+.photo-blank {
+  width: 55%;
+  height: 55%;
+  fill: currentColor;
+  opacity: 0.4;
+}
+
+.photo-preview:has(img) .photo-blank {
+  display: none;
+}
+
+.photo-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4375rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-line);
+  padding: 0.4375rem 0.875rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-ink);
+  cursor: pointer;
+  transition:
+    background-color 200ms ease,
+    border-color 200ms ease;
+}
+
+.photo-button:hover {
+  background: var(--color-paper-sunk);
+  border-color: var(--color-line-strong);
+}
+
+/* The file input inside is visually hidden, so the label carries the ring. */
+.photo-button:has(input:focus-visible) {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 2px;
+}
+
+.photo-remove {
+  border-radius: 999px;
+  padding: 0.4375rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-ink-muted);
+  transition:
+    background-color 200ms ease,
+    color 200ms ease;
+}
+
+.photo-remove:hover {
+  background: var(--color-clay-soft);
+  color: var(--color-clay);
+}
+
+/* A note rather than an action, closing the letter's download list. */
+.dl-foot {
+  margin-top: 0.25rem;
+  border-top: 1px solid var(--color-line-strong);
+  padding: 0.625rem 0.6875rem 0.375rem;
+  font-size: 0.6875rem;
+  line-height: 1.4;
+  color: var(--color-ink-muted);
+}
+
+/* --- Cover letter editor -------------------------------------------------
+   One document with no repeatable sections, so the rail lists parts of a
+   letter instead of resume sections and nothing in it reorders.
+--------------------------------------------------------------------------- */
+.letter-hint {
+  border-radius: 0.75rem;
+  border: 1px solid var(--color-line);
+  background: var(--color-paper-sunk);
+  padding: 0.875rem 1rem;
+  font-size: 0.75rem;
+  line-height: 1.6;
+  color: var(--color-ink-soft);
+}
+
+.letter-hint strong {
+  font-weight: 600;
+  color: var(--color-ink);
+}

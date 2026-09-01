@@ -1,0 +1,41 @@
+---
+/** The print accent, shared by the resume and the letter. */
+import { ACCENTS } from '../../lib/templates';
+---
+
+<div class="relative" data-menu="accent">
+  <button type="button" data-menu-button aria-expanded="false" class="bar-button">
+    <span class="size-3.5 rounded-full" data-accent-dot></span>
+    <span class="hidden sm:inline">Color</span>
+    <span class="text-ink-faint" aria-hidden="true">▾</span>
+  </button>
+
+  <div data-menu-panel hidden class="menu-panel absolute left-0 top-11 z-40 w-[15.5rem] p-3">
+    <p class="menu-group px-0 pt-0 pb-2.5">Print accent colors</p>
+    <div class="grid grid-cols-4 gap-2.5">
+      {
+        ACCENTS.map((accent) => (
+          <button
+            type="button"
+            data-accent={accent.id}
+            aria-pressed="false"
+            title={accent.name}
+            style={`background:${accent.hex}`}
+            class="grid size-9 place-items-center rounded-full text-white transition-transform duration-150 hover:scale-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+          >
+            <svg viewBox="0 0 16 16" fill="none" class="size-4 opacity-0" data-accent-tick aria-hidden="true">
+              <path
+                d="m3.4 8.4 3 3 6.2-6.6"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            <span class="sr-only">{accent.name}</span>
+          </button>
+        ))
+      }
+    </div>
+  </div>
+</div>

@@ -350,7 +350,17 @@ function sectionBody(data: ResumeData, key: SectionKey): string {
   }
 }
 
-function letterParagraphs(letter: CoverLetter, data: ResumeData, accent: string): string {
+/**
+ * The letter as Word paragraphs. `pageBreak` is what distinguishes the letter
+ * appended to a resume — which has to start on a fresh sheet — from a letter
+ * downloaded on its own, where a leading break would produce a blank page one.
+ */
+function letterParagraphs(
+  letter: CoverLetter,
+  data: ResumeData,
+  accent: string,
+  pageBreak = true,
+): string {
   const name = clean(data.basics.fullName);
   const blocks = clean(letter.body)
     .split(/\n\s*\n/)
@@ -368,7 +378,7 @@ function letterParagraphs(letter: CoverLetter, data: ResumeData, accent: string)
     .join('');
 
   return (
-    '<w:p><w:r><w:br w:type="page"/></w:r></w:p>' +
+    (pageBreak ? '<w:p><w:r><w:br w:type="page"/></w:r></w:p>' : '') +
     para(run(name || 'Your name', { bold: true, size: 32, color: accent }), {
       after: 40,
     }) +
@@ -436,6 +446,28 @@ export function buildDocx(data: ResumeData, options: ExportOptions): Blob {
     { name: '_rels/.rels', content: ROOT_RELS_XML },
     { name: 'word/_rels/document.xml.rels', content: DOC_RELS_XML },
     { name: 'word/document.xml', content: documentXml(data, options) },
+    { name: 'word/styles.xml', content: STYLES_XML },
+  ]);
+}
+
+function letterDocumentXml(data: ResumeData, accent: string): string {
+  const letter = data.coverLetter ?? EMPTY_COVER_LETTER;
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>${letterParagraphs(
+    letter,
+    data,
+    accent,
+    false,
+  )}<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="850" w:right="850" w:bottom="850" w:left="850" w:header="0" w:footer="0" w:gutter="0"/></w:sectPr></w:body></w:document>`;
+}
+
+/** The cover letter on its own — one page, no resume attached to it. */
+export function buildCoverLetterDocx(data: ResumeData, accent: string): Blob {
+  return zip([
+    { name: '[Content_Types].xml', content: CONTENT_TYPES_XML },
+    { name: '_rels/.rels', content: ROOT_RELS_XML },
+    { name: 'word/_rels/document.xml.rels', content: DOC_RELS_XML },
+    { name: 'word/document.xml', content: letterDocumentXml(data, accent) },
     { name: 'word/styles.xml', content: STYLES_XML },
   ]);
 }
@@ -527,39 +559,65 @@ export function buildPlainText(data: ResumeData, options: ExportOptions): string
   }
 
   if (options.coverLetter) {
-    const letter = data.coverLetter ?? EMPTY_COVER_LETTER;
     push();
     push('—'.repeat(40));
     push('COVER LETTER');
-    push();
-    if (clean(letter.date)) push(clean(letter.date));
-    [letter.recipient, letter.recipientTitle, letter.company, letter.companyAddress]
-      .map(clean)
-      .filter(Boolean)
-      .forEach(push);
-    if (clean(letter.role)) {
-      push();
-      push(`Re: ${clean(letter.role)}`);
-    }
-    if (clean(letter.greeting)) {
-      push();
-      push(clean(letter.greeting));
-    }
-    clean(letter.body)
-      .split(/\n\s*\n/)
-      .map((block) => block.replace(/\s*\n\s*/g, ' ').trim())
-      .filter(Boolean)
-      .forEach((block) => {
-        push();
-        push(block);
-      });
-    if (clean(letter.signOff)) {
-      push();
-      push(clean(letter.signOff));
-    }
-    if (clean(data.basics.fullName)) push(clean(data.basics.fullName));
+    letterLines(data).forEach(push);
   }
 
+  return out.join('\n').replace(/\n{3,}/g, '\n\n').trim() + '\n';
+}
+
+/** The letter's own lines, shared by the combined copy and the letter-only one. */
+function letterLines(data: ResumeData): string[] {
+  const letter = data.coverLetter ?? EMPTY_COVER_LETTER;
+  const out: string[] = [''];
+  const push = (line = ''): void => {
+    out.push(line);
+  };
+
+  if (clean(letter.date)) push(clean(letter.date));
+  [letter.recipient, letter.recipientTitle, letter.company, letter.companyAddress]
+    .map(clean)
+    .filter(Boolean)
+    .forEach(push);
+  if (clean(letter.role)) {
+    push();
+    push(`Re: ${clean(letter.role)}`);
+  }
+  if (clean(letter.greeting)) {
+    push();
+    push(clean(letter.greeting));
+  }
+  clean(letter.body)
+    .split(/\n\s*\n/)
+    .map((block) => block.replace(/\s*\n\s*/g, ' ').trim())
+    .filter(Boolean)
+    .forEach((block) => {
+      push();
+      push(block);
+    });
+  if (clean(letter.signOff)) {
+    push();
+    push(clean(letter.signOff));
+  }
+  if (clean(data.basics.fullName)) push(clean(data.basics.fullName));
+
+  return out;
+}
+
+/**
+ * The cover letter as plain text, for an application form that wants the
+ * letter pasted into a box. Opens on the letterhead, because on its own it has
+ * to say who sent it.
+ */
+export function buildCoverLetterText(data: ResumeData): string {
+  const out: string[] = [];
+  if (clean(data.basics.fullName)) out.push(clean(data.basics.fullName).toUpperCase());
+  if (clean(data.basics.title)) out.push(clean(data.basics.title));
+  const contact = contactLine(data);
+  if (contact) out.push(contact);
+  out.push(...letterLines(data));
   return out.join('\n').replace(/\n{3,}/g, '\n\n').trim() + '\n';
 }
 

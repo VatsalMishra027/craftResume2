@@ -20,9 +20,10 @@ const {
   class: className = '',
 } = Astro.props;
 // Decorative, and often wrapped in a link of its own — so no anchors inside.
-// The photo layouts show a silhouette so the frame is visible on a sample
-// resume that carries no picture.
-const html = renderResume(data, templateId, { links: false, placeholderPhoto: true });
+// Everything else about this render matches the editor's, right down to the
+// stand-in portrait on the photo layouts, so the sheet on the card is the
+// sheet the editor opens.
+const html = renderResume(data, templateId, { links: false });
 ---
 
 <div class={`sheet-fit sheet-fit--page ${className}`} data-sheet-fit="page" aria-hidden="true">

@@ -146,8 +146,15 @@ export const SECTION_KEYS = [
 
 export type SectionKey = (typeof SECTION_KEYS)[number];
 
-/** What the left rail lists: the two singletons plus every repeatable list. */
-export type PanelKey = 'basics' | 'cover' | SectionKey;
+/** What the resume editor's left rail lists: the singleton plus every list. */
+export type PanelKey = 'basics' | SectionKey;
+
+/**
+ * What the cover letter editor's rail lists. The letter is one document with
+ * no repeatable sections, so its rail is the three parts of a letter — who it
+ * is from, who it is to, and what it says — rather than a list of sections.
+ */
+export type CoverPanelKey = 'sender' | 'recipient' | 'letter';
 
 export type AnyItem =
   | ExperienceItem
