@@ -1,0 +1,41 @@
+---
+/**
+ * A cover letter format at full page size, rendered by the same code the
+ * editor uses. Not a screenshot: the card shows the sheet the editor opens.
+ */
+import { letterClass, renderCoverLetter, sheetStyle } from '../lib/render';
+import { SAMPLE_RESUME } from '../lib/sample';
+import { DEFAULT_ACCENT } from '../lib/templates';
+import type { ResumeData } from '../lib/types';
+import '../styles/resume.css';
+
+interface Props {
+  letterId: string;
+  accentId?: string;
+  /** Content to render. Defaults to the shared sample letter. */
+  data?: ResumeData;
+  class?: string;
+}
+
+const {
+  letterId,
+  accentId = DEFAULT_ACCENT,
+  data = SAMPLE_RESUME,
+  class: className = '',
+} = Astro.props;
+
+const html = renderCoverLetter(data, letterId);
+
+// Repainted in the browser with this visitor's own letter when they have one,
+// so the card is the page the editor opens rather than the sample.
+const showsSample = data === SAMPLE_RESUME;
+---
+
+<div class={`sheet-fit sheet-fit--page ${className}`} data-sheet-fit="page" aria-hidden="true">
+  <div
+    class={letterClass(letterId)}
+    style={sheetStyle(accentId)}
+    data-letter-sheet={showsSample ? letterId : undefined}
+    set:html={html}
+  />
+</div>

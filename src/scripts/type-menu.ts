@@ -1,11 +1,18 @@
 /**
- * The typeface and text-size menu, wired the same way in both editors.
+ * The typeface menu and the text-size stepper, wired the same way in both
+ * editors.
  *
- * The menu owns no state of its own: it reads the current values through the
- * getters it is handed and reports every change back, so whichever editor is
- * hosting it stays the single place that saves and repaints.
+ * Neither control owns any state: they read the current values through the
+ * getters they are handed and report every change back, so whichever editor is
+ * hosting them stays the single place that saves and repaints.
  */
-import { FONTS, FONT_SIZES, resolveFont, resolveFontSize } from '../lib/fonts';
+import {
+  DEFAULT_FONT_SIZE,
+  FONTS,
+  resolveFont,
+  resolveFontSize,
+  stepFontSize,
+} from '../lib/fonts';
 
 export interface TypeMenuOptions {
   font: () => string;
@@ -15,13 +22,16 @@ export interface TypeMenuOptions {
 
 export function initTypeMenu(options: TypeMenuOptions): void {
   const fontButtons = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-font]'));
-  const sizeButtons = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-font-size]'));
+  const stepButtons = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-size-step]'));
+  const resetButton = document.querySelector<HTMLButtonElement>('[data-size-reset]');
+  const sizeValue = document.querySelector<HTMLElement>('[data-size-value]');
   const label = document.querySelector<HTMLElement>('[data-font-label]');
-  if (!fontButtons.length && !sizeButtons.length) return;
+  if (!fontButtons.length && !stepButtons.length) return;
 
   function sync(): void {
     const font = resolveFont(options.font());
     const size = resolveFontSize(options.size());
+    const percent = Math.round(size.scale * 100);
 
     fontButtons.forEach((button) => {
       const active = button.dataset.font === font.id;
@@ -33,16 +43,25 @@ export function initTypeMenu(options: TypeMenuOptions): void {
       }
     });
 
-    sizeButtons.forEach((button) => {
-      button.setAttribute('aria-pressed', String(button.dataset.fontSize === size.id));
+    if (sizeValue) sizeValue.textContent = `${percent}%`;
+
+    // A step that would not move the page is disabled rather than hidden, so
+    // the three controls never shift position under the pointer.
+    stepButtons.forEach((button) => {
+      const delta = Number(button.dataset.sizeStep) || 0;
+      button.disabled = stepFontSize(size.id, delta).id === size.id;
     });
 
-    // The bar button says what is in force. "Type" on its own would be a menu
-    // you have to open to find out what it did.
-    if (label) {
-      const name = font.id === 'default' ? 'Type' : font.name;
-      label.textContent = size.id === 'm' ? name : `${name} · ${Math.round(size.scale * 100)}%`;
+    if (resetButton) {
+      resetButton.title =
+        size.id === DEFAULT_FONT_SIZE
+          ? 'Text size'
+          : `${size.name} — ${percent}%. Click to reset to 100%.`;
     }
+
+    // The bar button says which face is in force. "Type" on its own would be a
+    // menu you have to open to find out what it did.
+    if (label) label.textContent = font.id === 'default' ? 'Type' : font.name;
   }
 
   fontButtons.forEach((button) => {
@@ -54,13 +73,20 @@ export function initTypeMenu(options: TypeMenuOptions): void {
     });
   });
 
-  sizeButtons.forEach((button) => {
+  stepButtons.forEach((button) => {
     button.addEventListener('click', () => {
-      const next = FONT_SIZES.find((entry) => entry.id === button.dataset.fontSize);
-      if (!next) return;
+      const delta = Number(button.dataset.sizeStep) || 0;
+      const next = stepFontSize(options.size(), delta);
+      if (next.id === resolveFontSize(options.size()).id) return;
       options.onChange(options.font(), next.id);
       sync();
     });
+  });
+
+  resetButton?.addEventListener('click', () => {
+    if (resolveFontSize(options.size()).id === DEFAULT_FONT_SIZE) return;
+    options.onChange(options.font(), DEFAULT_FONT_SIZE);
+    sync();
   });
 
   sync();

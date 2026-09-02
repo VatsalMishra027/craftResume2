@@ -3,10 +3,11 @@ import Layout from '../layouts/Layout.astro';
 import Logo from '../components/Logo.astro';
 import ThemeToggle from '../components/ThemeToggle.astro';
 import Field from '../components/editor/Field.astro';
-import TemplateMenu from '../components/editor/TemplateMenu.astro';
+import LetterMenu from '../components/editor/LetterMenu.astro';
 import AccentMenu from '../components/editor/AccentMenu.astro';
 import TypeMenu from '../components/editor/TypeMenu.astro';
-import DocSwitch from '../components/editor/DocSwitch.astro';
+import DocLabel from '../components/editor/DocLabel.astro';
+import SizeStepper from '../components/editor/SizeStepper.astro';
 import DownloadMenu from '../components/editor/DownloadMenu.astro';
 import '../styles/resume.css';
 import '../styles/editor.css';
@@ -32,7 +33,7 @@ const icons: Record<string, string> = {
 
 <Layout
   title="Cover letter — CraftResume"
-  description="Write a cover letter that matches your resume — same template, same accent, same type. Free, no account, nothing uploaded."
+  description="Write a cover letter in its own editor — eight formats, and it borrows your resume's accent and type. Free, no account, nothing uploaded."
   bare
 >
   <div class="flex h-dvh flex-col">
@@ -44,14 +45,15 @@ const icons: Record<string, string> = {
         <Logo class="[&>span:last-child]:hidden sm:[&>span:last-child]:inline" />
 
         <div class="flex items-center gap-1.5">
-          <TemplateMenu />
+          <LetterMenu />
           <AccentMenu />
           <TypeMenu />
+          <SizeStepper />
         </div>
       </div>
 
       <div class="flex items-center gap-2.5">
-        <DocSwitch active="cover" />
+        <DocLabel doc="cover" />
 
         <span class="hidden text-xs text-ink-faint lg:inline" data-save-status>
           Saved to this browser
@@ -88,6 +90,22 @@ const icons: Record<string, string> = {
             ))
           }
         </ul>
+
+        <a class="rail-exit" href="/cover-letter-templates">
+          <svg
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.3"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="size-3.5 flex-none"
+            aria-hidden="true"
+          >
+            <path d="M9.6 3.6 5.2 8l4.4 4.4" />
+          </svg>
+          All letter formats
+        </a>
       </nav>
 
       <!-- Form -->
@@ -218,7 +236,7 @@ const icons: Record<string, string> = {
           </div>
 
           <div class="sheet-fit sheet-fit--flow rounded-sm shadow-page" data-sheet-fit="flow">
-            <div data-preview class="resume-sheet cover-letter resume-sheet--live t-atlas"></div>
+            <div data-preview class="resume-sheet cover-letter resume-sheet--live cl-classic"></div>
           </div>
 
           <p

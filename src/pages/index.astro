@@ -6,6 +6,7 @@ import TemplateCard from '../components/TemplateCard.astro';
 import TemplateThumb from '../components/TemplateThumb.astro';
 import { TEMPLATES, TEMPLATE_CATEGORIES } from '../lib/templates';
 import { BLUEPRINTS } from '../lib/blueprints';
+import { LETTERS } from '../lib/letters';
 
 /** One layout per shelf, so the grid shows the range without printing all 12. */
 const featured = TEMPLATE_CATEGORIES.map(
@@ -20,7 +21,7 @@ const steps = [
   {
     n: '01',
     title: 'Pick a template',
-    body: `${TEMPLATES.length} layouts and ${BLUEPRINTS.length} pre-filled role blueprints. Swap between them at any point — your content stays put.`,
+    body: `${TEMPLATES.length} resume layouts, ${BLUEPRINTS.length} pre-filled role blueprints and ${LETTERS.length} cover letter formats. Swap between them at any point — your content stays put.`,
   },
   {
     n: '02',
@@ -106,8 +107,10 @@ const faqs = [
           </h1>
 
           <p class="mt-6 max-w-lg text-[17px] leading-relaxed text-ink-soft">
-            Choose a template, fill in your details, download the PDF. That is the whole product —
-            no sign-up wall, no credit card, no export that quietly stamps a logo on your work.
+            Choose a template, fill in your details, download the PDF. Then, if the posting asks for
+            one, write the cover letter the same way — its own formats, its own editor, the same
+            colour and type. No sign-up wall, no credit card, no export that quietly stamps a logo
+            on your work.
           </p>
 
           <div class="mt-9 flex flex-wrap items-center gap-3">
@@ -123,12 +126,23 @@ const faqs = [
             >
               Browse templates
             </a>
+            <a
+              href="/cover-letter-templates"
+              class="inline-flex h-12 items-center gap-2 rounded-full px-3 text-[15px] font-medium text-ink-soft transition-colors duration-200 hover:text-ink"
+            >
+              Write a cover letter
+              <span aria-hidden="true">→</span>
+            </a>
           </div>
 
           <dl class="mt-12 flex flex-wrap gap-x-10 gap-y-5 border-t border-line pt-7">
             <div>
-              <dt class="eyebrow">Templates</dt>
+              <dt class="eyebrow">Resume templates</dt>
               <dd class="mt-1 text-xl font-semibold tabular-nums">{TEMPLATES.length}</dd>
+            </div>
+            <div>
+              <dt class="eyebrow">Letter formats</dt>
+              <dd class="mt-1 text-xl font-semibold tabular-nums">{LETTERS.length}</dd>
             </div>
             <div>
               <dt class="eyebrow">Role blueprints</dt>

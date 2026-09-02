@@ -1,0 +1,70 @@
+---
+/**
+ * The letter format picker. The cover letter editor's equivalent of the
+ * resume's TemplateMenu, and deliberately a different list: a letter has its
+ * own eight formats, chosen in its own gallery.
+ */
+import { LETTER_ATS_LABEL, lettersByCategory } from '../../lib/letters';
+---
+
+<div class="relative" data-menu="letter">
+  <button type="button" data-menu-button aria-expanded="false" class="bar-button">
+    <svg viewBox="0 0 16 16" fill="none" class="size-3.5 text-ink-muted" aria-hidden="true">
+      <path
+        d="M2 3.4h12v9.2H2zM2.4 4.4l5.6 4 5.6-4"
+        stroke="currentColor"
+        stroke-width="1.2"
+        stroke-linecap="round"
+        stroke-linejoin="round"></path>
+    </svg>
+    <span class="hidden sm:inline" data-letter-label>Classic</span>
+    <span class="text-ink-faint" aria-hidden="true">▾</span>
+  </button>
+
+  <div
+    data-menu-panel
+    hidden
+    class="menu-panel absolute left-0 top-11 z-40 max-h-[min(32rem,70vh)] w-[19rem] overflow-y-auto overscroll-contain p-1.5"
+  >
+    {
+      lettersByCategory().map((group) => (
+        <div>
+          <p class="menu-group">{group.category}</p>
+          {group.items.map((letter) => (
+            <button
+              type="button"
+              data-letter={letter.id}
+              data-letter-name={letter.name}
+              aria-pressed="false"
+              class="menu-item flex w-full items-start gap-2.5 text-left"
+            >
+              <span
+                class="mt-1 size-3.5 flex-none rounded-full border border-line-strong"
+                data-letter-tick
+              />
+              <span class="min-w-0 flex-1">
+                <span class="flex items-baseline gap-2">
+                  <span class="text-[13px] font-semibold tracking-[-0.01em]">{letter.name}</span>
+                  <span class="ml-auto flex-none text-[10px] text-ink-muted">
+                    {LETTER_ATS_LABEL[letter.ats]}
+                  </span>
+                </span>
+                <span class="mt-0.5 block text-[11px] leading-snug text-ink-muted">
+                  {letter.tagline}
+                </span>
+              </span>
+            </button>
+          ))}
+        </div>
+      ))
+    }
+
+    <a
+      href="/cover-letter-templates"
+      class="mt-2 flex items-center justify-between gap-2 rounded-lg border-t border-line-strong px-2.5 pt-2.5 pb-1.5 text-[11px] font-medium text-ink-muted transition-colors duration-150 hover:text-ink"
+    >
+      See every format at full size
+      <span aria-hidden="true">→</span>
+    </a>
+  </div>
+</div>

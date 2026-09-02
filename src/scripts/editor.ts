@@ -15,6 +15,7 @@ import {
   loadAccent,
   loadFont,
   loadFontSize,
+  loadLetter,
   loadResume,
   loadSplit,
   loadTemplate,
@@ -237,6 +238,9 @@ export function initEditor(): void {
   let panel: PanelKey = 'basics';
   let font = loadFont();
   let fontSize = loadFontSize();
+  // Read, never written here: the letter's format belongs to the letter's own
+  // editor. This editor only needs it to staple the letter onto the download.
+  const letterId = loadLetter();
 
   /**
    * `?blueprint=` opens the editor on a complete resume written for one job
@@ -383,10 +387,10 @@ export function initEditor(): void {
      never needs more than a few hundred pixels of headshot. Nothing leaves
      the browser at any point.
   --------------------------------------------------------------------------- */
+  const photoBlock = document.querySelector<HTMLElement>('[data-photo-block]');
   const photoInput = document.querySelector<HTMLInputElement>('[data-photo-input]');
   const photoPreview = document.querySelector<HTMLElement>('[data-photo-preview]');
   const photoRemove = document.querySelector<HTMLElement>('[data-photo-remove]');
-  const photoHint = document.querySelector<HTMLElement>('[data-photo-hint]');
   const photoButtonLabel = document.querySelector<HTMLElement>('[data-photo-button-label]');
 
   /** Longest edge of the stored picture, in pixels. */
@@ -394,10 +398,14 @@ export function initEditor(): void {
   /** Refuse anything absurd before decoding it. */
   const PHOTO_MAX_BYTES = 12 * 1024 * 1024;
 
-  const DEFAULT_PHOTO_HINT = photoHint?.innerHTML ?? '';
-
   function syncPhoto(): void {
     const src = data.basics.photo ?? '';
+
+    // The upload only appears on the five layouts that have a frame for a
+    // picture. Offering it on the other twelve was offering something the
+    // sheet would then decline to print. A photo already on file stays on
+    // file and comes straight back when a photo layout is picked again.
+    if (photoBlock) photoBlock.hidden = !templateUsesPhoto(template);
 
     if (photoPreview) {
       const existing = photoPreview.querySelector('img');
@@ -417,14 +425,6 @@ export function initEditor(): void {
     if (photoRemove) photoRemove.hidden = !src;
     if (photoButtonLabel) photoButtonLabel.textContent = src ? 'Replace photo' : 'Choose a photo';
 
-    // Say so plainly when there is a picture on file that this layout will
-    // not draw, rather than letting the user wonder where it went.
-    if (photoHint && DEFAULT_PHOTO_HINT) {
-      photoHint.innerHTML =
-        src && !templateUsesPhoto(template)
-          ? 'Saved, but this layout does not show a photo. Pick one of the five <strong class="font-medium">With Photo</strong> templates to put it on the page.'
-          : DEFAULT_PHOTO_HINT;
-    }
   }
 
   /** Decodes, scales down and re-encodes the picture as a compact data URL. */
@@ -1160,7 +1160,7 @@ export function initEditor(): void {
     ];
     if (includeCover()) {
       sheets.push(
-        `<div class="${letterClass(template)}" style="${style}">${renderCoverLetter(data)}</div>`,
+        `<div class="${letterClass(letterId)}" style="${style}">${renderCoverLetter(data, letterId)}</div>`,
       );
     }
     printRoot!.innerHTML = sheets.join('');

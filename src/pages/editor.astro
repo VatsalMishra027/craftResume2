@@ -6,7 +6,8 @@ import Field from '../components/editor/Field.astro';
 import TemplateMenu from '../components/editor/TemplateMenu.astro';
 import AccentMenu from '../components/editor/AccentMenu.astro';
 import TypeMenu from '../components/editor/TypeMenu.astro';
-import DocSwitch from '../components/editor/DocSwitch.astro';
+import DocLabel from '../components/editor/DocLabel.astro';
+import SizeStepper from '../components/editor/SizeStepper.astro';
 import DownloadMenu from '../components/editor/DownloadMenu.astro';
 import '../styles/resume.css';
 import '../styles/editor.css';
@@ -57,11 +58,12 @@ const listPanels = panels.filter((panel) => panel.key !== 'basics');
           <TemplateMenu />
           <AccentMenu />
           <TypeMenu />
+          <SizeStepper />
         </div>
       </div>
 
       <div class="flex items-center gap-2.5">
-        <DocSwitch active="resume" />
+        <DocLabel doc="resume" />
 
         <span class="hidden text-xs text-ink-faint lg:inline" data-save-status>
           Saved to this browser
@@ -210,6 +212,22 @@ const listPanels = panels.filter((panel) => panel.key !== 'basics');
             ))
           }
         </ul>
+
+        <a class="rail-exit" href="/templates">
+          <svg
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.3"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="size-3.5 flex-none"
+            aria-hidden="true"
+          >
+            <path d="M9.6 3.6 5.2 8l4.4 4.4" />
+          </svg>
+          All templates
+        </a>
       </nav>
 
       <!-- Form -->
@@ -245,8 +263,14 @@ const listPanels = panels.filter((panel) => panel.key !== 'basics');
               />
 
               <!-- Headshot. Read off disk, scaled down in the browser, stored
-                   with the rest of the draft. Never uploaded anywhere. -->
-              <div class="sm:col-span-2">
+                   with the rest of the draft. Never uploaded anywhere.
+
+                   Shown only on the five layouts that have somewhere to put a
+                   picture. Offering the upload on the other twelve was asking
+                   for something the page would then refuse to print. Anything
+                   already saved stays saved and comes back the moment a photo
+                   layout is chosen again. -->
+              <div class="sm:col-span-2" data-photo-block hidden>
                 <span class="text-xs font-medium text-ink-soft">Photo</span>
                 <div class="mt-1.5 flex items-start gap-4">
                   <span class="photo-preview" data-photo-preview>
@@ -287,9 +311,8 @@ const listPanels = panels.filter((panel) => panel.key !== 'basics');
 
                     <p class="mt-2 text-[11px] leading-relaxed text-ink-faint" data-photo-hint>
                       JPG, PNG or WebP. Scaled down and stored in this browser — it is never
-                      uploaded. Only the five <strong class="font-medium">With Photo</strong>
-                      layouts draw it; the rest ignore it. Those five show a drawn stand-in until
-                      you add your own, so the page never has a hole in it.
+                      uploaded. This layout shows a drawn stand-in until you add your own, so the
+                      page never has a hole in it.
                     </p>
                   </div>
                 </div>

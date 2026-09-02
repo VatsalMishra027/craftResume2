@@ -1,0 +1,175 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import LetterThumb from '../components/LetterThumb.astro';
+import { LETTERS, LETTER_ATS_LABEL, LETTER_CATEGORIES } from '../lib/letters';
+import { TEMPLATES } from '../lib/templates';
+---
+
+<Layout
+  title="Cover letter templates — CraftResume"
+  description={`${LETTERS.length} free cover letter formats, previewed at full A4 size. Pick one and start writing — no account, nothing uploaded, no watermark on the download.`}
+>
+  <Header active="cover" />
+
+  <main>
+    <section class="border-b border-line bg-surface/60">
+      <div class="shell py-16 lg:py-20">
+        <p class="eyebrow">Cover letters</p>
+        <h1 class="display mt-3 max-w-2xl text-[clamp(2.2rem,5vw,3.4rem)]">
+          Pick a letterhead,<br class="hidden sm:block" /> then write the letter.
+        </h1>
+        <p class="mt-5 max-w-xl text-[17px] leading-relaxed text-ink-soft">
+          {LETTERS.length} formats, all free and all downloadable without a watermark. The letter is
+          its own document with its own editor — it borrows your resume's colour and typeface, and
+          nothing else. Switching format inside the editor keeps everything you have written.
+        </p>
+      </div>
+    </section>
+
+    <section data-letter-gallery>
+      <div class="shell pt-10 pb-16 lg:pb-20">
+        <!-- Filters -->
+        <div class="flex flex-wrap gap-2" role="group" aria-label="Filter formats by style">
+          <button type="button" data-filter="all" aria-pressed="true" class="gallery-pill">All</button>
+          {
+            LETTER_CATEGORIES.map((category) => (
+              <button type="button" data-filter={category} aria-pressed="false" class="gallery-pill">
+                {category}
+              </button>
+            ))
+          }
+        </div>
+
+        <!-- Shown once a draft exists in this browser, so the card is the page
+             the editor will actually open rather than the sample letter. -->
+        <p
+          data-draft-note
+          hidden
+          class="mt-6 rounded-card border border-line bg-paper-sunk px-4 py-3 text-xs text-ink-muted"
+        >
+          Previewing <strong class="font-medium text-ink">your own letter</strong>, not the sample.
+        </p>
+
+        <div class="mt-12 grid gap-x-10 gap-y-14 md:grid-cols-2 lg:grid-cols-3">
+          {
+            LETTERS.map((letter, index) => (
+              <article class="group" data-card data-category={letter.category}>
+                <div class="flex items-baseline gap-3">
+                  <span class="font-mono text-xs text-ink-faint tabular-nums">
+                    {String(index + 1).padStart(2, '0')}
+                  </span>
+                  <h2 class="text-lg font-semibold tracking-[-0.02em]">{letter.name}</h2>
+                  <span class="ml-auto rounded-full bg-paper-sunk px-2.5 py-1 text-[11px] font-medium text-ink-muted">
+                    {letter.category}
+                  </span>
+                </div>
+
+                <p class="mt-2 min-h-[2.5rem] text-sm text-ink-muted">{letter.tagline}</p>
+
+                <a
+                  href={`/cover-letter?letter=${letter.id}`}
+                  class="mt-4 block overflow-hidden rounded-card border border-line bg-surface transition-all duration-300 ease-(--ease-out-soft) hover:-translate-y-1 hover:border-line-strong hover:shadow-page focus-visible:ring-2 focus-visible:ring-ink"
+                  aria-label={`Write a cover letter in the ${letter.name} format`}
+                >
+                  <LetterThumb letterId={letter.id} />
+                </a>
+
+                <div class="mt-4 flex flex-wrap items-center gap-2">
+                  <span
+                    class:list={[
+                      'rounded-full px-2.5 py-1 text-[11px] font-medium',
+                      letter.ats === 'strict'
+                        ? 'bg-clay-soft text-clay'
+                        : 'bg-paper-sunk text-ink-muted',
+                    ]}
+                  >
+                    {LETTER_ATS_LABEL[letter.ats]}
+                  </span>
+                  <span class="text-[11px] text-ink-faint">One page · A4</span>
+                </div>
+
+                <p class="mt-2 text-[11px] leading-relaxed text-ink-faint">Best for {letter.bestFor}</p>
+
+                <a
+                  href={`/cover-letter?letter=${letter.id}`}
+                  class="mt-4 inline-flex h-10 items-center rounded-full bg-ink px-5 text-sm font-medium text-paper transition-transform duration-200 ease-(--ease-out-soft) hover:-translate-y-px"
+                >
+                  Use {letter.name}
+                </a>
+              </article>
+            ))
+          }
+        </div>
+
+        <p
+          data-empty
+          hidden
+          class="mt-12 rounded-card border border-dashed border-line px-6 py-12 text-center text-sm text-ink-faint"
+        >
+          Nothing on this shelf yet. Try “All”.
+        </p>
+      </div>
+    </section>
+
+    <section class="border-t border-line">
+      <div class="shell py-16">
+        <div
+          class="flex flex-col items-start justify-between gap-6 rounded-card border border-line bg-surface p-8 sm:flex-row sm:items-center"
+        >
+          <div>
+            <h2 class="text-lg font-semibold tracking-[-0.015em]">Need the resume first?</h2>
+            <p class="mt-1.5 max-w-md text-sm text-ink-muted">
+              Most applications are read resume first, letter second. {TEMPLATES.length} layouts are waiting
+              on the templates page, and the two documents share a colour and a typeface so they
+              arrive looking like one application.
+            </p>
+          </div>
+          <a
+            href="/templates"
+            class="inline-flex h-11 flex-none items-center rounded-full bg-ink px-6 text-sm font-medium text-paper transition-transform duration-200 ease-(--ease-out-soft) hover:-translate-y-0.5"
+          >
+            Browse resume templates
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <Footer />
+</Layout>
+
+<style>
+  .gallery-pill {
+    border-radius: 999px;
+    border: 1px solid var(--color-line);
+    background: var(--color-surface);
+    padding: 0.4rem 1rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--color-ink-soft);
+    transition:
+      background-color 200ms ease,
+      border-color 200ms ease,
+      color 200ms ease;
+  }
+
+  .gallery-pill:hover {
+    border-color: var(--color-line-strong);
+  }
+
+  .gallery-pill[aria-pressed="true"] {
+    background: var(--color-ink);
+    border-color: var(--color-ink);
+    color: var(--color-paper);
+  }
+</style>
+
+<script>
+  import { observeSheets } from '../lib/fit';
+  import { initLetterGallery } from '../scripts/letter-gallery';
+
+  observeSheets();
+  initLetterGallery();
+</script>

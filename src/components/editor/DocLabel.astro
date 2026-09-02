@@ -1,0 +1,36 @@
+---
+/**
+ * Which document this editor is holding.
+ *
+ * It used to be a two-state switch, which made one editor look like it was
+ * hosting both files. It is not: a resume and a cover letter are written at
+ * different times, from different galleries, and only one of them is needed
+ * for most applications. So the bar states what is open, and the way to the
+ * other document is out through its own gallery — see the rail's exit link.
+ */
+interface Props {
+  doc: 'resume' | 'cover';
+}
+const { doc } = Astro.props;
+
+const label = doc === 'cover' ? 'Cover letter' : 'Resume';
+const path =
+  doc === 'cover'
+    ? '<rect x="2" y="3.4" width="12" height="9.2" rx="1.2"/><path d="m2.4 4.4 5.6 4 5.6-4"/>'
+    : '<path d="M9 1.8H4.4a1 1 0 0 0-1 1v10.4a1 1 0 0 0 1 1h7.2a1 1 0 0 0 1-1V5.4z"/><path d="M9 1.8v3.6h3.6M6 9.4h4M6 11.4h2.6"/>';
+---
+
+<p class="doc-label">
+  <svg
+    viewBox="0 0 16 16"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    class="size-3.5"
+    aria-hidden="true"
+    set:html={path}
+  />
+  {label}
+</p>

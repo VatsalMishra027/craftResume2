@@ -4,6 +4,7 @@
  * decides what is on screen, so the page works as a plain list before it runs.
  */
 import { fitSheet } from '../lib/fit';
+import { paintResumeThumbs } from './draft-thumbs';
 
 type TabKey = 'layouts' | 'roles';
 
@@ -19,6 +20,12 @@ export function initGallery(): void {
 
   const tabButtons = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-tab]'));
   const emptyNote = root.querySelector<HTMLElement>('[data-empty]');
+  const draftNote = root.querySelector<HTMLElement>('[data-draft-note]');
+
+  // The layout cards preview whatever this visitor has already written, so
+  // clicking one does not open a different person's resume. Blueprint cards
+  // carry their own content and are left showing it.
+  if (paintResumeThumbs(root) && draftNote) draftNote.hidden = false;
 
   // One filter per tab, remembered so switching back restores the choice.
   const filter: Record<TabKey, string> = { layouts: 'all', roles: 'all' };

@@ -24,8 +24,19 @@ const {
 // stand-in portrait on the photo layouts, so the sheet on the card is the
 // sheet the editor opens.
 const html = renderResume(data, templateId, { links: false });
+
+// A card showing the shared sample can be repainted in the browser with
+// whatever draft this visitor has saved, so the sheet on the card is the sheet
+// the editor opens for *them*. A card given its own content — a role
+// blueprint — is showing that blueprint on purpose and is left alone.
+const showsSample = data === SAMPLE_RESUME;
 ---
 
 <div class={`sheet-fit sheet-fit--page ${className}`} data-sheet-fit="page" aria-hidden="true">
-  <div class={sheetClass(templateId)} style={sheetStyle(accentId)} set:html={html} />
+  <div
+    class={sheetClass(templateId)}
+    style={sheetStyle(accentId)}
+    data-template-sheet={showsSample ? templateId : undefined}
+    set:html={html}
+  />
 </div>

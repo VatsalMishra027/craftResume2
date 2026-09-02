@@ -2198,13 +2198,17 @@
    The same sheet, the same accent and the same type as the resume it travels
    with, set as a letter: a letterhead, a date, an inside address, a subject
    line, and paragraphs with room to breathe.
+
+   Everything down to `.cl-signature` is shared by all eight formats. Each
+   `.cl-<id>` block after that restyles the letterhead only — the body of a
+   letter is the same shape whichever way you are announced at the top of it.
    =========================================================================== */
 .cover-letter {
-  /* Overrides whatever geometry the resume template asked for — a letter is
-     one column on a plain white page whichever layout it is paired with. */
-  display: block !important;
-  padding: 20mm 22mm !important;
-  background: #fff !important;
+  /* A letter is one column on a plain white page. The formats below change the
+     letterhead and nothing else, so this is the whole shared geometry. */
+  display: block;
+  padding: 20mm 22mm;
+  background: #fff;
   font-size: calc(10.2pt * var(--rs-scale, 1));
   line-height: 1.6;
 }
@@ -2290,4 +2294,253 @@
   margin-top: 12mm !important;
   font-weight: 600;
   color: var(--rs-ink);
+}
+
+/* ===========================================================================
+   The eight letter formats.
+
+   Each one owns its letterhead and leaves the body alone, so the page still
+   holds four hundred words at any size the reader picks.
+   =========================================================================== */
+
+/* --- Classic: ruled letterhead, block-left throughout. --------------------
+   The shared rules above already are Classic, so it adds nothing. */
+
+/* --- Masthead: centred name and contact over a hairline. ----------------- */
+.cl-masthead .cl-head {
+  text-align: center;
+  border-bottom-width: 0.25mm;
+  border-bottom-color: var(--rs-line);
+  padding-bottom: 4mm;
+}
+
+.cl-masthead .cl-name {
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: calc(17pt * var(--rs-scale, 1));
+}
+
+.cl-masthead .cl-role {
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-size: calc(8.6pt * var(--rs-scale, 1));
+}
+
+.cl-masthead .rs-contact {
+  justify-content: center;
+}
+
+/* --- Statement: name on an accent underline, subject as a tinted chip. --- */
+.cl-statement .cl-head {
+  border-bottom-width: 1.4mm;
+  padding-bottom: 4mm;
+  margin-bottom: 8mm;
+}
+
+.cl-statement .cl-name {
+  font-size: calc(26pt * var(--rs-scale, 1));
+  letter-spacing: -0.03em;
+}
+
+.cl-statement .cl-subject {
+  display: inline-block;
+  background: var(--rs-accent-tint);
+  border-left: 1mm solid var(--rs-accent);
+  padding: 2mm 4mm;
+  color: var(--rs-accent);
+}
+
+/* --- Rail: contact in a tinted column, the letter beside it. ------------- */
+.cl-rail {
+  display: grid;
+  grid-template-columns: 52mm 1fr;
+  padding: 0;
+}
+
+.cl-rail .cl-side {
+  background: var(--rs-accent-tint);
+  border-right: 0.4mm solid var(--rs-accent-line);
+  padding: 20mm 8mm;
+  align-self: stretch;
+}
+
+.cl-rail .cl-main {
+  padding: 20mm 18mm 20mm 12mm;
+  min-width: 0;
+}
+
+.cl-rail .cl-name {
+  font-size: calc(16pt * var(--rs-scale, 1));
+  line-height: 1.15;
+}
+
+.cl-rail .cl-role {
+  font-size: calc(9.4pt * var(--rs-scale, 1));
+}
+
+.cl-rail .rs-contact {
+  display: block;
+  margin-top: 6mm;
+}
+
+.cl-rail .rs-contact li {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.8mm;
+  margin-bottom: 2.6mm;
+  line-height: 1.35;
+}
+
+/* The inline separator the resume rail draws between contact items would sit
+   in the middle of a stacked list. */
+.cl-rail .rs-contact li + li::before {
+  display: none;
+}
+
+.cl-rail .cl-meta {
+  margin-bottom: 7mm;
+}
+
+/* --- Plain: no colour anywhere. ----------------------------------------- */
+.cl-plain {
+  padding: 24mm 26mm;
+  /* Black ink rather than accent-tinted ink: this is the format for a letter
+     that will be pasted into a form or read by a machine. */
+  --rs-ink: #14140f;
+  --rs-soft: #26251f;
+  --rs-muted: #55524a;
+}
+
+.cl-plain .cl-head {
+  border-bottom: 0.25mm solid #b9b5aa;
+  padding-bottom: 3.5mm;
+  margin-bottom: 8mm;
+}
+
+.cl-plain .cl-name {
+  color: var(--rs-ink);
+  font-size: calc(15pt * var(--rs-scale, 1));
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.cl-plain .cl-subject {
+  color: var(--rs-ink);
+}
+
+/* --- Typeset: serif, sender block right-aligned, indented paragraphs. ---- */
+.cl-typeset {
+  font-family: var(--rs-font, "Source Serif 4", ui-serif, Georgia, serif);
+  padding: 24mm 24mm;
+  --rs-ink: #171612;
+  --rs-soft: #2b2924;
+  --rs-muted: #5d5951;
+}
+
+.cl-typeset .cl-head {
+  text-align: right;
+  border-bottom: none;
+  padding-bottom: 0;
+  margin-bottom: 10mm;
+}
+
+.cl-typeset .cl-name {
+  color: var(--rs-ink);
+  font-size: calc(16pt * var(--rs-scale, 1));
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.cl-typeset .rs-contact {
+  justify-content: flex-end;
+}
+
+.cl-typeset .cl-subject {
+  font-style: italic;
+  font-weight: 600;
+}
+
+/* A serif letter marks its paragraphs by indent rather than by space. */
+.cl-typeset .cl-body p {
+  margin-bottom: 0;
+  text-indent: 8mm;
+  text-align: justify;
+}
+
+.cl-typeset .cl-body p:first-child {
+  text-indent: 0;
+}
+
+/* --- Banner: a solid accent band with the name reversed out. ------------- */
+.cl-banner {
+  padding: 0 0 20mm;
+}
+
+.cl-banner .cl-head {
+  border-bottom: none;
+  padding-bottom: 0;
+  margin-bottom: 9mm;
+}
+
+.cl-banner .cl-band {
+  background: var(--rs-accent);
+  color: var(--rs-on-accent);
+  padding: 14mm 22mm 11mm;
+}
+
+.cl-banner .cl-name {
+  color: var(--rs-on-accent);
+  font-size: calc(24pt * var(--rs-scale, 1));
+}
+
+.cl-banner .cl-role {
+  color: var(--rs-on-accent-soft);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: calc(8.8pt * var(--rs-scale, 1));
+}
+
+.cl-banner .rs-contact {
+  margin: 5mm 22mm 0;
+}
+
+/* The band runs to the paper's edge, so everything under it needs the margin
+   the sheet is no longer supplying. */
+.cl-banner .cl-meta,
+.cl-banner .cl-subject,
+.cl-banner .cl-greeting,
+.cl-banner .cl-body,
+.cl-banner .cl-signoff {
+  margin-left: 22mm;
+  margin-right: 22mm;
+}
+
+/* --- Monogram: initials in an accent disc beside the name. --------------- */
+.cl-monogram .cl-head {
+  display: flex;
+  align-items: center;
+  gap: 6mm;
+}
+
+.cl-monogram .cl-mono-main {
+  min-width: 0;
+}
+
+.cl-monogram .cl-mono {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 20mm;
+  height: 20mm;
+  border-radius: 50%;
+  background: var(--rs-accent);
+  color: var(--rs-on-accent);
+  font-size: calc(13pt * var(--rs-scale, 1));
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.cl-monogram .cl-name {
+  font-size: calc(19pt * var(--rs-scale, 1));
 }

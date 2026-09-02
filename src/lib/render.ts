@@ -14,6 +14,7 @@ import type {
 import { SECTION_KEYS } from './types';
 import { EMPTY_COVER_LETTER } from './sample';
 import { resolveAccent, resolveTemplate } from './templates';
+import { resolveLetter } from './letters';
 import { resolveFont, resolveFontSize } from './fonts';
 
 /** All user content passes through here before it touches innerHTML. */
@@ -1138,9 +1139,14 @@ export function templateSectionInfo(templateId: string): SectionInfo[] {
 /* ===========================================================================
    Cover letter.
 
-   One A4 sheet that borrows the resume's accent and type, so the two
-   documents read as one application. Deliberately plain: a letterhead, a
-   date, an inside address, a subject line, paragraphs, a sign-off.
+   One A4 sheet with its own set of formats — see lib/letters.ts. Every format
+   prints the same letter in the same order: a letterhead, a date, an inside
+   address, a subject line, paragraphs, a sign-off. What changes between them
+   is the letterhead, because that is the only part of a letter a layout can
+   usefully redesign without getting in the way of reading it.
+
+   The accent and the typeface are the resume's, so the two documents still
+   arrive looking like one application.
    =========================================================================== */
 function paragraphs(value: string): string[] {
   return clean(value)
@@ -1149,26 +1155,54 @@ function paragraphs(value: string): string[] {
     .filter(Boolean);
 }
 
-export function renderCoverLetter(data: ResumeData): string {
+/**
+ * The pieces every format is assembled from. Kept apart from the arrangement
+ * so a new letterhead is a new arrangement of the same parts rather than a
+ * second copy of the escaping, the click-to-edit hooks and the empty states.
+ */
+interface LetterParts {
+  name: string;
+  nameHtml: string;
+  role: string;
+  contact: string;
+  contactIcons: string;
+  initials: string;
+  date: string;
+  address: string;
+  subject: string;
+  greeting: string;
+  body: string;
+  signOff: string;
+}
+
+/** "Ananya Rao" becomes "AR". Two letters at most, so the disc stays a disc. */
+function initialsOf(name: string): string {
+  const words = clean(name).split(/\s+/).filter(Boolean);
+  if (!words.length) return '';
+  const first = words[0][0] ?? '';
+  const last = words.length > 1 ? (words[words.length - 1][0] ?? '') : '';
+  return (first + last).toUpperCase();
+}
+
+function letterParts(data: ResumeData): LetterParts {
   const letter = data.coverLetter ?? EMPTY_COVER_LETTER;
   const name = clean(data.basics.fullName);
 
-  const letterhead = `<header class="cl-head"${opens('basics')}>${
-    name
-      ? `<h1 class="cl-name"${hook('basics|fullName')}>${esc(name)}</h1>`
-      : '<h1 class="cl-name rs-placeholder">Your name</h1>'
-  }${
-    clean(data.basics.title)
-      ? `<p class="cl-role"${hook('basics|title')}>${esc(clean(data.basics.title))}</p>`
-      : ''
-  }${contactList(data)}</header>`;
+  const nameHtml = name
+    ? `<h1 class="cl-name"${hook('basics|fullName')}>${esc(name)}</h1>`
+    : '<h1 class="cl-name rs-placeholder">Your name</h1>';
+
+  const role = clean(data.basics.title)
+    ? `<p class="cl-role"${hook('basics|title')}>${esc(clean(data.basics.title))}</p>`
+    : '';
 
   const date = clean(letter.date)
     ? `<p class="cl-date"${hook('cover|date')}>${esc(clean(letter.date))}</p>`
     : '';
 
   const addressLines = [
-    clean(letter.recipient) && `<span${hook('cover|recipient')}>${esc(clean(letter.recipient))}</span>`,
+    clean(letter.recipient) &&
+      `<span${hook('cover|recipient')}>${esc(clean(letter.recipient))}</span>`,
     clean(letter.recipientTitle) &&
       `<span${hook('cover|recipientTitle')}>${esc(clean(letter.recipientTitle))}</span>`,
     clean(letter.company) && `<span${hook('cover|company')}>${esc(clean(letter.company))}</span>`,
@@ -1196,16 +1230,90 @@ export function renderCoverLetter(data: ResumeData): string {
     : `<div class="cl-body cl-body--empty"${hook('cover|body')}><p>Your letter goes here. Three short paragraphs is plenty: why this role, what you have actually done that proves you can do it, and what you would like to happen next.</p></div>`;
 
   const signOff = `<div class="cl-signoff">${
-    clean(letter.signOff)
-      ? `<p${hook('cover|signOff')}>${esc(clean(letter.signOff))}</p>`
-      : ''
+    clean(letter.signOff) ? `<p${hook('cover|signOff')}>${esc(clean(letter.signOff))}</p>` : ''
   }${name ? `<p class="cl-signature"${hook('basics|fullName')}>${esc(name)}</p>` : ''}</div>`;
 
-  return `${letterhead}<div class="cl-meta">${date}${address}</div>${subject}${greeting}${body}${signOff}`;
+  return {
+    name,
+    nameHtml,
+    role,
+    contact: contactList(data),
+    contactIcons: contactList(data, true),
+    initials: initialsOf(name),
+    date,
+    address,
+    subject,
+    greeting,
+    body,
+    signOff,
+  };
 }
 
-export function letterClass(templateId: string): string {
-  return `resume-sheet cover-letter t-${resolveTemplate(templateId)}`;
+/** Everything below the letterhead. Identical in every format. */
+function letterBody(parts: LetterParts): string {
+  return `<div class="cl-meta">${parts.date}${parts.address}</div>${parts.subject}${parts.greeting}${parts.body}${parts.signOff}`;
+}
+
+function head(inner: string, extraClass = ''): string {
+  return `<header class="cl-head ${extraClass}"${opens('basics')}>${inner}</header>`;
+}
+
+/**
+ * One A4 sheet. `letterId` picks the letterhead; everything under it is the
+ * same letter, because the part a format can usefully change is how you are
+ * announced, not how you write.
+ */
+export function renderCoverLetter(data: ResumeData, letterId?: string): string {
+  const parts = letterParts(data);
+  const rest = letterBody(parts);
+
+  switch (resolveLetter(letterId)) {
+    /* Centred name and contact line over a hairline rule. */
+    case 'masthead':
+      return head(`${parts.nameHtml}${parts.role}${parts.contact}`) + rest;
+
+    /* Large name on an accent underline, the role as a tinted subject chip. */
+    case 'statement':
+      return head(`${parts.nameHtml}${parts.role}${parts.contact}`) + rest;
+
+    /* Contact details in a tinted column beside the letter itself. */
+    case 'rail':
+      return `<aside class="cl-side"${opens('basics')}>${parts.nameHtml}${parts.role}${parts.contactIcons}</aside><div class="cl-main">${rest}</div>`;
+
+    /* No colour anywhere: small name, wide margins, black text. */
+    case 'plain':
+      return head(`${parts.nameHtml}${parts.role}${parts.contact}`) + rest;
+
+    /* Serif page, sender block right-aligned, indented paragraphs. */
+    case 'typeset':
+      return head(`${parts.nameHtml}${parts.role}${parts.contact}`) + rest;
+
+    /* A solid accent band with the name reversed out of it. */
+    case 'banner':
+      return (
+        head(
+          `<div class="cl-band">${parts.nameHtml}${parts.role}</div>${parts.contact}`,
+          'cl-head--banner',
+        ) + rest
+      );
+
+    /* Initials in an accent disc beside the name and contact stack. */
+    case 'monogram':
+      return (
+        head(
+          `${parts.initials ? `<span class="cl-mono" aria-hidden="true">${esc(parts.initials)}</span>` : ''}<div class="cl-mono-main">${parts.nameHtml}${parts.role}${parts.contact}</div>`,
+          'cl-head--monogram',
+        ) + rest
+      );
+
+    /* Classic: ruled letterhead, block-left throughout. */
+    default:
+      return head(`${parts.nameHtml}${parts.role}${parts.contact}`) + rest;
+  }
+}
+
+export function letterClass(letterId: string): string {
+  return `resume-sheet cover-letter cl-${resolveLetter(letterId)}`;
 }
 
 export function sheetClass(templateId: string): string {

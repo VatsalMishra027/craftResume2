@@ -1,0 +1,58 @@
+---
+/**
+ * Text size for the whole sheet, as two buttons and a reading.
+ *
+ * Size is the one typographic setting people adjust repeatedly — you type a
+ * third role, the page spills onto a second sheet, you take it down a notch —
+ * so it sits in the bar as a stepper rather than behind a menu. One press is
+ * one step on the ladder in lib/fonts.ts, and the number in the middle says
+ * where you are; double-click it to go back to 100%.
+ *
+ * The same control appears in both editors and writes the same stored value,
+ * so a resume and its letter cannot end up set at two different sizes.
+ */
+---
+
+<div class="size-stepper" data-size-stepper>
+  <button
+    type="button"
+    data-size-step="-1"
+    class="size-step"
+    aria-label="Make the text smaller"
+    title="Smaller text"
+  >
+    <svg viewBox="0 0 16 16" fill="none" class="size-3.5" aria-hidden="true">
+      <path
+        d="M3.4 8h9.2"
+        stroke="currentColor"
+        stroke-width="1.6"
+        stroke-linecap="round"></path>
+    </svg>
+  </button>
+
+  <button
+    type="button"
+    data-size-reset
+    class="size-value"
+    aria-label="Text size — click to reset to 100%"
+    title="Click to reset to 100%"
+  >
+    <span data-size-value>100%</span>
+  </button>
+
+  <button
+    type="button"
+    data-size-step="1"
+    class="size-step"
+    aria-label="Make the text bigger"
+    title="Bigger text"
+  >
+    <svg viewBox="0 0 16 16" fill="none" class="size-3.5" aria-hidden="true">
+      <path
+        d="M8 3.4v9.2M3.4 8h9.2"
+        stroke="currentColor"
+        stroke-width="1.6"
+        stroke-linecap="round"></path>
+    </svg>
+  </button>
+</div>

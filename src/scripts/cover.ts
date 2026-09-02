@@ -2,9 +2,14 @@
  * The cover letter editor.
  *
  * A sibling of the resume editor rather than a mode of it: same workbench,
- * same stored draft, one document. It owns `coverLetter` and the contact block
- * and merges everything else back from storage on every save — see markSaved —
- * so the two editors can be open in two tabs without rolling each other back.
+ * same stored draft, one document. It owns `coverLetter`, the letter format
+ * and the contact block, and merges everything else back from storage on every
+ * save — see markSaved — so the two editors can be open in two tabs without
+ * rolling each other back.
+ *
+ * The format comes from the letter's own gallery and is stored apart from the
+ * resume's template. The accent and the typeface are shared, which is what
+ * makes the two documents arrive looking like one application.
  */
 import { letterClass, renderCoverLetter, sheetStyle } from '../lib/render';
 import {
@@ -14,17 +19,18 @@ import {
   loadAccent,
   loadFont,
   loadFontSize,
+  loadLetter,
   loadResume,
   loadSplit,
-  loadTemplate,
   saveAccent,
   saveFont,
   saveFontSize,
+  saveLetter,
   saveResume,
   saveSplit,
-  saveTemplate,
 } from '../lib/store';
-import { resolveAccent, resolveTemplate } from '../lib/templates';
+import { resolveAccent } from '../lib/templates';
+import { resolveLetter } from '../lib/letters';
 import {
   buildCoverLetterDocx,
   buildCoverLetterText,
@@ -59,13 +65,23 @@ export function initCoverEditor(): void {
 
   const params = new URLSearchParams(location.search);
   const data: ResumeData = loadResume();
-  let template = params.has('template') ? resolveTemplate(params.get('template')) : loadTemplate();
+  // `?letter=` is how the formats gallery hands a choice over. The accent and
+  // the typeface are shared with the resume; the format is the letter's own.
+  let letterId = params.has('letter') ? resolveLetter(params.get('letter')) : loadLetter();
   let accent = params.has('accent') ? resolveAccent(params.get('accent')).id : loadAccent();
   let font = loadFont();
   let fontSize = loadFontSize();
 
-  saveTemplate(template);
+  saveLetter(letterId);
   saveAccent(accent);
+
+  // The choice is stored now, so leave a clean URL behind — a reload should
+  // not re-apply a format the user has since changed.
+  if (params.has('letter')) {
+    const url = new URL(location.href);
+    url.searchParams.delete('letter');
+    history.replaceState(null, '', url);
+  }
 
   /** The letter, created on first use rather than carried by every draft. */
   function letter(): CoverLetter {
@@ -118,9 +134,9 @@ export function initCoverEditor(): void {
   }
 
   function paintPreview(): void {
-    preview!.className = `${letterClass(template)} resume-sheet--live`;
+    preview!.className = `${letterClass(letterId)} resume-sheet--live`;
     preview!.setAttribute('style', sheetStyle(accent, sheetType()));
-    preview!.innerHTML = renderCoverLetter(data);
+    preview!.innerHTML = renderCoverLetter(data, letterId);
     fitSheet(previewFit!);
     reportPageCount();
   }
@@ -266,30 +282,28 @@ export function initCoverEditor(): void {
     if (event.key === 'Escape') closeMenus();
   });
 
-  // --- Template, colour, type ---------------------------------------------
-  const templateButtons = Array.from(
-    document.querySelectorAll<HTMLButtonElement>('[data-template]'),
-  );
-  const templateLabel = document.querySelector<HTMLElement>('[data-template-label]');
+  // --- Format, colour, type -----------------------------------------------
+  const letterButtons = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-letter]'));
+  const letterLabel = document.querySelector<HTMLElement>('[data-letter-label]');
 
-  function syncTemplateButtons(): void {
-    templateButtons.forEach((button) => {
-      const active = button.dataset.template === template;
+  function syncLetterButtons(): void {
+    letterButtons.forEach((button) => {
+      const active = button.dataset.letter === letterId;
       button.setAttribute('aria-pressed', String(active));
-      const tick = button.querySelector<HTMLElement>('[data-template-tick]');
+      const tick = button.querySelector<HTMLElement>('[data-letter-tick]');
       if (tick) {
         tick.classList.toggle('bg-ink', active);
         tick.classList.toggle('border-ink', active);
       }
-      if (active && templateLabel) templateLabel.textContent = button.dataset.templateName ?? '';
+      if (active && letterLabel) letterLabel.textContent = button.dataset.letterName ?? '';
     });
   }
 
-  templateButtons.forEach((button) => {
+  letterButtons.forEach((button) => {
     button.addEventListener('click', () => {
-      template = resolveTemplate(button.dataset.template);
-      saveTemplate(template);
-      syncTemplateButtons();
+      letterId = resolveLetter(button.dataset.letter);
+      saveLetter(letterId);
+      syncLetterButtons();
       paintPreview();
       closeMenus();
     });
@@ -395,10 +409,10 @@ export function initCoverEditor(): void {
   const copyLabel = document.querySelector<HTMLElement>('[data-copy-label]');
 
   function printLetter(): void {
-    printRoot!.innerHTML = `<div class="${letterClass(template)}" style="${sheetStyle(
+    printRoot!.innerHTML = `<div class="${letterClass(letterId)}" style="${sheetStyle(
       accent,
       sheetType(),
-    )}">${renderCoverLetter(data)}</div>`;
+    )}">${renderCoverLetter(data, letterId)}</div>`;
 
     // Browsers seed the "Save as PDF" filename from the document title.
     const name = data.basics.fullName.trim();
@@ -488,7 +502,7 @@ export function initCoverEditor(): void {
 
   // --- Boot ---------------------------------------------------------------
   hydrateFields();
-  syncTemplateButtons();
+  syncLetterButtons();
   syncAccentButtons();
   showPanel('letter');
   applySplit();

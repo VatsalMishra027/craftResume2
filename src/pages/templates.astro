@@ -111,6 +111,17 @@ const tabs = [
           </div>
         </div>
 
+        <!-- Shown once a draft exists in this browser: the layout cards below
+             are then previewing that draft rather than the sample resume. -->
+        <p
+          data-draft-note
+          hidden
+          class="mt-6 rounded-card border border-line bg-paper-sunk px-4 py-3 text-xs text-ink-muted"
+        >
+          Previewing <strong class="font-medium text-ink">your own resume</strong>, not the sample.
+          Role blueprints below still show the resume they come with.
+        </p>
+
         <!-- Layouts -->
         <div data-panel="layouts" hidden>
           <div class="mt-12 grid gap-x-10 gap-y-14 md:grid-cols-2 lg:grid-cols-3">

@@ -451,93 +451,100 @@
   background: var(--menu-hover);
 }
 
-/* --- Text size chips ------------------------------------------------------ */
-.size-chip {
-  display: grid;
-  justify-items: center;
-  gap: 0.0625rem;
+/* --- Text size stepper ----------------------------------------------------
+   Two buttons and a reading, sized to sit level with the .bar-button pills
+   beside it. Size is the setting people reach for again and again while a page
+   is filling up, so it is on the bar rather than inside a menu.
+--------------------------------------------------------------------------- */
+.size-stepper {
+  display: inline-flex;
+  align-items: center;
+  height: 2.25rem;
   border-radius: 0.5rem;
   border: 1px solid var(--color-line-strong);
-  padding: 0.375rem 0.125rem 0.3125rem;
+  overflow: hidden;
+}
+
+.size-step {
+  display: grid;
+  place-items: center;
+  width: 1.875rem;
+  align-self: stretch;
   color: var(--color-ink-soft);
   transition:
     background-color 150ms ease,
-    border-color 150ms ease,
     color 150ms ease;
 }
 
-.size-chip:hover {
+.size-step:hover:not(:disabled) {
   background: var(--menu-hover);
   color: var(--color-ink);
 }
 
-.size-chip[aria-pressed="true"] {
-  background: var(--color-ink);
-  border-color: var(--color-ink);
-  color: var(--color-paper);
+/* At either end of the ladder the button stays in place and stops responding,
+   rather than disappearing and shifting the two beside it. */
+.size-step:disabled {
+  color: var(--color-ink-faint);
+  cursor: default;
 }
 
-/* The glyph is the control: each chip shows "Aa" at the size it will set, so
-   the row is a specimen rather than five numbers. */
-.size-chip-glyph {
-  font-weight: 600;
-  line-height: 1;
-}
-
-.size-chip:nth-child(1) .size-chip-glyph {
-  font-size: 0.6875rem;
-}
-.size-chip:nth-child(2) .size-chip-glyph {
+.size-value {
+  min-width: 2.75rem;
+  align-self: stretch;
+  padding: 0 0.125rem;
+  border-inline: 1px solid var(--color-line-strong);
   font-size: 0.75rem;
-}
-.size-chip:nth-child(3) .size-chip-glyph {
-  font-size: 0.8125rem;
-}
-.size-chip:nth-child(4) .size-chip-glyph {
-  font-size: 0.9375rem;
-}
-.size-chip:nth-child(5) .size-chip-glyph {
-  font-size: 1.0625rem;
-}
-
-.size-chip-label {
-  font-size: 0.5625rem;
+  font-weight: 500;
   font-variant-numeric: tabular-nums;
-  opacity: 0.75;
+  color: var(--color-ink);
+  transition: background-color 150ms ease;
 }
 
-/* --- Document switch -----------------------------------------------------
-   Two links, not two view states: each document has a page of its own.
+.size-value:hover {
+  background: var(--menu-hover);
+}
+
+/* --- Which document you are editing --------------------------------------
+   A label, not a switch. The resume and the cover letter are two documents
+   with two editors, and each one is reached from its own gallery -- so the bar
+   says what is open rather than offering to swap it for the other one.
 --------------------------------------------------------------------------- */
-.doc-switch {
+.doc-label {
   display: inline-flex;
-  padding: 0.1875rem;
+  align-items: center;
+  gap: 0.4375rem;
+  padding: 0.3125rem 0.75rem;
   border-radius: 999px;
   border: 1px solid var(--glass-line);
   background: color-mix(in srgb, var(--color-surface) 60%, transparent);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-}
-
-.doc-switch a {
-  border-radius: 999px;
-  padding: 0.3125rem 0.75rem;
   font-size: 0.75rem;
   font-weight: 500;
-  color: var(--color-ink-muted);
-  white-space: nowrap;
-  transition:
-    background-color 200ms ease,
-    color 200ms ease;
-}
-
-.doc-switch a:hover {
   color: var(--color-ink);
+  white-space: nowrap;
 }
 
-.doc-switch a[aria-current="page"] {
-  background: var(--color-ink);
-  color: var(--color-paper);
+.doc-label svg {
+  color: var(--color-ink-muted);
+}
+
+/* The way out of an editor: back to the gallery this document was picked
+   from. Sits at the foot of the rail, out of the writing surface. */
+.rail-exit {
+  display: flex;
+  align-items: center;
+  gap: 0.4375rem;
+  margin: 0.75rem 0.5rem 0;
+  padding: 0.5rem 0.625rem;
+  border-top: 1px solid var(--color-line);
+  font-size: 0.75rem;
+  color: var(--color-ink-muted);
+  transition: color 150ms ease;
+}
+
+.rail-exit:hover {
+  color: var(--color-ink);
 }
 
 /* --- Download menu ------------------------------------------------------- */

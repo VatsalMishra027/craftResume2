@@ -1,15 +1,13 @@
 ---
 /**
- * Typeface and text size for the sheet.
+ * The typeface for the sheet. Size is next door, on the stepper — see
+ * SizeStepper.astro for why the two are split.
  *
- * One menu rather than two controls in the bar: the two settings are always
- * adjusted together — you pick a face, then find the size that makes it fit —
- * and the sample line under the faces is the only honest way to choose one.
- *
- * The same menu appears in both editors and writes to the same two stored
- * values, so a resume and its letter cannot end up in different type.
+ * The faces are set in themselves, because the specimen is the only honest way
+ * to choose one. The same menu appears in both editors and writes the same
+ * stored value, so a resume and its letter cannot arrive in different type.
  */
-import { FONTS, FONT_SIZES } from '../../lib/fonts';
+import { FONTS } from '../../lib/fonts';
 ---
 
 <div class="relative" data-menu="type">
@@ -58,25 +56,9 @@ import { FONTS, FONT_SIZES } from '../../lib/fonts';
       ))
     }
 
-    <p class="menu-group mt-1 border-t border-line-strong pt-2.5">Text size</p>
-    <div class="grid grid-cols-5 gap-1 px-1.5 pb-1">
-      {
-        FONT_SIZES.map((size) => (
-          <button
-            type="button"
-            data-font-size={size.id}
-            aria-pressed="false"
-            title={`${size.name} — ${Math.round(size.scale * 100)}%`}
-            class="size-chip"
-          >
-            <span class="size-chip-glyph">Aa</span>
-            <span class="size-chip-label">{Math.round(size.scale * 100)}</span>
-          </button>
-        ))
-      }
-    </div>
-    <p class="px-2.5 pb-1.5 text-[11px] leading-snug text-ink-muted" data-font-size-note>
-      Scales every size on the page together, so the layout keeps its shape.
+    <p class="mt-1 border-t border-line-strong px-2.5 pt-2.5 pb-1.5 text-[11px] leading-snug text-ink-muted">
+      Text size lives on the <strong class="font-medium">A− / A+</strong> stepper in the bar. It
+      scales every size on the page together, so the layout keeps its shape.
     </p>
   </div>
 </div>

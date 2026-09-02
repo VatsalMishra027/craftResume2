@@ -95,15 +95,35 @@ export interface SizeMeta {
 }
 
 export const FONT_SIZES: SizeMeta[] = [
+  { id: 'xxs', name: 'Smallest', scale: 0.85 },
   { id: 'xs', name: 'Compact', scale: 0.9 },
   { id: 's', name: 'Small', scale: 0.95 },
   { id: 'm', name: 'Default', scale: 1 },
   { id: 'l', name: 'Large', scale: 1.06 },
   { id: 'xl', name: 'Larger', scale: 1.12 },
+  { id: 'xxl', name: 'Largest', scale: 1.18 },
 ];
 
 export const DEFAULT_FONT_SIZE = 'm';
 
+const DEFAULT_SIZE_INDEX = FONT_SIZES.findIndex((size) => size.id === DEFAULT_FONT_SIZE);
+
 export function resolveFontSize(value: string | null | undefined): SizeMeta {
-  return FONT_SIZES.find((size) => size.id === value) ?? FONT_SIZES[2];
+  return FONT_SIZES.find((size) => size.id === value) ?? FONT_SIZES[DEFAULT_SIZE_INDEX];
+}
+
+/**
+ * One step bigger or smaller, stopping at either end of the ladder rather than
+ * wrapping around — pressing A+ once more at the top should do nothing, not
+ * shrink the page back to its smallest.
+ */
+export function stepFontSize(value: string | null | undefined, delta: number): SizeMeta {
+  const current = FONT_SIZES.indexOf(resolveFontSize(value));
+  const next = Math.min(FONT_SIZES.length - 1, Math.max(0, current + delta));
+  return FONT_SIZES[next];
+}
+
+/** True when there is no more room to grow (or shrink) in that direction. */
+export function atSizeLimit(value: string | null | undefined, delta: number): boolean {
+  return stepFontSize(value, delta).id === resolveFontSize(value).id;
 }

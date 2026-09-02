@@ -15,6 +15,7 @@ import type {
 import { SECTION_KEYS } from './types';
 import { EMPTY_COVER_LETTER, EMPTY_RESUME, SAMPLE_RESUME } from './sample';
 import { DEFAULT_ACCENT, DEFAULT_TEMPLATE, resolveAccent, resolveTemplate } from './templates';
+import { DEFAULT_LETTER, resolveLetter } from './letters';
 import {
   DEFAULT_FONT,
   DEFAULT_FONT_SIZE,
@@ -25,6 +26,7 @@ import {
 const DATA_KEY = 'craftresume:data:v2';
 const LEGACY_DATA_KEY = 'craftresume:data:v1';
 const TEMPLATE_KEY = 'craftresume:template:v1';
+const LETTER_KEY = 'craftresume:letter:v1';
 const ACCENT_KEY = 'craftresume:accent:v1';
 const SPLIT_KEY = 'craftresume:split:v1';
 const THEME_KEY = 'craftresume:theme:v1';
@@ -288,6 +290,39 @@ export function saveTemplate(id: string): void {
     localStorage.setItem(TEMPLATE_KEY, resolveTemplate(id));
   } catch {
     // Ignore — the template still applies for this session.
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   The cover letter's format.
+
+   Stored apart from the resume's template on purpose: the two documents are
+   picked in two different galleries at two different moments, and a letter
+   layout is not a resume layout with fewer sections. They still share the
+   accent and the typeface, which is what makes them look like one application.
+--------------------------------------------------------------------------- */
+export function loadLetter(): string {
+  try {
+    return resolveLetter(localStorage.getItem(LETTER_KEY));
+  } catch {
+    return DEFAULT_LETTER;
+  }
+}
+
+export function saveLetter(id: string): void {
+  try {
+    localStorage.setItem(LETTER_KEY, resolveLetter(id));
+  } catch {
+    // Ignore — the format still applies for this session.
+  }
+}
+
+/** True when this browser has picked a letter format before. */
+export function hasChosenLetter(): boolean {
+  try {
+    return localStorage.getItem(LETTER_KEY) !== null;
+  } catch {
+    return false;
   }
 }
 
