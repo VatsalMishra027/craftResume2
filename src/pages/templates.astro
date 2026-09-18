@@ -39,6 +39,25 @@ const tabs = [
           all downloadable without a watermark. You are not locked in — switching templates inside the
           editor keeps everything you have typed.
         </p>
+
+        <div class="mt-8 flex flex-wrap items-center gap-4 p-4 rounded-card border border-clay/30 bg-clay-soft/30 max-w-xl">
+          <div class="size-9 rounded-full bg-clay-soft text-clay flex items-center justify-center flex-none">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" class="size-4.5">
+              <path d="M9 1.8H4.4a1 1 0 0 0-1 1v10.4a1 1 0 0 0 1 1h7.2a1 1 0 0 0 1-1V5.4z" />
+              <path d="M9 1.8v3.6h3.6M8 8v4m-2-2 2-2 2 2" />
+            </svg>
+          </div>
+          <div class="flex-1 min-w-[200px]">
+            <p class="text-xs font-semibold text-ink">Already have an existing resume?</p>
+            <p class="text-[11px] text-ink-muted">Upload your PDF and we'll automatically fill these templates for you.</p>
+          </div>
+          <a
+            href="/import"
+            class="rounded-full bg-ink px-4 py-2 text-xs font-semibold text-paper hover:-translate-y-px transition-transform flex-none"
+          >
+            Import PDF
+          </a>
+        </div>
       </div>
     </section>
 

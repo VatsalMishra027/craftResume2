@@ -41,6 +41,7 @@ import type { ExportSection } from '../lib/export';
 import { fitSheet } from '../lib/fit';
 import { SECTION_KEYS as SECTIONS } from '../lib/types';
 import type { AnyItem, PanelKey, ResumeData, SectionKey, SectionMeta } from '../lib/types';
+import { parsePdfResume } from '../lib/pdf';
 
 const CONTROL =
   'mt-1.5 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-ink-faint transition-colors duration-150 hover:border-line-strong focus:border-ink focus:outline-none';
@@ -1128,6 +1129,136 @@ export function initEditor(): void {
     syncSectionOrder();
     paintPreview();
     markSaved();
+  });
+
+  // --- Import Resume Modal ------------------------------------------------
+  const importModal = document.querySelector<HTMLElement>('[data-modal="import"]');
+  const importDropzone = document.querySelector<HTMLElement>('[data-modal-dropzone]');
+  const importFileInput = document.querySelector<HTMLInputElement>('[data-modal-file-input]');
+  const importStatus = document.querySelector<HTMLElement>('[data-modal-status]');
+  const importStatusText = document.querySelector<HTMLElement>('[data-modal-status-text]');
+  const importPreview = document.querySelector<HTMLElement>('[data-modal-preview]');
+  const importPreviewSummary = document.querySelector<HTMLElement>('[data-modal-preview-summary]');
+  const importApplyBtn = document.querySelector<HTMLButtonElement>('[data-modal-apply]');
+
+  let pendingImportData: ResumeData | null = null;
+
+  function openImportModal(): void {
+    if (!importModal) return;
+    importModal.hidden = false;
+    pendingImportData = null;
+    if (importPreview) importPreview.classList.add('hidden');
+    if (importStatus) importStatus.classList.add('hidden');
+    if (importApplyBtn) importApplyBtn.disabled = true;
+    if (importFileInput) importFileInput.value = '';
+  }
+
+  function closeImportModal(): void {
+    if (!importModal) return;
+    importModal.hidden = true;
+    pendingImportData = null;
+  }
+
+  document.querySelectorAll<HTMLElement>('[data-open-import]').forEach((btn) => {
+    btn.addEventListener('click', openImportModal);
+  });
+
+  document.querySelectorAll<HTMLElement>('[data-modal-close="import"]').forEach((btn) => {
+    btn.addEventListener('click', closeImportModal);
+  });
+
+  importModal?.addEventListener('click', (e) => {
+    if (e.target === importModal) closeImportModal();
+  });
+
+  async function handleImportPdf(file: File): Promise<void> {
+    console.log('====================================================');
+    console.log('[In-Editor PDF Import] User file selected:');
+    console.log(`  • Uploaded filename: ${file.name}`);
+    console.log(`  • File size: ${file.size} bytes (${(file.size / 1024).toFixed(1)} KB)`);
+    console.log(`  • MIME type: ${file.type || '(empty/unknown)'}`);
+
+    if (!file.name.toLowerCase().endsWith('.pdf') && file.type !== 'application/pdf') {
+      alert('Please upload a valid PDF file.');
+      return;
+    }
+
+    try {
+      if (importStatus) importStatus.classList.remove('hidden');
+      if (importStatusText) importStatusText.textContent = 'Reading PDF binary data…';
+      if (importPreview) importPreview.classList.add('hidden');
+      if (importApplyBtn) importApplyBtn.disabled = true;
+
+      const arrayBuffer = await file.arrayBuffer();
+      console.log(`  • ArrayBuffer byte length: ${arrayBuffer.byteLength} bytes`);
+
+      if (importStatusText) importStatusText.textContent = 'Extracting resume details…';
+
+      const res = await parsePdfResume(arrayBuffer, {
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type,
+      });
+      pendingImportData = res.data;
+
+      console.log('[In-Editor PDF Import] Resume parsed successfully! Summary stats:', res.stats);
+
+      if (importStatus) importStatus.classList.add('hidden');
+      if (importPreview && importPreviewSummary) {
+        importPreview.classList.remove('hidden');
+        const name = res.data.basics.fullName || 'Candidate';
+        importPreviewSummary.textContent = `${name} · ${res.stats.experienceCount} roles · ${res.stats.educationCount} degrees · ${res.stats.skillsCount} skills · ${res.stats.projectsCount} projects detected.`;
+      }
+      if (importApplyBtn) importApplyBtn.disabled = false;
+    } catch (err: unknown) {
+      console.error('[In-Editor PDF Import Error] Exception caught:', err);
+      if (err instanceof Error && err.stack) {
+        console.error('[In-Editor PDF Import Error] Stack trace:', err.stack);
+      }
+      if (importStatus) importStatus.classList.add('hidden');
+      const msg = err instanceof Error ? err.message : String(err);
+      alert(
+        `Could not extract text from this PDF.\n\nDetails: ${msg}\n\nCheck browser developer console (F12) for the complete diagnostic trace.`,
+      );
+    }
+  }
+
+  importFileInput?.addEventListener('change', () => {
+    if (importFileInput.files && importFileInput.files[0]) {
+      void handleImportPdf(importFileInput.files[0]);
+    }
+  });
+
+  importDropzone?.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    importDropzone.classList.add('border-ink', 'bg-paper-sunk');
+  });
+
+  importDropzone?.addEventListener('dragleave', () => {
+    importDropzone.classList.remove('border-ink', 'bg-paper-sunk');
+  });
+
+  importDropzone?.addEventListener('drop', (e) => {
+    e.preventDefault();
+    importDropzone.classList.remove('border-ink', 'bg-paper-sunk');
+    if (e.dataTransfer?.files && e.dataTransfer.files[0]) {
+      void handleImportPdf(e.dataTransfer.files[0]);
+    }
+  });
+
+  importApplyBtn?.addEventListener('click', () => {
+    if (!pendingImportData) return;
+    const ok = window.confirm('Replace your current resume draft with the imported details?');
+    if (!ok) return;
+
+    data = structuredClone(pendingImportData);
+    hydrateStaticFields();
+    renderAllSections();
+    syncSectionHeadings();
+    syncSectionOrder();
+    paintPreview();
+    markSaved();
+    closeImportModal();
   });
 
   /* --- Download -------------------------------------------------------------

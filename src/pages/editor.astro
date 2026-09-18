@@ -9,6 +9,7 @@ import TypeMenu from '../components/editor/TypeMenu.astro';
 import DocLabel from '../components/editor/DocLabel.astro';
 import SizeStepper from '../components/editor/SizeStepper.astro';
 import DownloadMenu from '../components/editor/DownloadMenu.astro';
+import ImportModal from '../components/editor/ImportModal.astro';
 import '../styles/resume.css';
 import '../styles/editor.css';
 
@@ -63,7 +64,18 @@ const listPanels = panels.filter((panel) => panel.key !== 'basics');
       </div>
 
       <div class="flex items-center gap-2.5">
-        <DocLabel doc="resume" />
+        <button
+          type="button"
+          data-open-import
+          class="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1.5 text-xs font-medium text-ink transition-colors hover:border-line-strong hover:bg-paper-sunk cursor-pointer"
+          title="Import an existing resume PDF"
+        >
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" class="size-3.5">
+            <path d="M9 1.8H4.4a1 1 0 0 0-1 1v10.4a1 1 0 0 0 1 1h7.2a1 1 0 0 0 1-1V5.4z" />
+            <path d="M9 1.8v3.6h3.6M8 8v4m-2-2 2-2 2 2" />
+          </svg>
+          <span>Import PDF</span>
+        </button>
 
         <span class="hidden text-xs text-ink-faint lg:inline" data-save-status>
           Saved to this browser
@@ -212,6 +224,27 @@ const listPanels = panels.filter((panel) => panel.key !== 'basics');
             ))
           }
         </ul>
+
+        <button
+          type="button"
+          data-open-import
+          class="rail-exit mb-1 w-full text-left cursor-pointer hover:text-ink"
+        >
+          <svg
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.3"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="size-3.5 flex-none"
+            aria-hidden="true"
+          >
+            <path d="M9 1.8H4.4a1 1 0 0 0-1 1v10.4a1 1 0 0 0 1 1h7.2a1 1 0 0 0 1-1V5.4z" />
+            <path d="M9 1.8v3.6h3.6M8 8v4m-2-2 2-2 2 2" />
+          </svg>
+          Import PDF
+        </button>
 
         <a class="rail-exit" href="/templates">
           <svg
@@ -425,6 +458,8 @@ const listPanels = panels.filter((panel) => panel.key !== 'basics');
   <!-- Populated only at print time, at true A4 size. Kept off screen by the
        .print-root class rather than the `hidden` attribute — see global.css. -->
   <div class="print-root"></div>
+
+  <ImportModal />
 </Layout>
 
 

@@ -7,13 +7,15 @@
   },
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build",
+    "build": "node ./node_modules/astro/bin/astro.mjs build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "test": "npx tsx tests/parser-scenarios.test.ts"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",
     "astro": "^7.2.10",
+    "pdfjs-dist": "^6.3.289",
     "tailwindcss": "^4.3.3"
   },
   "allowScripts": {
