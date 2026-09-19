@@ -379,25 +379,54 @@ function groupFragmentsIntoLines(
   return lines;
 }
 
+const ICON_FONT_REGEX = /icon|symbol|dingbat|wingding|webding|awesome|glyph|socicon|fontello|icomoon/i;
+const UNICODE_ICON_REGEX = /[\u2700-\u27BF\uE000-\uF8FF\u2600-\u26FF\u{1F300}-\u{1F9FF}\u2709✉]/u;
+
+function isIconOrSymbolFragment(item: TextFragment): boolean {
+  if (item.fontName && ICON_FONT_REGEX.test(item.fontName)) {
+    return true;
+  }
+  const trimmed = item.text.trim();
+  if (UNICODE_ICON_REGEX.test(trimmed)) {
+    return true;
+  }
+  return false;
+}
+
 function buildTextLine(items: TextFragment[], pageNum: number, columnIndex: number): TextLine {
   items.sort((a, b) => a.x - b.x);
 
   let text = '';
   let prevRight = -1;
+  let prevItem: TextFragment | null = null;
 
   for (const item of items) {
     const raw = item.text;
     if (!raw) continue;
 
     // Check if space needed between fragments
-    if (prevRight >= 0 && item.x - prevRight > 2.5) {
-      if (!text.endsWith(' ') && !raw.startsWith(' ')) {
-        text += ' ';
+    let needSpace = false;
+    if (prevRight >= 0) {
+      const gap = item.x - prevRight;
+      if (gap > 2.0) {
+        needSpace = true;
+      } else if (prevItem) {
+        const prevIsIcon = isIconOrSymbolFragment(prevItem);
+        const currIsIcon = isIconOrSymbolFragment(item);
+        const fontChanged = Boolean(prevItem.fontName && item.fontName && prevItem.fontName !== item.fontName);
+        if (prevIsIcon || currIsIcon || (fontChanged && gap > 0.5)) {
+          needSpace = true;
+        }
       }
+    }
+
+    if (needSpace && !text.endsWith(' ') && !raw.startsWith(' ')) {
+      text += ' ';
     }
 
     text += raw;
     prevRight = item.x + item.width;
+    prevItem = item;
   }
 
   text = text.replace(/\s+/g, ' ').trim();

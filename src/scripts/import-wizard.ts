@@ -1,5 +1,5 @@
 import { fitSheet, observeSheets } from '../lib/fit';
-import { parsePdfResume } from '../lib/pdf';
+import { parsePdfResume, stripLeadingBullet } from '../lib/pdf';
 import type { ExtractedSectionItem, ItemCategory, ParsedResumeResult, UnmappedSection } from '../lib/pdf/types';
 import { renderResume, sheetClass, sheetStyle } from '../lib/render';
 import { loadAccent, loadFont, loadFontSize, saveResume, saveTemplate, uid } from '../lib/store';
@@ -143,14 +143,19 @@ export function initImportWizard(): void {
           id: u.id || uid('csec'),
           title: u.rawHeading || 'Custom Section',
           type: 'custom',
-          items: keptItems.map((it) => ({
-            id: it.id,
-            text: it.text || [it.name, it.detail].filter(Boolean).join(' — '),
-            name: it.name,
-            detail: it.detail,
-            date: it.date,
-            url: it.url,
-          })),
+          items: keptItems.map((it) => {
+            const rawText = it.text || [it.name, it.detail].filter(Boolean).join(' — ');
+            const cleanText = stripLeadingBullet(rawText);
+            const cleanName = stripLeadingBullet(it.name || '');
+            return {
+              id: it.id,
+              text: cleanText || rawText,
+              name: cleanName || it.name,
+              detail: it.detail,
+              date: it.date,
+              url: it.url,
+            };
+          }),
         });
       }
     }
@@ -654,32 +659,32 @@ export function initImportWizard(): void {
     if (targetCategory === 'certifications') {
       parsed.data.certifications.push({
         id: itId,
-        name: item.name,
+        name: stripLeadingBullet(item.name || item.text),
         issuer: item.detail || section.rawHeading,
         date: item.date || '',
       });
     } else if (targetCategory === 'experience') {
       parsed.data.experience.push({
         id: itId,
-        role: item.name,
+        role: stripLeadingBullet(item.name),
         company: section.rawHeading,
         location: '',
         start: item.date || '',
         end: '',
-        bullets: item.detail || item.text,
+        bullets: stripLeadingBullet(item.detail || item.text),
       });
     } else if (targetCategory === 'projects') {
       parsed.data.projects.push({
         id: itId,
-        name: item.name,
+        name: stripLeadingBullet(item.name),
         link: item.url || '',
         tech: '',
-        description: item.detail || item.text,
+        description: stripLeadingBullet(item.detail || item.text),
       });
     } else if (targetCategory === 'publications') {
       parsed.data.publications.push({
         id: itId,
-        title: item.name,
+        title: stripLeadingBullet(item.name),
         meta: item.detail || item.text,
       });
     }

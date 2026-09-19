@@ -793,22 +793,24 @@ export function buildPrintDocument(sheetsHtml: string, documentTitle = 'Resume')
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=Space+Grotesk:wght@500;600;700&family=Lato:wght@400;700&family=Roboto:wght@400;500;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap" rel="stylesheet" />
   `;
 
-  // Dedicated Print-Only Precision Stylesheet (all print overrides isolated here)
+  // Dedicated Print-Only Precision Stylesheet: minimal print adjustments only.
+  // Existing resume.css is the single source of truth for all layout, columns, widths, spacing, and typography.
   const printStyles = `
     <style id="craftresume-print-engine">
+      /* 1. Strict A4 dimensions with zero @page margins; resume.css governs layout & internal padding */
       @page {
         size: 210mm 297mm;
-        margin: 0mm;
-        margin-top: 16mm;
-        margin-bottom: 12mm;
-        margin-left: 0mm;
-        margin-right: 0mm;
+        margin: 0;
       }
+
+      /* 2. Color fidelity */
       *, *::before, *::after {
         box-sizing: border-box;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
       }
+
+      /* 3. Base document canvas */
       html, body {
         margin: 0 !important;
         padding: 0 !important;
@@ -818,7 +820,8 @@ export function buildPrintDocument(sheetsHtml: string, documentTitle = 'Resume')
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
       }
-      /* Ensure print container and sheet are strictly visible */
+
+      /* 4. Isolated print container visibility */
       body > .print-root,
       .print-root {
         display: block !important;
@@ -829,226 +832,67 @@ export function buildPrintDocument(sheetsHtml: string, documentTitle = 'Resume')
         width: 210mm !important;
         background: #fff !important;
       }
+
+      /* 5. Resume sheet: strip screen-only artifacts (shadows, borders) while preserving resume.css layout */
       .resume-sheet {
         visibility: visible !important;
         opacity: 1 !important;
         margin: 0 !important;
-        padding-top: 0 !important;
-        padding-bottom: 0 !important;
         border: none !important;
         border-radius: 0 !important;
         box-shadow: none !important;
         transform: none !important;
         width: 210mm !important;
-        min-height: auto !important;
-        height: auto !important;
         box-sizing: border-box !important;
         page-break-after: always;
         break-after: page;
-        position: relative !important;
       }
+
       .resume-sheet:last-child {
         page-break-after: auto !important;
         break-after: auto !important;
       }
-      /* Zero out vertical padding on rail/main/sidebar so @page uniform margins govern all pages */
+
+      /* 6. Physical page boundary breathing room via cloned box decoration:
+         Ensures that fragmented sheets, rails, and columns replicate their natural top/bottom
+         padding onto every physical printed page fragment rather than slicing flush to the paper edge.
+         Preserves full-bleed backgrounds (Atlas, Cameo, Prism, Harbor, Summit) without unwanted white borders. */
+      .resume-sheet,
       .rs-rail,
       .rs-main,
-      .rs-sidebar {
-        padding-top: 0 !important;
-        padding-bottom: 0 !important;
+      .rs-columns,
+      .rs-col,
+      .rs-col--main,
+      .rs-col--side {
+        -webkit-box-decoration-break: clone !important;
+        box-decoration-break: clone !important;
       }
 
-      /* =========================================================================
-         Multi-Column & Sidebar Print Precision Grid Engine
-         Locks sidebar and main content into physical parallel tracks across pages
-         ========================================================================= */
-
-      /* 1. Single-Column Templates: Pure vertical block flow */
-      .t-ledger,
-      .t-scholar,
-      .t-beacon,
-      .t-meridian,
-      .t-cascade,
-      .t-helix,
-      .t-aperture,
+      /* Anchor header band compensation: maintains flush top bleed on Page 1 while ensuring natural top breathing room on Page 2+ */
       .t-anchor {
-        display: block !important;
+        padding-top: 14mm !important;
+      }
+      .t-anchor .rs-anchor-band {
+        margin-top: -14mm !important;
       }
 
-      /* 2. Sidebar Templates: Fixed-width parallel physical tracks */
-      .t-cameo {
-        display: grid !important;
-        grid-template-columns: 63mm 147mm !important;
-        padding: 0 !important;
-        width: 210mm !important;
-      }
-      .t-cameo > .rs-rail {
-        grid-column: 1 !important;
-        width: 63mm !important;
-        box-sizing: border-box !important;
-      }
-      .t-cameo > .rs-main {
-        grid-column: 2 !important;
-        width: 147mm !important;
-        box-sizing: border-box !important;
+      /* 7. Clean link styling */
+      a {
+        color: inherit;
+        text-decoration: none;
       }
 
-      .t-prism {
-        display: grid !important;
-        grid-template-columns: 60mm 150mm !important;
-        padding: 0 !important;
-        width: 210mm !important;
-      }
-      .t-prism > .rs-rail {
-        grid-column: 1 !important;
-        width: 60mm !important;
-        box-sizing: border-box !important;
-      }
-      .t-prism > .rs-main {
-        grid-column: 2 !important;
-        width: 150mm !important;
-        box-sizing: border-box !important;
+      /* 7. Essential print page-break intelligence:
+         - Sections and section bodies allow natural page breaks so multi-item sections (skills, experience)
+           start immediately on Page 1 instead of jumping across pages.
+         - Section titles avoid page breaks after to prevent orphan headings.
+         - Individual entries and list items avoid breaking internally across page boundaries. */
+      .rs-section,
+      .rs-section-body {
+        break-inside: auto !important;
+        page-break-inside: auto !important;
       }
 
-      .t-atlas {
-        display: grid !important;
-        grid-template-columns: 66mm 144mm !important;
-        padding: 0 !important;
-        width: 210mm !important;
-      }
-      .t-atlas > .rs-rail {
-        grid-column: 1 !important;
-        width: 66mm !important;
-        box-sizing: border-box !important;
-      }
-      .t-atlas > .rs-main {
-        grid-column: 2 !important;
-        width: 144mm !important;
-        box-sizing: border-box !important;
-      }
-
-      .t-harbor {
-        display: grid !important;
-        grid-template-columns: 62mm 148mm !important;
-        padding: 0 !important;
-        width: 210mm !important;
-      }
-      .t-harbor > .rs-rail {
-        grid-column: 1 !important;
-        width: 62mm !important;
-        box-sizing: border-box !important;
-      }
-      .t-harbor > .rs-main {
-        grid-column: 2 !important;
-        width: 148mm !important;
-        box-sizing: border-box !important;
-      }
-
-      .t-summit {
-        display: grid !important;
-        grid-template-columns: 138mm 72mm !important;
-        padding: 0 !important;
-        width: 210mm !important;
-      }
-      .t-summit > .rs-main {
-        grid-column: 1 !important;
-        width: 138mm !important;
-        box-sizing: border-box !important;
-      }
-      .t-summit > .rs-rail {
-        grid-column: 2 !important;
-        width: 72mm !important;
-        box-sizing: border-box !important;
-      }
-
-      /* 3. Balanced Two-Column Split Templates */
-      .t-vertex,
-      .t-lattice,
-      .t-pulse,
-      .t-orbit {
-        display: block !important;
-      }
-
-      .t-vertex .rs-columns {
-        display: grid !important;
-        grid-template-columns: 108mm 102mm !important;
-        min-height: auto !important;
-        height: auto !important;
-        width: 210mm !important;
-      }
-      .t-vertex .rs-col--main {
-        grid-column: 1 !important;
-        width: 108mm !important;
-        box-sizing: border-box !important;
-      }
-      .t-vertex .rs-col--side {
-        grid-column: 2 !important;
-        width: 102mm !important;
-        box-sizing: border-box !important;
-      }
-
-      .t-lattice .rs-columns {
-        display: grid !important;
-        grid-template-columns: 92mm 82mm !important;
-        gap: 8mm !important;
-        min-height: auto !important;
-        height: auto !important;
-        width: 182mm !important;
-      }
-      .t-lattice .rs-col--main {
-        grid-column: 1 !important;
-        width: 92mm !important;
-        box-sizing: border-box !important;
-      }
-      .t-lattice .rs-col--side {
-        grid-column: 2 !important;
-        width: 82mm !important;
-        box-sizing: border-box !important;
-      }
-
-      .t-pulse .rs-columns {
-        display: grid !important;
-        grid-template-columns: 128mm 82mm !important;
-        min-height: auto !important;
-        height: auto !important;
-        width: 210mm !important;
-      }
-      .t-pulse .rs-col--main {
-        grid-column: 1 !important;
-        width: 128mm !important;
-        box-sizing: border-box !important;
-      }
-      .t-pulse .rs-col--side {
-        grid-column: 2 !important;
-        width: 82mm !important;
-        box-sizing: border-box !important;
-      }
-
-      .t-orbit .rs-columns {
-        display: grid !important;
-        grid-template-columns: 105mm 70mm !important;
-        gap: 9mm !important;
-        min-height: auto !important;
-        height: auto !important;
-        width: 184mm !important;
-      }
-      .t-orbit .rs-col--main {
-        grid-column: 1 !important;
-        width: 105mm !important;
-        box-sizing: border-box !important;
-      }
-      .t-orbit .rs-col--side {
-        grid-column: 2 !important;
-        width: 70mm !important;
-        box-sizing: border-box !important;
-      }
-
-      /* =========================================================================
-         Print Pagination & Page-Break Hierarchy
-         ========================================================================= */
-
-      /* 1. Prevent orphan section heading at the bottom of a page */
       .rs-section-title {
         break-inside: avoid !important;
         page-break-inside: avoid !important;
@@ -1056,109 +900,32 @@ export function buildPrintDocument(sheetsHtml: string, documentTitle = 'Resume')
         page-break-after: avoid !important;
       }
 
-      /* 2. Bind section heading to section body content */
-      .rs-section-body {
-        break-before: avoid-page !important;
-        page-break-before: avoid !important;
-      }
-      .rs-section-body > *:first-child {
-        break-before: avoid-page !important;
-        page-break-before: avoid !important;
-      }
-
-      /* 3. Sections allow entries to flow naturally across pages */
-      .rs-section {
-        break-inside: auto !important;
-        page-break-inside: auto !important;
-      }
-
-      /* 4. Entries break internally between bullets to fill available space on Page 1 */
-      .rs-entry {
-        break-inside: auto !important;
-        page-break-inside: auto !important;
-        margin-bottom: 3.5mm !important;
-      }
-
-      /* 5. Short non-bullet entries stay intact */
-      .rs-entry:not(:has(.rs-bullets)) {
+      .rs-entry,
+      .rs-mini {
         break-inside: avoid !important;
         page-break-inside: avoid !important;
       }
 
-      /* 6. Keep entry title, subtitle, organization, and tech tags bound together
-            and bound forward to the first content item */
-      .rs-entry-head {
-        break-inside: avoid !important;
-        page-break-inside: avoid !important;
-      }
-      .rs-entry-head:not(:last-child) {
-        break-after: avoid-page !important;
-        page-break-after: avoid !important;
-      }
-
-      .rs-entry-sub,
-      .rs-tech,
-      .rs-chips,
-      .rs-entry-org,
-      .rs-entry-where {
-        break-inside: avoid !important;
-        page-break-inside: avoid !important;
-      }
-      .rs-entry-sub:not(:last-child),
-      .rs-tech:not(:last-child),
-      .rs-chips:not(:last-child),
-      .rs-entry-org:not(:last-child),
-      .rs-entry-where:not(:last-child) {
-        break-after: avoid-page !important;
-        page-break-after: avoid !important;
-      }
-
-      /* 7. Bind first bullet to entry header so entry header never sits alone */
-      .rs-bullets {
-        break-inside: auto !important;
-        page-break-inside: auto !important;
-      }
-
-      .rs-bullets > li:first-child {
-        break-before: avoid-page !important;
-        page-break-before: avoid !important;
-        break-inside: avoid !important;
-        page-break-inside: avoid !important;
-      }
-
-      /* 8. Individual bullet points never slice horizontally in half */
-      .rs-bullets li {
-        break-inside: avoid !important;
-        page-break-inside: avoid !important;
-      }
-
-      /* 9. Discrete items that should never fracture across pages */
-      .rs-header,
-      .rs-photo,
-      .rs-skill-group,
-      .rs-skill-chip,
-      .rs-mini,
+      .rs-bullets li,
       .rs-meters li,
       .rs-dotrows li,
       .rs-grid li,
-      .rs-interests li,
       .rs-inline li,
-      .rs-plainlist li,
+      .rs-chips li,
       .rs-pairs li,
-      .rs-pubs li {
+      .rs-plainlist li,
+      .rs-pubs li,
+      .rs-interests li,
+      .rs-contact li {
         break-inside: avoid !important;
         page-break-inside: avoid !important;
       }
 
-      /* 10. Typography orphan and widow protection */
-      html, body, .resume-sheet, p, li {
-        orphans: 2;
-        widows: 2;
-      }
-
-      a {
-        color: inherit;
-        text-decoration: none;
+      .rs-header,
+      .rs-photo,
+      .rs-rail-head {
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
       }
     </style>
   `;
@@ -1190,6 +957,12 @@ export async function printResumeIframe(sheetsHtml: string, documentTitle = 'Res
   if (typeof document === 'undefined') return;
 
   return new Promise<void>((resolve) => {
+    // Synchronize parent document title so Chromium/Windows print spooler seeds the default save filename
+    const originalParentTitle = document.title;
+    if (documentTitle) {
+      document.title = documentTitle;
+    }
+
     // Remove any previous print iframe
     document.getElementById('craftresume-print-frame')?.remove();
 
@@ -1224,15 +997,26 @@ export async function printResumeIframe(sheetsHtml: string, documentTitle = 'Res
     doc.write(htmlContent);
     doc.close();
 
+    if (documentTitle) {
+      try {
+        doc.title = documentTitle;
+      } catch {
+        // Ignore
+      }
+    }
+
     let cleanedUp = false;
     const cleanup = () => {
       if (cleanedUp) return;
       cleanedUp = true;
-      try {
-        iframe.remove();
-      } catch {
-        // Ignore
-      }
+      // Delay iframe removal slightly so Chromium spooler threads complete safely
+      setTimeout(() => {
+        try {
+          iframe.remove();
+        } catch {
+          // Ignore
+        }
+      }, 1000);
       resolve();
     };
 
@@ -1245,6 +1029,14 @@ export async function printResumeIframe(sheetsHtml: string, documentTitle = 'Res
 
     const triggerPrint = () => {
       try {
+        if (documentTitle) {
+          document.title = documentTitle;
+          try {
+            if (doc) doc.title = documentTitle;
+          } catch {
+            // Ignore
+          }
+        }
         win.focus();
         win.print();
       } catch (err) {

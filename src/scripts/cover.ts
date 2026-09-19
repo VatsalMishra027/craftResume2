@@ -164,6 +164,9 @@ export function initCoverEditor(): void {
       letter()[field.slice(6) as keyof CoverLetter] = el.value;
     } else if (field.startsWith('basics.')) {
       data.basics[field.replace('basics.', '') as keyof ResumeData['basics']] = el.value;
+      if (field === 'basics.fullName') {
+        syncDocumentTitle();
+      }
     } else {
       return;
     }
@@ -405,8 +408,12 @@ export function initCoverEditor(): void {
      The letter on its own. The resume has its own editor and its own download,
      and the switch there is what staples the two together.
   --------------------------------------------------------------------------- */
-  const originalTitle = document.title;
   const copyLabel = document.querySelector<HTMLElement>('[data-copy-label]');
+
+  function syncDocumentTitle(): void {
+    const name = data.basics.fullName.replace(/[\\/:*?"<>|]/g, '').trim();
+    document.title = name ? `${name} - Cover Letter` : 'Cover Letter';
+  }
 
   function printLetter(): void {
     printRoot!.innerHTML = `<div class="${letterClass(letterId)}" style="${sheetStyle(
@@ -415,8 +422,7 @@ export function initCoverEditor(): void {
     )}">${renderCoverLetter(data, letterId)}</div>`;
 
     // Browsers seed the "Save as PDF" filename from the document title.
-    const name = data.basics.fullName.trim();
-    document.title = name ? `${name} — Cover letter` : 'Cover letter';
+    syncDocumentTitle();
     window.print();
   }
 
@@ -452,7 +458,7 @@ export function initCoverEditor(): void {
   });
 
   window.addEventListener('afterprint', () => {
-    document.title = originalTitle;
+    syncDocumentTitle();
     printRoot!.innerHTML = '';
   });
 
@@ -504,6 +510,7 @@ export function initCoverEditor(): void {
   hydrateFields();
   syncLetterButtons();
   syncAccentButtons();
+  syncDocumentTitle();
   showPanel('letter');
   applySplit();
   paintPreview();

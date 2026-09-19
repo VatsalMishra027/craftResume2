@@ -29,6 +29,16 @@ function line(
     page?: number;
     col?: number;
     spacingBefore?: number;
+    items?: Array<{
+      text: string;
+      fontName?: string;
+      x?: number;
+      y?: number;
+      width?: number;
+      height?: number;
+      fontSize?: number;
+      page?: number;
+    }>;
   } = {},
 ): TextLine {
   const y = opts.y ?? 100;
@@ -36,6 +46,30 @@ function line(
   const isAllUpper =
     opts.isAllUpper ??
     (text.length >= 3 && text === text.toUpperCase() && !/[0-9@]/.test(text));
+
+  const items = opts.items
+    ? opts.items.map((it, idx) => ({
+        text: it.text,
+        x: it.x ?? 50 + idx * 20,
+        y: it.y ?? y,
+        width: it.width ?? it.text.length * 6,
+        height: it.height ?? fontSize,
+        fontSize: it.fontSize ?? fontSize,
+        fontName: it.fontName ?? (isAllUpper || fontSize > 11 ? 'Helvetica-Bold' : 'Helvetica'),
+        page: it.page ?? (opts.page ?? 1),
+      }))
+    : [
+        {
+          text,
+          x: 50,
+          y,
+          width: text.length * 6,
+          height: fontSize,
+          fontSize,
+          fontName: isAllUpper || fontSize > 11 ? 'Helvetica-Bold' : 'Helvetica',
+          page: opts.page ?? 1,
+        },
+      ];
 
   return {
     id: `line-${Math.random().toString(36).slice(2, 7)}`,
@@ -46,18 +80,7 @@ function line(
     minX: 50,
     maxX: 500,
     text,
-    items: [
-      {
-        text,
-        x: 50,
-        y,
-        width: text.length * 6,
-        height: fontSize,
-        fontSize,
-        fontName: isAllUpper || fontSize > 11 ? 'Helvetica-Bold' : 'Helvetica',
-        page: opts.page ?? 1,
-      },
-    ],
+    items,
     isAllUpper,
     maxFontSize: fontSize,
     spacingBefore: opts.spacingBefore ?? 4,
@@ -351,6 +374,31 @@ assert(
   'Multi-line bullet joined intact into a single item without line loss',
 );
 
+// Verify leading bullet characters are stripped from stored text to separate content from list formatting
+assert(
+  !achSection?.items[0]?.text.startsWith('•') &&
+    !achSection?.items[0]?.text.startsWith('-') &&
+    !achSection?.items[0]?.text.startsWith('*'),
+  'Stored item text must not contain a leading bullet character (•)',
+);
+assert(
+  achSection?.items[0]?.text ===
+    'ICPC Regionals : Certificate — Qualified for the Amritapuri Regionals, Kerala in the International Collegiate Programming Contest (ICPC) as part of team Binary Brain.',
+  'Stored item text must contain clean content without leading bullet marker',
+);
+assert(
+  achSection?.items[0]?.name === 'ICPC Regionals : Certificate',
+  'Stored item name must contain clean content without leading bullet marker',
+);
+
+// Verify all items in the section have clean content without leading list markers
+for (const it of achSection?.items || []) {
+  assert(
+    !it.text.startsWith('•') && !it.name.startsWith('•'),
+    `Item "${it.name}" must not contain leading bullet`,
+  );
+}
+
 // Verify independent semantic classification
 assert(achSection?.items[0]?.suggestedCategory === 'achievements', 'ICPC classified as Achievements');
 assert(achSection?.items[1]?.suggestedCategory === 'achievements', 'LeetCode classified as Achievements');
@@ -368,11 +416,151 @@ assert(achStat !== undefined, 'Section statistics recorded for ACHIEVEMENTS & CE
 assert(achStat?.itemCount === 6, 'Section stats records itemCount === 6');
 assert(achStat?.items.length === 6, 'Section stats records 6 items');
 
+// -----------------------------------------------------------------------------
+// Scenario 11: Pattern A (Name -> Job Title -> Location)
+// -----------------------------------------------------------------------------
+console.log('\nScenario 11: Pattern A (Name -> Job Title -> Location)');
+const doc11 = createMockDoc([
+  line('VATSAL MISHRA', { fontSize: 18 }),
+  line('Software Engineer', { fontSize: 12 }),
+  line('Greater Noida, Uttar Pradesh, India', {}),
+  line('vatsal.vns@gmail.com · +91 99999 99999', {}),
+  line('EXPERIENCE', { isAllUpper: true, fontSize: 13 }),
+  line('Software Engineer | Tech Corp', {}),
+  line('2022 — Present', {}),
+  line('• Engineered distributed transaction systems.', {}),
+]);
+const res11 = parseResume(doc11);
+assert(res11.data.basics.fullName === 'VATSAL MISHRA', 'Pattern A: exact name extracted');
+assert(res11.data.basics.title === 'Software Engineer', 'Pattern A: job title extracted');
+assert(res11.data.basics.location === 'Greater Noida, Uttar Pradesh, India', 'Pattern A: location extracted');
+assert(res11.data.basics.email === 'vatsal.vns@gmail.com', 'Pattern A: email extracted');
+assert(res11.data.basics.phone === '+91 99999 99999', 'Pattern A: phone extracted');
+assert(res11.confidence['basics.title'] === 'high', 'Pattern A: job title confidence is high');
+assert(res11.confidence['basics.location'] === 'high', 'Pattern A: location confidence is high');
+
+// -----------------------------------------------------------------------------
+// Scenario 12: Pattern B (Name -> Location without Job Title)
+// -----------------------------------------------------------------------------
+console.log('\nScenario 12: Pattern B (Name -> Location without Job Title)');
+const doc12 = createMockDoc([
+  line('VATSAL MISHRA', { fontSize: 18 }),
+  line('Greater Noida, Uttar Pradesh, India', {}),
+  line('vatsal.vns@gmail.com · +91 99999 99999', {}),
+  line('EXPERIENCE', { isAllUpper: true, fontSize: 13 }),
+  line('Software Engineer | Tech Corp', {}),
+  line('2022 — Present', {}),
+  line('• Engineered distributed transaction systems.', {}),
+]);
+const res12 = parseResume(doc12);
+assert(res12.data.basics.fullName === 'VATSAL MISHRA', 'Pattern B: exact name extracted');
+assert(res12.data.basics.title === '', 'Pattern B: job title is strictly empty (not invented)');
+assert(res12.data.basics.location === 'Greater Noida, Uttar Pradesh, India', 'Pattern B: location extracted');
+assert(res12.data.basics.email === 'vatsal.vns@gmail.com', 'Pattern B: email extracted');
+assert(res12.data.basics.phone === '+91 99999 99999', 'Pattern B: phone extracted');
+assert(res12.confidence['basics.title'] === 'low', 'Pattern B: job title marked low confidence');
+assert(res12.confidence['basics.location'] === 'high', 'Pattern B: location confidence is high');
+
+// -----------------------------------------------------------------------------
+// Scenario 13: Ambiguous Header Line (Zero Invention & Text Preservation)
+// -----------------------------------------------------------------------------
+console.log('\nScenario 13: Ambiguous Header Line (Zero Invention & Text Preservation)');
+const doc13 = createMockDoc([
+  line('Alex Morgan', { fontSize: 18 }),
+  line('Portfolio 2024 / Selected Works', {}),
+  line('alex.morgan@design.io · +1 206 555 0188', {}),
+  line('WORK EXPERIENCE', { isAllUpper: true, fontSize: 13 }),
+  line('Designer | Studio Nine', {}),
+  line('2020 — 2024', {}),
+  line('• Created brand identities for consumer startups.', {}),
+]);
+const res13 = parseResume(doc13);
+assert(res13.data.basics.fullName === 'Alex Morgan', 'Ambiguous case: name extracted');
+assert(res13.data.basics.title === '', 'Ambiguous case: job title not invented');
+assert(res13.data.basics.location === '', 'Ambiguous case: location not invented');
+assert(res13.data.basics.email === 'alex.morgan@design.io', 'Ambiguous case: email extracted');
+assert(res13.confidence['basics.title'] === 'low', 'Ambiguous case: job title marked low confidence');
+assert(res13.confidence['basics.location'] === 'low', 'Ambiguous case: location marked low confidence');
+
+// -----------------------------------------------------------------------------
+// Scenario 14: Exact Email Extraction & Fragment Disambiguation Suite
+// -----------------------------------------------------------------------------
+console.log('\nScenario 14: Exact Email Extraction & Fragment Disambiguation Suite');
+
+// Subtest 1: Normal email
+const doc14a = createMockDoc([
+  line('John Doe', { fontSize: 18 }),
+  line('john.doe@example.com', {}),
+]);
+const res14a = parseResume(doc14a);
+assert(res14a.data.basics.email === 'john.doe@example.com', 'Subtest 1: Normal email extracted');
+assert(res14a.confidence['basics.email'] === 'high', 'Subtest 1: Normal email confidence is high');
+
+// Subtest 2: Email next to an icon
+const doc14b = createMockDoc([
+  line('John Doe', { fontSize: 18 }),
+  line('✉ john.doe@example.com', {}),
+]);
+const res14b = parseResume(doc14b);
+assert(res14b.data.basics.email === 'john.doe@example.com', 'Subtest 2: Email next to icon extracted without icon');
+
+// Subtest 3: Email represented across multiple text fragments
+const doc14c = createMockDoc([
+  line('John Doe', { fontSize: 18 }),
+  line('john.doe@example.com', {
+    items: [
+      { text: 'john.', x: 50, width: 30 },
+      { text: 'doe@', x: 80, width: 25 },
+      { text: 'example.com', x: 105, width: 65 },
+    ],
+  }),
+]);
+const res14c = parseResume(doc14c);
+assert(res14c.data.basics.email === 'john.doe@example.com', 'Subtest 3: Email reconstructed from multiple fragments');
+
+// Subtest 4: Email positioned next to phone/LinkedIn/GitHub
+const doc14d = createMockDoc([
+  line('John Doe', { fontSize: 18 }),
+  line('john.doe@example.com · +1 415 555 0192 · https://linkedin.com/in/johndoe · https://github.com/johndoe', {}),
+]);
+const res14d = parseResume(doc14d);
+assert(res14d.data.basics.email === 'john.doe@example.com', 'Subtest 4: Only email extracted into basics.email');
+assert(res14d.data.basics.phone === '+1 415 555 0192', 'Subtest 4: Phone correctly separated');
+assert(res14d.data.basics.linkedin === 'linkedin.com/in/johndoe', 'Subtest 4: LinkedIn correctly separated');
+assert(res14d.data.basics.github === 'github.com/johndoe', 'Subtest 4: GitHub correctly separated');
+
+// Subtest 5: Email preceded by icon glyph fragment (FontAwesome / icon font 'R' glyph)
+const doc14e = createMockDoc([
+  line('Vatsal Mishra', { fontSize: 18 }),
+  line('R vatsal.vns@gmail.com', {
+    items: [
+      { text: 'R', fontName: 'FontAwesome', x: 50, width: 10 },
+      { text: 'vatsal.vns@gmail.com', fontName: 'Helvetica', x: 65, width: 120 },
+    ],
+  }),
+]);
+const res14e = parseResume(doc14e);
+assert(res14e.data.basics.email === 'vatsal.vns@gmail.com', 'Subtest 5: Exact email without prepended icon glyph');
+assert(res14e.data.basics.email !== 'Rvatsal.vns@gmail.com', 'Subtest 5: Accidental "Rvatsal.vns@gmail.com" strictly prevented');
+
+// Subtest 6: Legitimate email starting with 'r' in standard font
+const doc14f = createMockDoc([
+  line('Robert Smith', { fontSize: 18 }),
+  line('robert.smith@example.com', {
+    items: [
+      { text: 'robert.smith@example.com', fontName: 'Helvetica', x: 50, width: 130 },
+    ],
+  }),
+]);
+const res14f = parseResume(doc14f);
+assert(res14f.data.basics.email === 'robert.smith@example.com', 'Subtest 6: Real character "r" in legitimate email preserved');
+
 console.log('\n====================================================');
 console.log(`TEST RESULTS: ${passedTests} / ${totalTests} ASSERTIONS PASSED`);
 console.log('====================================================');
 if (passedTests === totalTests) {
-  console.log('ALL 10 QUALITY SCENARIOS VERIFIED SUCCESSFULLY! 🎉\n');
+  console.log('ALL 14 QUALITY SCENARIOS VERIFIED SUCCESSFULLY! 🎉\n');
 } else {
   process.exit(1);
 }
+

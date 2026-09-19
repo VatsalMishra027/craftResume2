@@ -32,7 +32,7 @@ console.log('\nSuite 2: Dedicated Print-Only CSS Overrides (Isolated from live p
 
   // @page A4 dimensions
   assert.ok(doc.includes('size: 210mm 297mm;'), 'Must specify exact A4 dimensions: 210mm 297mm');
-  assert.ok(doc.includes('margin: 0mm;'), 'Must specify zero @page margins to prevent browser print dialog shrinking');
+  assert.ok(doc.includes('margin: 0;'), 'Must specify zero @page margins so resume.css governs layout');
   console.log('  ✓ PASS: Strict @page A4 dimensions (210mm x 297mm, 0mm margin) confirmed');
 
   // Print color adjust
@@ -40,17 +40,21 @@ console.log('\nSuite 2: Dedicated Print-Only CSS Overrides (Isolated from live p
   console.log('  ✓ PASS: Print color adjustment browser preference confirmed');
 
   // Page break intelligence
-  assert.ok(doc.includes('.rs-section {'), 'Must configure .rs-section print rules');
-  assert.ok(doc.includes('break-inside: auto !important;'), 'Must allow large sections to flow across pages without premature page gaps');
-  assert.ok(doc.includes('.rs-entry {'), 'Must configure .rs-entry print rules');
-  assert.ok(doc.includes('break-inside: avoid !important;'), 'Must prevent individual job/degree entries from splitting across pages');
-  assert.ok(doc.includes('.rs-bullets li {'), 'Must configure .rs-bullets li print rules');
+  assert.ok(doc.includes('.rs-section,'), 'Must configure .rs-section print rules for natural page flow');
+  assert.ok(doc.includes('.rs-section-body {'), 'Must configure .rs-section-body print rules');
+  assert.ok(doc.includes('.rs-section-title {'), 'Must configure .rs-section-title print rules');
+  assert.ok(doc.includes('break-after: avoid-page !important;'), 'Must avoid separating section title from content');
+  assert.ok(doc.includes('.rs-entry,'), 'Must configure .rs-entry break rules to prevent slicing job/project entries');
+  assert.ok(doc.includes('.rs-bullets li,'), 'Must configure .rs-bullets li print rules');
+  assert.ok(doc.includes('.rs-meters li,'), 'Must configure .rs-meters li print rules to protect skill meters');
+  assert.ok(doc.includes('break-inside: avoid !important;'), 'Must avoid splitting individual bullets and items across pages');
   console.log('  ✓ PASS: Section flow & entry break avoidance rules verified');
 
   // Multi-page sheet handling
   assert.ok(doc.includes('.resume-sheet:last-child'), 'Must handle last-child break behavior');
   assert.ok(doc.includes('break-after: auto !important;'), 'Last sheet must have break-after: auto to prevent trailing blank page');
-  console.log('  ✓ PASS: Multi-sheet break and trailing blank page prevention verified');
+  assert.ok(doc.includes('box-decoration-break: clone !important;'), 'Must clone box decoration padding across page breaks for physical page breathing room');
+  console.log('  ✓ PASS: Multi-sheet break, trailing blank page prevention, and physical page breathing room verified');
 }
 
 // 3. Vector Text & HTML Content Preservation
@@ -90,34 +94,30 @@ console.log('\nSuite 5: Document Title Escaping');
   console.log('  ✓ PASS: Document title safely escaped');
 }
 
-// 6. Multi-Column & Sidebar Parallel Track Engine
-console.log('\nSuite 6: Multi-Column & Sidebar Parallel Track Engine');
+// 6. Single Source of Truth & Zero Redundant Layout Overrides
+console.log('\nSuite 6: Single Source of Truth & Zero Redundant Layout Overrides');
 {
   const doc = buildPrintDocument('<div></div>');
 
-  // Sidebar templates
-  assert.ok(doc.includes('.t-cameo {'), 'Must configure .t-cameo grid layout');
-  assert.ok(doc.includes('grid-template-columns: 63mm 147mm !important;'), 'Cameo: exact 63mm + 147mm = 210mm tracks');
-  assert.ok(doc.includes('.t-prism {'), 'Must configure .t-prism grid layout');
-  assert.ok(doc.includes('grid-template-columns: 60mm 150mm !important;'), 'Prism: exact 60mm + 150mm = 210mm tracks');
-  assert.ok(doc.includes('.t-atlas {'), 'Must configure .t-atlas grid layout');
-  assert.ok(doc.includes('grid-template-columns: 66mm 144mm !important;'), 'Atlas: exact 66mm + 144mm = 210mm tracks');
-  assert.ok(doc.includes('.t-harbor {'), 'Must configure .t-harbor grid layout');
-  assert.ok(doc.includes('grid-template-columns: 62mm 148mm !important;'), 'Harbor: exact 62mm + 148mm = 210mm tracks');
-  assert.ok(doc.includes('.t-summit {'), 'Must configure .t-summit grid layout');
-  assert.ok(doc.includes('grid-template-columns: 138mm 72mm !important;'), 'Summit: exact 138mm + 72mm = 210mm tracks');
+  // Ensure no redundant grid redefinitions exist that would override resume.css
+  assert.ok(!doc.includes('grid-template-columns: 63mm 147mm !important;'), 'Must NOT force Cameo grid columns');
+  assert.ok(!doc.includes('grid-template-columns: 60mm 150mm !important;'), 'Must NOT force Prism grid columns');
+  assert.ok(!doc.includes('grid-template-columns: 66mm 144mm !important;'), 'Must NOT force Atlas grid columns');
+  assert.ok(!doc.includes('grid-template-columns: 62mm 148mm !important;'), 'Must NOT force Harbor grid columns');
+  assert.ok(!doc.includes('grid-template-columns: 138mm 72mm !important;'), 'Must NOT force Summit grid columns');
+  assert.ok(!doc.includes('grid-template-columns: 108mm 102mm !important;'), 'Must NOT force Vertex grid columns');
+  assert.ok(!doc.includes('grid-template-columns: 92mm 82mm !important;'), 'Must NOT force Lattice grid columns');
+  assert.ok(!doc.includes('grid-template-columns: 128mm 82mm !important;'), 'Must NOT force Pulse grid columns');
+  assert.ok(!doc.includes('grid-template-columns: 105mm 70mm !important;'), 'Must NOT force Orbit grid columns');
 
-  // Two-column split templates
-  assert.ok(doc.includes('.t-vertex .rs-columns {'), 'Must configure Vertex columns');
-  assert.ok(doc.includes('grid-template-columns: 108mm 102mm !important;'), 'Vertex: exact 108mm + 102mm = 210mm tracks');
-  assert.ok(doc.includes('.t-lattice .rs-columns {'), 'Must configure Lattice columns');
-  assert.ok(doc.includes('grid-template-columns: 92mm 82mm !important;'), 'Lattice: exact 92mm + 82mm + 8mm gap = 182mm tracks');
-  assert.ok(doc.includes('.t-pulse .rs-columns {'), 'Must configure Pulse columns');
-  assert.ok(doc.includes('grid-template-columns: 128mm 82mm !important;'), 'Pulse: exact 128mm + 82mm = 210mm tracks');
-  assert.ok(doc.includes('.t-orbit .rs-columns {'), 'Must configure Orbit columns');
-  assert.ok(doc.includes('grid-template-columns: 105mm 70mm !important;'), 'Orbit: exact 105mm + 70mm + 9mm gap = 184mm tracks');
+  // Ensure no destructive padding or margin resets that distort visual balance
+  assert.ok(!doc.includes('padding-top: 0 !important;'), 'Must NOT strip top padding from sheets or rails');
+  assert.ok(!doc.includes('padding-bottom: 0 !important;'), 'Must NOT strip bottom padding from sheets or rails');
+  assert.ok(!doc.includes('margin-bottom: 3.5mm !important;'), 'Must NOT override resume.css entry margins with 3.5mm');
+  assert.ok(!doc.includes('margin-top: 16mm;'), 'Must NOT set non-zero top page margin');
+  assert.ok(!doc.includes('orphans: 2;'), 'Must NOT force artificial typography orphans');
 
-  console.log('  ✓ PASS: All sidebar and two-column templates configured with parallel physical tracks');
+  console.log('  ✓ PASS: Single source of truth preserved (zero redundant layout, grid, or padding overrides)');
 }
 
 // 7. Exhaustive Multi-Page Pagination Audit Across All 17 Templates
@@ -425,52 +425,27 @@ console.log('\nSuite 8: Targeted Verification for 9 Multi-Column Templates acros
       assert.ok(doc.includes(s.data.basics.fullName), `${t.name} [${s.name}]: candidate name present`);
       assert.ok(!doc.includes('<canvas'), `${t.name} [${s.name}]: vector text (no canvas rasterization)`);
 
-      // 1. No vertical stacking: Grid track assignment verified
-      if (t.isSheetGrid) {
-        assert.ok(doc.includes(`.t-${t.id} {`), `${t.name}: must have grid sheet rule`);
-        assert.ok(doc.includes(`grid-template-columns: ${t.track1}mm ${t.track2}mm !important;`), `${t.name}: exact grid tracks`);
-        assert.ok(doc.includes(`.t-${t.id} > .${t.col1Class} {\n        grid-column: 1 !important;`), `${t.name}: col 1 strictly bound to track 1`);
-        assert.ok(doc.includes(`.t-${t.id} > .${t.col2Class} {\n        grid-column: 2 !important;`), `${t.name}: col 2 strictly bound to track 2`);
-      } else {
-        assert.ok(doc.includes(`.t-${t.id} .rs-columns {`), `${t.name}: must have columns grid rule`);
-        assert.ok(doc.includes(`grid-template-columns: ${t.track1}mm ${t.track2}mm !important;`), `${t.name}: exact grid tracks`);
-        assert.ok(doc.includes(`.t-${t.id} .rs-col--main {\n        grid-column: 1 !important;`), `${t.name}: col--main strictly bound to track 1`);
-        assert.ok(doc.includes(`.t-${t.id} .rs-col--side {\n        grid-column: 2 !important;`), `${t.name}: col--side strictly bound to track 2`);
-      }
+      // 1. Single Source of Truth Invariant: No hardcoded grid overrides in print layer
+      assert.ok(!doc.includes('grid-template-columns: 66mm 144mm !important;'), `${t.name}: no forced Atlas grid`);
+      assert.ok(!doc.includes('grid-template-columns: 63mm 147mm !important;'), `${t.name}: no forced Cameo grid`);
+      assert.ok(!doc.includes('grid-template-columns: 60mm 150mm !important;'), `${t.name}: no forced Prism grid`);
 
-      // 2. No sidebar/main overlap: columns mapped to disjoint parallel tracks with physical widths
-      assert.ok(doc.includes(`width: ${t.track1}mm !important;`), `${t.name}: col1 has explicit width`);
-      assert.ok(doc.includes(`width: ${t.track2}mm !important;`), `${t.name}: col2 has explicit width`);
+      // 2. Padding and Spacing Invariant: Zero destructive resets
+      assert.ok(!doc.includes('padding-top: 0 !important;'), `${t.name}: zero padding-top resets`);
+      assert.ok(!doc.includes('padding-bottom: 0 !important;'), `${t.name}: zero padding-bottom resets`);
+      assert.ok(!doc.includes('margin-bottom: 3.5mm !important;'), `${t.name}: zero margin-bottom resets`);
+      assert.ok(!doc.includes('margin-top: 16mm;'), `${t.name}: zero page top margin`);
 
-      // 3. No clipping: heights auto, box-sizing border-box
-      assert.ok(doc.includes('min-height: auto !important;'), `${t.name}: min-height: auto avoids artificial stretching & clipping`);
-      assert.ok(doc.includes('height: auto !important;'), `${t.name}: height: auto enables fluid vertical pagination`);
-      assert.ok(doc.includes('box-sizing: border-box !important;'), `${t.name}: box-sizing border-box avoids layout blowout`);
-
-      // 4. No horizontal overflow beyond 210mm: Verified mathematically and via container width
-      const containerWidth = t.isSheetGrid ? 'width: 210mm !important;' : `width: ${210 - t.padH}mm !important;`;
-      assert.ok(doc.includes(containerWidth), `${t.name}: container bounded to exactly ${210 - t.padH}mm`);
-
-      // 5. No unnecessary blank pages:
+      // 3. No unnecessary blank pages:
       assert.ok(doc.includes('.resume-sheet:last-child {\n        page-break-after: auto !important;\n        break-after: auto !important;\n      }'), 'Trailing blank page prevented');
 
-      // 6. No large unexplained blank areas:
-      assert.ok(doc.includes('.rs-section {\n        break-inside: auto !important;'), 'Sections break naturally across pages');
-      assert.ok(doc.includes('.rs-entry {\n        break-inside: auto !important;'), 'Entries break naturally across pages');
+      // 4. Page break intelligence:
+      assert.ok(doc.includes('.rs-section-title {'), 'Section title orphan prevention');
+      assert.ok(doc.includes('break-after: avoid-page !important;'), 'Avoid orphan title');
+      assert.ok(doc.includes('.rs-bullets li,'), 'Bullet points included in item break avoidance');
+      assert.ok(doc.includes('break-inside: avoid !important;'), 'Bullet points never sliced horizontally');
 
-      // 7. Consistent top/bottom spacing on every page:
-      assert.ok(doc.includes('@page {\n        size: 210mm 297mm;\n        margin: 0mm;\n        margin-top: 16mm;\n        margin-bottom: 12mm;'), 'Uniform 16mm top and 12mm bottom margin on every page');
-      assert.ok(doc.includes('.resume-sheet {\n        visibility: visible !important;\n        opacity: 1 !important;\n        margin: 0 !important;\n        padding-top: 0 !important;\n        padding-bottom: 0 !important;'), 'Zero sheet vertical padding prevents margin accumulation');
-      assert.ok(doc.includes('.rs-rail,\n      .rs-main,\n      .rs-sidebar {\n        padding-top: 0 !important;\n        padding-bottom: 0 !important;\n      }'), 'Zero column vertical padding prevents double spacing');
-
-      // 8. Preserved section/header/bullet pagination:
-      assert.ok(doc.includes('.rs-section-title {\n        break-inside: avoid !important;\n        page-break-inside: avoid !important;\n        break-after: avoid-page !important;'), 'Section title orphan prevention');
-      assert.ok(doc.includes('.rs-section-body {\n        break-before: avoid-page !important;'), 'Section title bound forward to content');
-      assert.ok(doc.includes('.rs-entry-head {\n        break-inside: avoid !important;'), 'Entry header intact');
-      assert.ok(doc.includes('.rs-bullets > li:first-child {\n        break-before: avoid-page !important;\n        page-break-before: avoid !important;\n        break-inside: avoid !important;'), 'Entry header bound forward to first bullet');
-      assert.ok(doc.includes('.rs-bullets li {\n        break-inside: avoid !important;'), 'Bullet points never sliced horizontally');
-
-      // Scenario-specific assertions:
+      // 5. Scenario-specific content assertions:
       if (s.name === 'long sidebar') {
         assert.ok(doc.includes('Kubernetes'), `${t.name}: heavy sidebar item (Kubernetes) rendered`);
         assert.ok(doc.includes('AWS Certified Solutions Architect'), `${t.name}: certification rendered`);

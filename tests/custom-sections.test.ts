@@ -5,6 +5,7 @@ import { buildDocx, buildPlainText } from '../src/lib/export';
 import { normalise } from '../src/lib/store';
 import type { ResumeData, CustomSection } from '../src/lib/types';
 import type { ParsedResumeResult } from '../src/lib/pdf/types';
+import { stripLeadingBullet } from '../src/lib/pdf';
 
 console.log('====================================================');
 console.log('CUSTOM SECTIONS: FULL LIFECYCLE & ARCHITECTURE SUITE');
@@ -336,6 +337,42 @@ console.log('Requirement 7: DOCX & Plain Text Export Support');
   console.log('  ✓ PASS: Plain text export outputs all custom section items as bullets');
   console.log('  ✓ PASS: Plain text export preserves custom section order in export[]');
   console.log('  ✓ PASS: Word DOCX binary blob built successfully with custom section items\n');
+}
+
+// -------------------------------------------------------------
+// Test 8: Bullet Normalization & Prevention of Double Bullets
+// -------------------------------------------------------------
+console.log('Requirement 8: Stored item text must not contain leading bullet characters (prevent double bullets)');
+{
+  assert.strictEqual(
+    stripLeadingBullet('• ICPC Regionals : Certificate — Qualified for the Amritapuri Regionals'),
+    'ICPC Regionals : Certificate — Qualified for the Amritapuri Regionals',
+    'stripLeadingBullet strips leading unicode bullet (•)',
+  );
+  assert.strictEqual(
+    stripLeadingBullet('• • LeetCode : VatsalMishra27 — Achieved 1654'),
+    'LeetCode : VatsalMishra27 — Achieved 1654',
+    'stripLeadingBullet strips multiple leading bullets',
+  );
+  assert.strictEqual(
+    stripLeadingBullet('- CodeChef : vatsalmishra27 — Max Rating 1459'),
+    'CodeChef : vatsalmishra27 — Max Rating 1459',
+    'stripLeadingBullet strips leading hyphen bullet (-)',
+  );
+  assert.strictEqual(
+    stripLeadingBullet('* GeeksforGeeks : vatsal_mishra27 — Contest Rating 1558'),
+    'GeeksforGeeks : vatsal_mishra27 — Contest Rating 1558',
+    'stripLeadingBullet strips leading asterisk bullet (*)',
+  );
+
+  const data = createBaseResume();
+  data.customSections![0].items[0].text = stripLeadingBullet('• ICPC Regionals : Certificate — Qualified');
+  const html = renderResume(data, 'ledger');
+  assert.ok(html.includes('>ICPC Regionals : Certificate — Qualified</li>'), 'Rendered li must contain clean text without leading bullet');
+  assert.ok(!html.includes('>•'), 'Rendered li text must not start with bullet glyph');
+
+  console.log('  ✓ PASS: stripLeadingBullet strips leading bullet markers cleanly');
+  console.log('  ✓ PASS: Templates render clean <li> without literal bullet glyphs (no double bullets)\n');
 }
 
 console.log('====================================================');

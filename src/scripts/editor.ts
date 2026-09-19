@@ -1115,6 +1115,9 @@ export function initEditor(): void {
     } else if (el.dataset.field?.startsWith('basics.')) {
       const key = el.dataset.field.replace('basics.', '') as keyof ResumeData['basics'];
       data.basics[key] = el.value;
+      if (key === 'fullName') {
+        syncDocumentTitle();
+      }
     } else {
       return;
     }
@@ -1603,6 +1606,7 @@ export function initEditor(): void {
     syncSectionHeadings();
     syncSectionOrder();
     paintPreview();
+    syncDocumentTitle();
     markSaved();
     closeImportModal();
   });
@@ -1635,6 +1639,16 @@ export function initEditor(): void {
     return data.basics.fullName.trim();
   }
 
+  function syncDocumentTitle(): void {
+    const name = documentName().replace(/[\\/:*?"<>|]/g, '').trim();
+    const label = includeCover() ? 'Resume and Cover Letter' : 'Resume';
+    document.title = name ? `${name} - ${label}` : label;
+  }
+
+  includeCoverInput?.addEventListener('change', () => {
+    syncDocumentTitle();
+  });
+
   function printDocuments(): void {
     const style = sheetStyle(accent, sheetType());
     const sheets = [
@@ -1646,12 +1660,9 @@ export function initEditor(): void {
       );
     }
 
-    // Browsers seed the "Save as PDF" filename from the document title.
-    const name = documentName();
-    const label = includeCover() ? 'Resume and cover letter' : 'Resume';
-    const title = name ? `${name} — ${label}` : label;
-
-    void printResumeIframe(sheets.join('\n'), title);
+    // Browsers seed the "Save as PDF" and print-to-PDF filename from the document title.
+    syncDocumentTitle();
+    void printResumeIframe(sheets.join('\n'), document.title);
   }
 
   function downloadWord(): void {
@@ -1699,7 +1710,7 @@ export function initEditor(): void {
   });
 
   window.addEventListener('afterprint', () => {
-    document.title = originalTitle;
+    syncDocumentTitle();
     printRoot!.innerHTML = '';
   });
 
@@ -1732,6 +1743,7 @@ export function initEditor(): void {
   syncSectionOrder();
   syncTemplateButtons();
   syncAccentButtons();
+  syncDocumentTitle();
   showPanel('basics');
   applySplit();
   paintPreview();

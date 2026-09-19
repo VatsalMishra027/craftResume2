@@ -28,15 +28,28 @@ import type {
 // Regular expressions for contact and metadata
 const EMAIL_REGEX = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/;
 const PHONE_REGEX =
-  /(?:(?:\+?\d{1,3}[-.\s]?)?(?:\(?\d{2,4}\)?[-.\s]?)?\d{3,4}[-.\s]?\d{3,4}|\b\d{10}\b)/;
+  /(?:(?:\+?\d{1,3}[-.\s]*)?(?:\(?\d{2,5}\)?[-.\s]*)?\d{3,5}[-.\s]*\d{3,5}|\b\d{10}\b)/;
 const LINKEDIN_REGEX =
   /(?:https?:\/\/)?(?:www\.)?linkedin\.com\/in\/([a-zA-Z0-9_\u0080-\uFFFF-]+)/i;
 const GITHUB_REGEX = /(?:https?:\/\/)?(?:www\.)?github\.com\/([a-zA-Z0-9_-]+)/i;
 const URL_REGEX =
   /\b(?:https?:\/\/)?(?:www\.)?[a-zA-Z0-9][a-zA-Z0-9-]{1,50}\.(?:com|org|net|dev|io|app|ai|me|co|in|tech|info|edu)\b(?:\/[^\s,]*)?/gi;
 
-const BULLET_START_REGEX =
-  /^(?:[\s]*[•\*\▪\▫\►\✔\⁃\◦]|\s*[\u002D\u2010-\u2015\u2212]\s+|\s*(?:\d+[\.\)]|\(\d+\))\s+)/;
+export const BULLET_START_REGEX =
+  /^(?:[\s]*[•\*\▪\▫\►\✔\⁃\◦\·\●\○\◆\◇\■\□]|\s*[\u002D\u2010-\u2015\u2212]\s+|\s*(?:\d+[\.\)]|\(\d+\))\s+)/;
+
+/**
+ * Strips any leading bullet characters, list markers, or numbered prefixes from text.
+ * Ensures stored item content does not carry bullet formatting that templates independently render.
+ */
+export function stripLeadingBullet(text: string): string {
+  if (!text) return '';
+  let cleaned = text.trim();
+  while (BULLET_START_REGEX.test(cleaned)) {
+    cleaned = cleaned.replace(BULLET_START_REGEX, '').trim();
+  }
+  return cleaned;
+}
 
 // All Unicode dash variants: U+002D (hyphen), U+2010 to U+2015 (hyphens, en-dash, em-dash, horizontal bar), U+2212 (minus)
 const DASH_PATTERN = '[\u002D\u2010-\u2015\u2212]';
@@ -462,6 +475,470 @@ function evaluateHeadingSignals(
   return null;
 }
 
+// =============================================================================
+// PERSONAL INFORMATION & HEADER CLASSIFICATION CONSTANTS & SCORING
+// =============================================================================
+
+const STRICT_EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+const EMAIL_TOKEN_REGEX = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
+const LEADING_ICON_OR_NOISE = /^[\u2700-\u27BF\uE000-\uF8FF\u2600-\u26FF\u{1F300}-\u{1F9FF}\u2709✉\s:;•·|/\\-]+/u;
+const TRAILING_NOISE = /[\s:;•·|/\\,.]*$/;
+
+const JOB_ROLE_KEYWORDS = new Set([
+  'engineer', 'engineers', 'developer', 'developers', 'designer', 'designers',
+  'architect', 'architects', 'consultant', 'consultants', 'analyst', 'analysts',
+  'scientist', 'scientists', 'specialist', 'specialists', 'administrator',
+  'administrators', 'officer', 'officers', 'coordinator', 'coordinators',
+  'strategist', 'strategists', 'technologist', 'technologists', 'researcher',
+  'researchers', 'programmer', 'programmers', 'manager', 'managers', 'lead',
+  'leads', 'head', 'director', 'directors', 'vp', 'president', 'founder',
+  'co-founder', 'partner', 'associate', 'associates', 'intern', 'interns',
+  'practitioner', 'instructor', 'professor', 'advisor', 'auditor', 'creator',
+  'editor', 'writer', 'producer', 'expert', 'assistant', 'fellow', 'planner',
+]);
+
+const JOB_DOMAIN_KEYWORDS = new Set([
+  'software', 'frontend', 'front-end', 'backend', 'back-end', 'fullstack',
+  'full-stack', 'web', 'mobile', 'ios', 'android', 'cloud', 'devops', 'sre',
+  'reliability', 'data', 'database', 'ai', 'artificial', 'intelligence',
+  'learning', 'nlp', 'vision', 'product', 'project', 'program', 'qa', 'quality',
+  'assurance', 'security', 'cybersecurity', 'network', 'systems', 'platform',
+  'infrastructure', 'ui', 'ux', 'ui/ux', 'graphic', 'visual', 'interaction',
+  'creative', 'business', 'finance', 'marketing', 'operations', 'sales', 'hr',
+  'content', 'legal', 'hardware', 'embedded', 'firmware', 'blockchain',
+  'distributed', 'machine',
+]);
+
+const JOB_SENIORITY_KEYWORDS = new Set([
+  'senior', 'sr', 'junior', 'jr', 'lead', 'principal', 'staff', 'chief',
+  'associate', 'intern', 'entry-level', 'graduate', 'trainee', 'distinguished',
+]);
+
+const RECOGNIZED_COUNTRIES = new Set([
+  'india', 'usa', 'united states', 'us', 'u.s.', 'u.s.a.', 'uk', 'united kingdom',
+  'u.k.', 'canada', 'australia', 'germany', 'france', 'japan', 'singapore',
+  'netherlands', 'ireland', 'sweden', 'switzerland', 'brazil', 'spain', 'italy',
+  'china', 'south korea', 'korea', 'uae', 'united arab emirates', 'new zealand',
+  'israel', 'poland', 'mexico', 'taiwan', 'russia', 'norway', 'denmark',
+  'finland', 'austria', 'belgium', 'south africa', 'portugal', 'greece',
+  'turkey', 'saudi arabia', 'argentina', 'chile', 'colombia', 'malaysia',
+  'thailand', 'vietnam', 'indonesia', 'philippines', 'pakistan', 'bangladesh',
+  'egypt', 'nigeria', 'kenya',
+]);
+
+const RECOGNIZED_STATES = new Set([
+  // US 2-letter codes
+  'al', 'ak', 'az', 'ar', 'ca', 'co', 'ct', 'de', 'fl', 'ga', 'hi', 'id', 'il',
+  'in', 'ia', 'ks', 'ky', 'la', 'me', 'md', 'ma', 'mi', 'mn', 'ms', 'mo', 'mt',
+  'ne', 'nv', 'nh', 'nj', 'nm', 'ny', 'nc', 'nd', 'oh', 'ok', 'or', 'pa', 'ri',
+  'sc', 'sd', 'tn', 'tx', 'ut', 'vt', 'va', 'wa', 'wv', 'wi', 'wy', 'dc',
+  // US state names
+  'california', 'texas', 'new york', 'washington', 'illinois', 'massachusetts',
+  'florida', 'colorado', 'georgia', 'virginia', 'ohio', 'michigan',
+  'north carolina', 'pennsylvania', 'oregon', 'arizona', 'minnesota',
+  // Indian states & UTs
+  'uttar pradesh', 'karnataka', 'maharashtra', 'delhi', 'new delhi', 'tamil nadu',
+  'telangana', 'gujarat', 'rajasthan', 'west bengal', 'haryana', 'punjab',
+  'kerala', 'bihar', 'madhya pradesh', 'andhra pradesh', 'odisha', 'assam',
+  'jharkhand', 'uttarakhand', 'himachal pradesh', 'goa', 'chandigarh',
+  'jammu and kashmir', 'up', 'mp', 'ap', 'tn', 'wb', 'ka', 'mh', 'dl',
+  // Canadian provinces
+  'ontario', 'quebec', 'british columbia', 'alberta', 'manitoba', 'saskatchewan',
+  'nova scotia', 'new brunswick', 'on', 'qc', 'bc', 'ab', 'mb',
+]);
+
+const RECOGNIZED_CITIES = new Set([
+  // Major Indian cities
+  'greater noida', 'noida', 'bengaluru', 'bangalore', 'mumbai', 'delhi',
+  'new delhi', 'hyderabad', 'chennai', 'pune', 'kolkata', 'gurugram', 'gurgaon',
+  'ahmedabad', 'jaipur', 'chandigarh', 'indore', 'lucknow', 'kanpur', 'kochi',
+  'patna', 'bhopal', 'nagpur', 'vadodara', 'ghaziabad', 'ludhiana', 'agra',
+  'nashik', 'varanasi',
+  // Major US & Global cities
+  'austin', 'san francisco', 'new york', 'seattle', 'chicago', 'boston',
+  'los angeles', 'san jose', 'denver', 'atlanta', 'dallas', 'houston', 'toronto',
+  'vancouver', 'london', 'berlin', 'munich', 'paris', 'amsterdam', 'dublin',
+  'sydney', 'melbourne', 'tokyo', 'seoul', 'dubai', 'singapore', 'zurich',
+  'stockholm', 'hong kong',
+]);
+
+const LOCATION_KEYWORDS = new Set([
+  'remote', 'hybrid', 'on-site', 'relocating', 'greater', 'area', 'metro',
+  'metropolitan', 'district', 'city', 'county', 'state', 'province', 'region',
+]);
+
+function evaluateJobTitleCandidate(
+  text: string,
+  isImmediatelyAfterName: boolean,
+): { score: number; confidence: 'high' | 'medium' | 'low' } {
+  const clean = text.trim();
+  const lower = clean.toLowerCase();
+
+  // Outright rejections
+  if (
+    EMAIL_REGEX.test(clean) ||
+    PHONE_REGEX.test(clean) ||
+    URL_REGEX.test(clean) ||
+    clean.includes('@') ||
+    clean.includes('http') ||
+    clean.includes('.com') ||
+    BULLET_START_REGEX.test(clean) ||
+    DATE_RANGE_REGEX.test(clean) ||
+    SINGLE_YEAR_REGEX.test(clean) ||
+    clean.length < 2 ||
+    clean.length > 70
+  ) {
+    return { score: 0, confidence: 'low' };
+  }
+
+  // Reject action verbs or sentences ending with period/exclamation
+  if (
+    /[.!?]$/.test(clean) ||
+    /^(developed|managed|spearheaded|engineered|architected|built|led|designed|created)\b/i.test(clean)
+  ) {
+    return { score: 0, confidence: 'low' };
+  }
+
+  const words = lower.split(/[\s/\\-]+/).filter(Boolean);
+  if (words.length > 8) {
+    return { score: 0, confidence: 'low' };
+  }
+
+  let score = 0;
+
+  // Signal 1: Role / domain / seniority vocabulary
+  let roleCount = 0;
+  let domainCount = 0;
+  let seniorityCount = 0;
+
+  for (const w of words) {
+    if (JOB_ROLE_KEYWORDS.has(w)) roleCount += 1;
+    if (JOB_DOMAIN_KEYWORDS.has(w)) domainCount += 1;
+    if (JOB_SENIORITY_KEYWORDS.has(w)) seniorityCount += 1;
+  }
+
+  if (roleCount > 0) score += 45;
+  if (roleCount > 1) score += 15;
+  if (domainCount > 0) score += 20;
+  if (seniorityCount > 0) score += 15;
+
+  // Signal 2: Length & phrase structure
+  if (words.length >= 1 && words.length <= 4) {
+    score += 20;
+  } else if (words.length <= 6) {
+    score += 10;
+  }
+
+  // Signal 3: Position
+  if (isImmediatelyAfterName) {
+    score += 15;
+  }
+
+  // Signal 4: Casing
+  const isTitleCase = /^[A-Z][a-zA-Z]*(?:\s+[A-Z][a-zA-Z]*|\s+(?:and|of|in|for|&)\s+[A-Z][a-zA-Z]*)*$/.test(clean);
+  const isUpper = clean === clean.toUpperCase() && /[A-Z]/.test(clean);
+  if (isTitleCase || isUpper) {
+    score += 10;
+  }
+
+  // Negative Signal: Geographic structure & commas
+  if (clean.includes(',')) {
+    const parts = clean.split(',').map((p) => p.trim().toLowerCase());
+    let geoPartCount = 0;
+    for (const p of parts) {
+      if (RECOGNIZED_COUNTRIES.has(p) || RECOGNIZED_STATES.has(p) || RECOGNIZED_CITIES.has(p)) {
+        geoPartCount += 1;
+      }
+    }
+    if (geoPartCount > 0) {
+      score -= 60;
+    } else {
+      score -= 30;
+    }
+  }
+
+  // Negative Signal: Digits
+  if (/\d/.test(clean)) {
+    if (!/\b[23]d\b/i.test(clean) && !/\b(?:level|tier|l|e)\s*\d\b/i.test(clean)) {
+      score -= 40;
+    }
+  }
+
+  const confidence: 'high' | 'medium' | 'low' =
+    score >= 60 ? 'high' : score >= 40 ? 'medium' : 'low';
+
+  return { score: Math.max(0, score), confidence };
+}
+
+function evaluateLocationCandidate(
+  text: string,
+): { score: number; confidence: 'high' | 'medium' | 'low' } {
+  const clean = text.trim();
+  const lower = clean.toLowerCase();
+
+  // Outright rejections
+  if (
+    EMAIL_REGEX.test(clean) ||
+    clean.includes('@') ||
+    clean.includes('http') ||
+    clean.includes('.com') ||
+    BULLET_START_REGEX.test(clean) ||
+    DATE_RANGE_REGEX.test(clean) ||
+    clean.length < 2 ||
+    clean.length > 80
+  ) {
+    return { score: 0, confidence: 'low' };
+  }
+
+  // Negative signal: Job title role keywords (e.g. "Software Engineer")
+  const words = lower.split(/[\s,./\\-]+/).filter(Boolean);
+  let jobKeywordCount = 0;
+  for (const w of words) {
+    if (JOB_ROLE_KEYWORDS.has(w)) jobKeywordCount += 1;
+  }
+  if (jobKeywordCount > 0) {
+    return { score: 0, confidence: 'low' };
+  }
+
+  let score = 0;
+
+  // Signal 1: Comma-separated structure (City, State, Country or City, State or City, Country)
+  const commaParts = clean.split(',').map((p) => p.trim()).filter(Boolean);
+  if (commaParts.length >= 2 && commaParts.length <= 4) {
+    score += 35;
+  }
+
+  // Signal 2: Recognized geographic tokens
+  let geoTokenMatches = 0;
+  for (const part of commaParts) {
+    const pLower = part.toLowerCase();
+    if (
+      RECOGNIZED_COUNTRIES.has(pLower) ||
+      RECOGNIZED_STATES.has(pLower) ||
+      RECOGNIZED_CITIES.has(pLower)
+    ) {
+      geoTokenMatches += 1;
+    }
+  }
+
+  for (const city of RECOGNIZED_CITIES) {
+    if (lower.includes(city)) {
+      geoTokenMatches += 1;
+      break;
+    }
+  }
+  for (const country of RECOGNIZED_COUNTRIES) {
+    if (lower.includes(country)) {
+      geoTokenMatches += 1;
+      break;
+    }
+  }
+  for (const state of RECOGNIZED_STATES) {
+    const stateRegex = new RegExp(`\\b${state}\\b`, 'i');
+    if (stateRegex.test(lower)) {
+      geoTokenMatches += 1;
+      break;
+    }
+  }
+  for (const kw of LOCATION_KEYWORDS) {
+    if (lower.includes(kw)) {
+      score += 15;
+      break;
+    }
+  }
+
+  if (geoTokenMatches >= 2) {
+    score += 50;
+  } else if (geoTokenMatches === 1) {
+    score += 35;
+  }
+
+  // Signal 3: Standard US "City, ST" regex or ZIP code pattern
+  if (/\b[A-Z][a-zA-Z\s.-]+,\s*[A-Z]{2}(?:\s+\d{5})?\b/.test(clean)) {
+    score += 30;
+  }
+
+  // Signal 4: Clean phrase length
+  if (words.length >= 1 && words.length <= 6) {
+    score += 15;
+  } else if (words.length > 8 && commaParts.length < 2) {
+    score -= 30;
+  }
+
+  const confidence: 'high' | 'medium' | 'low' =
+    score >= 60 ? 'high' : score >= 40 ? 'medium' : 'low';
+
+  return { score: Math.max(0, score), confidence };
+}
+
+const ICON_FONT_REGEX = /icon|symbol|dingbat|wingding|webding|awesome|glyph|socicon|fontello|icomoon/i;
+const UNICODE_ICON_REGEX = /[\u2700-\u27BF\uE000-\uF8FF\u2600-\u26FF\u{1F300}-\u{1F9FF}\u2709✉]/u;
+
+function isIconOrGlyphFragment(frag: TextFragment): boolean {
+  if (frag.fontName && ICON_FONT_REGEX.test(frag.fontName)) {
+    return true;
+  }
+  const t = frag.text.trim();
+  if (UNICODE_ICON_REGEX.test(t)) {
+    return true;
+  }
+  return false;
+}
+
+interface EmailExtractionResult {
+  email: string;
+  confidence: SectionConfidence;
+  sourceLine?: TextLine;
+}
+
+/**
+ * Robust, fragment-aware email extraction preventing icon/glyph corruption.
+ * Only treats characters as icon/glyph fragments when supported by font metadata,
+ * Unicode category, or strong contextual fragment evidence.
+ */
+function extractEmail(lines: TextLine[], allText: string): EmailExtractionResult {
+  interface Candidate {
+    email: string;
+    sourceLine?: TextLine;
+    score: number;
+  }
+
+  const candidates: Candidate[] = [];
+
+  function addCandidate(raw: string, line: TextLine | undefined, baseScore: number) {
+    if (!raw) return;
+    const clean = raw.trim().replace(LEADING_ICON_OR_NOISE, '').replace(TRAILING_NOISE, '');
+    if (STRICT_EMAIL_REGEX.test(clean)) {
+      const existing = candidates.find((c) => c.email.toLowerCase() === clean.toLowerCase());
+      if (existing) {
+        existing.score = Math.max(existing.score, baseScore);
+        if (!existing.sourceLine && line) existing.sourceLine = line;
+      } else {
+        candidates.push({ email: clean, sourceLine: line, score: baseScore });
+      }
+    }
+  }
+
+  for (const line of lines) {
+    const items = line.items || [];
+    if (items.length > 0) {
+      // 1a. Check individual fragments
+      for (let i = 0; i < items.length; i += 1) {
+        const frag = items[i];
+        // If the fragment itself is identified as an icon/glyph, skip treating it as email
+        if (isIconOrGlyphFragment(frag)) {
+          continue;
+        }
+
+        const text = frag.text.trim();
+        if (STRICT_EMAIL_REGEX.test(text)) {
+          addCandidate(text, line, 100);
+        } else {
+          const stripped = text.replace(LEADING_ICON_OR_NOISE, '').replace(TRAILING_NOISE, '');
+          if (STRICT_EMAIL_REGEX.test(stripped)) {
+            addCandidate(stripped, line, 95);
+          }
+        }
+      }
+
+      // 1b. Check contiguous multi-fragment combinations
+      for (let s = 0; s < items.length; s += 1) {
+        const currentFrag = items[s];
+        const isIcon = isIconOrGlyphFragment(currentFrag);
+        const nextFrag = s + 1 < items.length ? items[s + 1] : undefined;
+        const isIsolated1CharGlyph =
+          currentFrag.text.trim().length === 1 &&
+          nextFrag &&
+          (currentFrag.fontName !== nextFrag.fontName || isIcon);
+
+        // Do not start an email candidate on an icon/glyph fragment
+        if (isIcon || isIsolated1CharGlyph) {
+          continue;
+        }
+
+        let accText = '';
+        for (let e = s; e < Math.min(items.length, s + 8); e += 1) {
+          accText += items[e].text;
+          const trimmed = accText.trim();
+          const clean = trimmed.replace(LEADING_ICON_OR_NOISE, '').replace(TRAILING_NOISE, '');
+          if (STRICT_EMAIL_REGEX.test(clean)) {
+            addCandidate(clean, line, 85);
+          }
+        }
+      }
+    }
+
+    // 1c. Line text fallback
+    const matches = line.text.match(EMAIL_TOKEN_REGEX);
+    if (matches) {
+      for (const m of matches) {
+        addCandidate(m, line, 80);
+      }
+    }
+  }
+
+  // 2. Global allText fallback
+  if (candidates.length === 0) {
+    const globalMatches = allText.match(EMAIL_TOKEN_REGEX);
+    if (globalMatches) {
+      for (const m of globalMatches) {
+        addCandidate(m, undefined, 70);
+      }
+    }
+  }
+
+  // If multiple candidates exist, verify whether one is corrupted by an adjacent icon fragment
+  if (candidates.length > 1) {
+    const filtered = candidates.filter((cand) => {
+      return !candidates.some((other) => {
+        if (cand.email.toLowerCase() === other.email.toLowerCase()) return false;
+        if (
+          cand.email.length === other.email.length + 1 &&
+          cand.email.toLowerCase().endsWith(other.email.toLowerCase())
+        ) {
+          const prefixChar = cand.email[0];
+          const line = cand.sourceLine || other.sourceLine;
+          if (line && line.items) {
+            const hasIconPrefix = line.items.some(
+              (it) =>
+                it.text.trim() === prefixChar &&
+                (isIconOrGlyphFragment(it) || it.fontName !== line.items[line.items.indexOf(it) + 1]?.fontName),
+            );
+            if (hasIconPrefix) return true;
+          }
+        }
+        return false;
+      });
+    });
+
+    if (filtered.length > 0) {
+      candidates.length = 0;
+      candidates.push(...filtered);
+    }
+  }
+
+  if (candidates.length === 0) {
+    return { email: '', confidence: 'low' };
+  }
+
+  candidates.sort((a, b) => b.score - a.score);
+
+  const uniqueEmails = Array.from(new Set(candidates.map((c) => c.email.toLowerCase())));
+  if (uniqueEmails.length === 1) {
+    return {
+      email: candidates[0].email,
+      confidence: candidates[0].score >= 80 ? 'high' : 'medium',
+      sourceLine: candidates[0].sourceLine,
+    };
+  }
+
+  return {
+    email: candidates[0].email,
+    confidence: 'medium',
+    sourceLine: candidates[0].sourceLine,
+  };
+}
+
 /**
  * Parses header block for Name, Title, Contact Info, and Links.
  */
@@ -473,25 +950,19 @@ function parseBasics(
 ): void {
   const allText = lines.map((l) => l.text).join(' \n ');
 
-  // Email
-  const emailMatch = allText.match(EMAIL_REGEX);
-  if (emailMatch) {
-    data.basics.email = emailMatch[0];
-    confidence['basics.email'] = 'high';
-    const sourceLine = lines.find((l) => l.text.includes(emailMatch[0]));
-    if (sourceLine) {
-      sourceMapping['basics.email'] = {
-        page: sourceLine.page,
-        blockId: sourceLine.id,
-        rawText: sourceLine.text,
-      };
-    }
-  } else {
-    data.basics.email = '';
-    confidence['basics.email'] = 'low';
+  // 1. Exact Email Extraction
+  const emailResult = extractEmail(lines, allText);
+  data.basics.email = emailResult.email;
+  confidence['basics.email'] = emailResult.confidence;
+  if (emailResult.sourceLine && emailResult.email) {
+    sourceMapping['basics.email'] = {
+      page: emailResult.sourceLine.page,
+      blockId: emailResult.sourceLine.id,
+      rawText: emailResult.sourceLine.text,
+    };
   }
 
-  // Phone
+  // 2. Phone
   const phoneMatch = allText.match(PHONE_REGEX);
   if (phoneMatch && phoneMatch[0].replace(/\D/g, '').length >= 7) {
     data.basics.phone = phoneMatch[0].trim();
@@ -509,21 +980,21 @@ function parseBasics(
     confidence['basics.phone'] = 'medium';
   }
 
-  // LinkedIn
+  // 3. LinkedIn
   const linkedinMatch = allText.match(LINKEDIN_REGEX);
   if (linkedinMatch) {
     data.basics.linkedin = linkedinMatch[0].replace(/^https?:\/\//i, '');
     confidence['basics.linkedin'] = 'high';
   }
 
-  // GitHub
+  // 4. GitHub
   const githubMatch = allText.match(GITHUB_REGEX);
   if (githubMatch) {
     data.basics.github = githubMatch[0].replace(/^https?:\/\//i, '');
     confidence['basics.github'] = 'high';
   }
 
-  // Website / Portfolio (excluding linkedin and github)
+  // 5. Website / Portfolio (excluding linkedin and github)
   const urlMatches = allText.match(URL_REGEX) || [];
   for (const url of urlMatches) {
     if (
@@ -537,40 +1008,40 @@ function parseBasics(
     }
   }
 
-  // Full Name and Title from top lines
+  // 6. Full Name from top lines
   let nameFound = false;
-  let titleFound = false;
+  let nameLineIndex = -1;
 
   for (let i = 0; i < Math.min(lines.length, 5); i += 1) {
     const line = lines[i];
     const text = line.text.trim();
 
-    if (EMAIL_REGEX.test(text) || PHONE_REGEX.test(text) || URL_REGEX.test(text)) continue;
-
-    const words = text.split(/\s+/);
-
-    if (!nameFound && words.length >= 1 && words.length <= 5 && !/[0-9]/.test(text)) {
-      data.basics.fullName = text;
-      nameFound = true;
-      confidence['basics.fullName'] = 'high';
-      sourceMapping['basics.fullName'] = {
-        page: line.page,
-        blockId: line.id,
-        rawText: text,
-      };
+    if (
+      EMAIL_REGEX.test(text) ||
+      PHONE_REGEX.test(text) ||
+      URL_REGEX.test(text) ||
+      text.includes('@') ||
+      BULLET_START_REGEX.test(text)
+    ) {
       continue;
     }
 
-    if (nameFound && !titleFound && words.length >= 1 && words.length <= 8) {
-      data.basics.title = text;
-      titleFound = true;
-      confidence['basics.title'] = 'high';
-      sourceMapping['basics.title'] = {
-        page: line.page,
-        blockId: line.id,
-        rawText: text,
-      };
-      break;
+    const words = text.split(/\s+/);
+    if (!nameFound && words.length >= 1 && words.length <= 5 && !/[0-9]/.test(text)) {
+      const jobEval = evaluateJobTitleCandidate(text, false);
+      const locEval = evaluateLocationCandidate(text);
+      if (jobEval.confidence !== 'high' && locEval.confidence !== 'high') {
+        data.basics.fullName = text;
+        nameFound = true;
+        nameLineIndex = i;
+        confidence['basics.fullName'] = 'high';
+        sourceMapping['basics.fullName'] = {
+          page: line.page,
+          blockId: line.id,
+          rawText: text,
+        };
+        break;
+      }
     }
   }
 
@@ -586,13 +1057,101 @@ function parseBasics(
     confidence['basics.fullName'] = 'low';
   }
 
-  // Location heuristics
-  const locRegex = /([A-Z][a-zA-Z\s.-]+,\s*[A-Z]{2,}(?:\s+[A-Z][a-zA-Z]+)?)/;
-  const locMatch = allText.match(locRegex);
-  if (locMatch && !locMatch[1].includes('@') && !locMatch[1].includes('http')) {
-    data.basics.location = locMatch[1].trim();
-    confidence['basics.location'] = 'medium';
-  } else {
+  // 7. Multi-Signal Independent Classification for Job Title & Location
+  let titleFound = false;
+  let locationFound = false;
+
+  const startIndex = nameLineIndex >= 0 ? nameLineIndex + 1 : 0;
+  for (let i = startIndex; i < lines.length; i += 1) {
+    const line = lines[i];
+    const text = line.text.trim();
+    if (!text) continue;
+
+    const isImmediatelyAfterName = (i === nameLineIndex + 1);
+    const hasContact =
+      EMAIL_REGEX.test(text) ||
+      PHONE_REGEX.test(text) ||
+      URL_REGEX.test(text) ||
+      text.includes('@');
+
+    if (!hasContact) {
+      const jobScore = evaluateJobTitleCandidate(text, isImmediatelyAfterName);
+      const locScore = evaluateLocationCandidate(text);
+
+      // Compare candidate scores independently
+      if (!titleFound && jobScore.score >= 45 && jobScore.score > locScore.score) {
+        data.basics.title = text;
+        titleFound = true;
+        confidence['basics.title'] = jobScore.confidence;
+        sourceMapping['basics.title'] = {
+          page: line.page,
+          blockId: line.id,
+          rawText: text,
+        };
+        continue;
+      }
+
+      if (!locationFound && locScore.score >= 40 && locScore.score > jobScore.score) {
+        data.basics.location = text;
+        locationFound = true;
+        confidence['basics.location'] = locScore.confidence;
+        sourceMapping['basics.location'] = {
+          page: line.page,
+          blockId: line.id,
+          rawText: text,
+        };
+        continue;
+      }
+    } else {
+      // Line contains contact info: check for an inline location segment
+      if (!locationFound) {
+        const segments = text.split(/[\s]*[·|•][\s]*/).map((s) => s.trim()).filter(Boolean);
+        for (const seg of segments) {
+          if (
+            EMAIL_REGEX.test(seg) ||
+            PHONE_REGEX.test(seg) ||
+            URL_REGEX.test(seg) ||
+            seg.includes('@')
+          ) {
+            continue;
+          }
+          const locScore = evaluateLocationCandidate(seg);
+          if (locScore.score >= 35) {
+            data.basics.location = seg;
+            locationFound = true;
+            confidence['basics.location'] = locScore.confidence;
+            sourceMapping['basics.location'] = {
+              page: line.page,
+              blockId: line.id,
+              rawText: seg,
+            };
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  // Fallback: check allText for recognized location format if not found yet
+  if (!locationFound) {
+    const locRegex = /([A-Z][a-zA-Z\s.-]+,\s*[A-Z]{2,}(?:\s+[A-Z][a-zA-Z]+)?)/;
+    const locMatch = allText.match(locRegex);
+    if (locMatch && !locMatch[1].includes('@') && !locMatch[1].includes('http')) {
+      const locScore = evaluateLocationCandidate(locMatch[1]);
+      if (locScore.score >= 35) {
+        data.basics.location = locMatch[1].trim();
+        locationFound = true;
+        confidence['basics.location'] = 'medium';
+      }
+    }
+  }
+
+  if (!titleFound) {
+    data.basics.title = '';
+    confidence['basics.title'] = 'low';
+  }
+
+  if (!locationFound) {
     data.basics.location = '';
     confidence['basics.location'] = 'low';
   }
@@ -1341,7 +1900,7 @@ export function extractSectionItems(lines: TextLine[], rawHeading = ''): Extract
 }
 
 function buildExtractedItem(fullText: string, rawHeading = ''): ExtractedSectionItem {
-  const cleanFull = fullText.replace(BULLET_START_REGEX, '').trim();
+  const cleanFull = stripLeadingBullet(fullText);
 
   // Extract year/date if present
   const dateMatch = cleanFull.match(SINGLE_YEAR_REGEX) || cleanFull.match(DATE_RANGE_REGEX);
@@ -1372,8 +1931,8 @@ function buildExtractedItem(fullText: string, rawHeading = ''): ExtractedSection
 
   return {
     id: uid('item'),
-    text: fullText,
-    name: name || cleanFull,
+    text: cleanFull || fullText.trim(),
+    name: name || cleanFull || fullText.trim(),
     detail,
     date,
     url,
