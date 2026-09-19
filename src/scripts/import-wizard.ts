@@ -1,9 +1,10 @@
+import { fitSheet, observeSheets } from '../lib/fit';
 import { parsePdfResume } from '../lib/pdf';
-import type { ParsedResumeResult, UnmappedSection } from '../lib/pdf/types';
-import type { ResumeData, SectionKey } from '../lib/types';
-import { saveResume, saveTemplate, uid } from '../lib/store';
+import type { ExtractedSectionItem, ItemCategory, ParsedResumeResult, UnmappedSection } from '../lib/pdf/types';
+import { renderResume, sheetClass, sheetStyle } from '../lib/render';
+import { loadAccent, loadFont, loadFontSize, saveResume, saveTemplate, uid } from '../lib/store';
 import { DEFAULT_TEMPLATE, TEMPLATES } from '../lib/templates';
-import { renderResume, sheetStyle } from '../lib/render';
+import type { CustomSection, ResumeData, SectionKey } from '../lib/types';
 
 export function initImportWizard(): void {
   const uploadStep = document.querySelector<HTMLElement>('[data-step="upload"]');
@@ -21,6 +22,13 @@ export function initImportWizard(): void {
 
   let parsed: ParsedResumeResult | null = null;
   let selectedTemplate: string = DEFAULT_TEMPLATE;
+  let unobserveCards: (() => void) | null = null;
+
+  function refitTemplates(): void {
+    const grid = document.querySelector<HTMLElement>('[data-template-cards]');
+    if (!grid) return;
+    grid.querySelectorAll<HTMLElement>('[data-sheet-fit]').forEach(fitSheet);
+  }
 
   function setStep(step: 'upload' | 'review' | 'template'): void {
     uploadStep?.classList.toggle('hidden', step !== 'upload');
@@ -35,6 +43,12 @@ export function initImportWizard(): void {
       pill.classList.toggle('bg-surface', !active);
       pill.classList.toggle('text-ink-muted', !active);
     });
+
+    if (step === 'template') {
+      requestAnimationFrame(() => {
+        refitTemplates();
+      });
+    }
 
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -116,38 +130,50 @@ export function initImportWizard(): void {
     }
   }
 
+  function syncCustomSectionsToData(result: ParsedResumeResult): void {
+    const customSections: CustomSection[] = [];
+
+    for (const u of result.unmappedSections) {
+      const keptItems = u.items.filter(
+        (it) => it.assignedCategory === 'custom' || !it.assignedCategory,
+      );
+
+      if (keptItems.length > 0) {
+        customSections.push({
+          id: u.id || uid('csec'),
+          title: u.rawHeading || 'Custom Section',
+          type: 'custom',
+          items: keptItems.map((it) => ({
+            id: it.id,
+            text: it.text || [it.name, it.detail].filter(Boolean).join(' — '),
+            name: it.name,
+            detail: it.detail,
+            date: it.date,
+            url: it.url,
+          })),
+        });
+      }
+    }
+
+    result.data.customSections = customSections;
+
+    if (result.data.order && result.data.order.length > 0) {
+      const existing = new Set(result.data.order);
+      for (const cs of customSections) {
+        if (!existing.has(cs.id)) {
+          result.data.order.push(cs.id);
+        }
+      }
+    }
+  }
+
   function renderReview(): void {
     if (!parsed) return;
+    syncCustomSectionsToData(parsed);
     const { data, confidence, unmappedSections, stats } = parsed;
 
     // 1. Stats Bar
-    const statsEl = document.querySelector<HTMLElement>('[data-review-stats]');
-    if (statsEl) {
-      statsEl.innerHTML = `
-        <span class="inline-flex items-center gap-1.5 rounded-full bg-surface px-3 py-1 border border-line text-xs font-medium text-ink">
-          <strong>${stats.pagesCount}</strong> ${stats.pagesCount === 1 ? 'Page' : 'Pages'}
-        </span>
-        <span class="inline-flex items-center gap-1.5 rounded-full bg-surface px-3 py-1 border border-line text-xs font-medium text-ink">
-          <strong>${stats.experienceCount}</strong> Roles
-        </span>
-        <span class="inline-flex items-center gap-1.5 rounded-full bg-surface px-3 py-1 border border-line text-xs font-medium text-ink">
-          <strong>${stats.educationCount}</strong> Degrees
-        </span>
-        <span class="inline-flex items-center gap-1.5 rounded-full bg-surface px-3 py-1 border border-line text-xs font-medium text-ink">
-          <strong>${stats.skillsCount}</strong> Skills
-        </span>
-        <span class="inline-flex items-center gap-1.5 rounded-full bg-surface px-3 py-1 border border-line text-xs font-medium text-ink">
-          <strong>${stats.projectsCount}</strong> Projects
-        </span>
-        ${
-          unmappedSections.length > 0
-            ? `<span class="inline-flex items-center gap-1.5 rounded-full bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 px-3 py-1 text-xs font-medium text-amber-800 dark:text-amber-300">
-                <strong>${unmappedSections.length}</strong> Custom / Preserved
-              </span>`
-            : ''
-        }
-      `;
-    }
+    renderStatsBar(parsed);
 
     // 2. Section Health Checklist
     renderChecklist(parsed);
@@ -163,12 +189,51 @@ export function initImportWizard(): void {
     bindInput('basics.github', data.basics.github, confidence['basics.github']);
     bindInput('basics.summary', data.basics.summary, confidence['basics.summary'], true);
 
-    // 4. Experience, Education, Skills, Projects, Unmapped
+    // 4. Experience, Education, Skills, Projects, Certifications, Unmapped
     renderExperienceCards(data);
     renderEducationCards(data);
     renderSkillPills(data);
     renderProjectCards(data);
+    renderCertificationsCards(data);
     renderUnmappedSections(unmappedSections);
+  }
+
+  function renderStatsBar(result: ParsedResumeResult): void {
+    const statsEl = document.querySelector<HTMLElement>('[data-review-stats]');
+    if (!statsEl) return;
+    const { data, unmappedSections, stats } = result;
+
+    statsEl.innerHTML = `
+      <span class="inline-flex items-center gap-1.5 rounded-full bg-surface px-3 py-1 border border-line text-xs font-medium text-ink">
+        <strong>${stats.pagesCount}</strong> ${stats.pagesCount === 1 ? 'Page' : 'Pages'}
+      </span>
+      <span class="inline-flex items-center gap-1.5 rounded-full bg-surface px-3 py-1 border border-line text-xs font-medium text-ink">
+        <strong>${data.experience.length}</strong> Roles
+      </span>
+      <span class="inline-flex items-center gap-1.5 rounded-full bg-surface px-3 py-1 border border-line text-xs font-medium text-ink">
+        <strong>${data.education.length}</strong> Degrees
+      </span>
+      <span class="inline-flex items-center gap-1.5 rounded-full bg-surface px-3 py-1 border border-line text-xs font-medium text-ink">
+        <strong>${data.skills.length}</strong> Skills
+      </span>
+      <span class="inline-flex items-center gap-1.5 rounded-full bg-surface px-3 py-1 border border-line text-xs font-medium text-ink">
+        <strong>${data.projects.length}</strong> Projects
+      </span>
+      ${
+        data.certifications && data.certifications.length > 0
+          ? `<span class="inline-flex items-center gap-1.5 rounded-full bg-surface px-3 py-1 border border-line text-xs font-medium text-ink">
+              <strong>${data.certifications.length}</strong> Certifications
+            </span>`
+          : ''
+      }
+      ${
+        unmappedSections.length > 0
+          ? `<span class="inline-flex items-center gap-1.5 rounded-full bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 px-3 py-1 text-xs font-medium text-amber-800 dark:text-amber-300">
+              <strong>${unmappedSections.reduce((acc, u) => acc + (u.itemCount || 1), 0)}</strong> Custom Items (${unmappedSections.length} Sections)
+            </span>`
+          : ''
+      }
+    `;
   }
 
   function renderChecklist(result: ParsedResumeResult): void {
@@ -203,11 +268,20 @@ export function initImportWizard(): void {
       },
     ];
 
+    if (result.data.certifications && result.data.certifications.length > 0) {
+      items.push({
+        label: 'Certifications',
+        ok: true,
+        sub: `${result.data.certifications.length} certificates`,
+      });
+    }
+
     if (result.unmappedSections.length > 0) {
+      const totalCustomItems = result.unmappedSections.reduce((acc, u) => acc + (u.itemCount || 1), 0);
       items.push({
         label: 'Custom Sections',
-        ok: false,
-        sub: `${result.unmappedSections.length} to review`,
+        ok: true,
+        sub: `${totalCustomItems} items preserved`,
       });
     }
 
@@ -324,7 +398,7 @@ export function initImportWizard(): void {
           : [];
 
         const bulletsHtml =
-          bulletList.length > 1
+          bulletList.length > 0
             ? `<ul class="mt-2 space-y-1 text-xs text-ink-soft">
                 ${bulletList
                   .map(
@@ -336,9 +410,7 @@ export function initImportWizard(): void {
                   )
                   .join('')}
               </ul>`
-            : bulletList.length === 1
-              ? `<p class="text-xs text-ink-soft mt-1.5 leading-relaxed">${esc(bulletList[0])}</p>`
-              : '';
+            : '';
 
         return `
       <div class="rounded-card border border-line bg-surface p-4">
@@ -350,6 +422,31 @@ export function initImportWizard(): void {
         ${bulletsHtml}
       </div>`;
       })
+      .join('');
+  }
+
+  function renderCertificationsCards(data: ResumeData): void {
+    const container = document.querySelector<HTMLElement>('[data-review-certifications-container]');
+    const certList = document.querySelector<HTMLElement>('[data-review-certifications]');
+    if (!container || !certList) return;
+
+    if (!data.certifications || !data.certifications.length) {
+      container.classList.add('hidden');
+      return;
+    }
+
+    container.classList.remove('hidden');
+    certList.innerHTML = data.certifications
+      .map(
+        (c) => `
+      <div class="rounded-card border border-line bg-surface p-4">
+        <div class="flex flex-wrap items-baseline justify-between gap-2">
+          <h4 class="font-semibold text-sm text-ink">${esc(c.name)}</h4>
+          ${c.date ? `<span class="text-xs text-ink-muted">${esc(c.date)}</span>` : ''}
+        </div>
+        ${c.issuer ? `<p class="text-xs font-medium text-clay mt-0.5">${esc(c.issuer)}</p>` : ''}
+      </div>`,
+      )
       .join('');
   }
 
@@ -365,85 +462,254 @@ export function initImportWizard(): void {
 
     container.classList.remove('hidden');
     list.innerHTML = unmapped
-      .map(
-        (u) => `
-      <div class="rounded-card border border-amber-200 dark:border-amber-900/40 bg-amber-50/50 dark:bg-amber-950/20 p-4">
+      .map((u) => {
+        const firstItem = u.items && u.items.length > 0 ? u.items[0] : null;
+        const previewText = firstItem ? firstItem.text : u.content.split('\n')[0] || '';
+
+        return `
+      <div class="rounded-card border border-amber-200 dark:border-amber-900/40 bg-amber-50/50 dark:bg-amber-950/20 p-4 transition-all" data-section-card="${u.id}">
         <div class="flex flex-wrap items-center justify-between gap-3">
-          <h4 class="font-medium text-sm text-ink flex items-center gap-2">
-            <span class="size-2 rounded-full bg-amber-500"></span>
-            Detected: <strong>"${esc(u.rawHeading)}"</strong>
-          </h4>
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="size-2.5 rounded-full bg-amber-500"></span>
+            <h4 class="font-semibold text-sm text-ink">
+              Detected: <strong>"${esc(u.rawHeading)}"</strong>
+            </h4>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-200 border border-amber-200 dark:border-amber-800">
+              ${u.itemCount} items detected
+            </span>
+          </div>
           <div class="flex items-center gap-2">
-            <label class="text-xs text-ink-muted">Place in:</label>
+            <label class="text-xs text-ink-muted font-medium">Batch destination:</label>
             <select
-              data-reassign="${u.id}"
-              class="rounded-lg border border-line bg-surface px-2.5 py-1 text-xs text-ink focus:outline-none focus:border-ink"
+              data-reassign-batch="${u.id}"
+              class="rounded-lg border border-line bg-surface px-2.5 py-1 text-xs text-ink focus:outline-none focus:border-ink cursor-pointer"
             >
-              <option value="custom" ${!u.suggestedCategory ? 'selected' : ''}>Keep as Custom</option>
-              <option value="certifications" ${u.suggestedCategory === 'certifications' ? 'selected' : ''}>Certifications</option>
-              <option value="experience" ${u.suggestedCategory === 'experience' ? 'selected' : ''}>Work Experience</option>
-              <option value="projects" ${u.suggestedCategory === 'projects' ? 'selected' : ''}>Projects</option>
-              <option value="publications" ${u.suggestedCategory === 'publications' ? 'selected' : ''}>Publications</option>
+              <option value="">Place all in...</option>
+              <option value="custom">Keep all as Custom</option>
+              <option value="certifications">All to Certifications</option>
+              <option value="experience">All to Work Experience</option>
+              <option value="projects">All to Projects</option>
+              <option value="publications">All to Publications</option>
             </select>
           </div>
         </div>
-        <p class="mt-2 text-xs text-ink-muted line-clamp-3 leading-relaxed whitespace-pre-wrap">${esc(u.content)}</p>
-      </div>`,
-      )
+
+        <!-- Shortened Preview -->
+        <div class="mt-3 p-3 rounded-lg bg-surface/80 border border-line/60">
+          <div class="flex items-center justify-between gap-2 mb-1.5">
+            <span class="text-[11px] font-semibold tracking-wider text-ink-soft uppercase">Preview</span>
+            <button
+              type="button"
+              data-toggle-items="${u.id}"
+              class="text-xs font-semibold text-clay hover:underline inline-flex items-center gap-1 cursor-pointer"
+            >
+              [View / Edit all ${u.itemCount} items]
+            </button>
+          </div>
+          <p class="text-xs text-ink-muted leading-relaxed line-clamp-2">${esc(previewText)}</p>
+        </div>
+
+        <!-- Interactive Per-Item Classification & Placement -->
+        <div class="mt-4 space-y-2.5" data-items-container="${u.id}">
+          <div class="flex items-center justify-between border-b border-line/40 pb-1.5">
+            <span class="text-xs font-semibold text-ink">Detected Items & Destinations:</span>
+            <span class="text-[11px] text-ink-muted">Assign each item independently</span>
+          </div>
+
+          <div class="space-y-2">
+            ${u.items.map((it, idx) => `
+              <div class="rounded-lg border border-line/70 bg-surface p-3 transition-all hover:border-line-strong">
+                <div class="flex flex-wrap items-start justify-between gap-2.5">
+                  <div class="flex items-start gap-2.5 flex-1 min-w-[220px]">
+                    <span class="text-xs font-bold text-ink-muted mt-0.5">${idx + 1}.</span>
+                    <div class="space-y-0.5">
+                      <div class="text-xs font-semibold text-ink">${esc(it.name)}</div>
+                      ${it.detail ? `<div class="text-[11px] text-ink-muted leading-relaxed">${esc(it.detail)}</div>` : ''}
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-2 flex-none">
+                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200/60 dark:border-amber-800/60">
+                      Suggested: ${esc(it.suggestedCategoryLabel || it.suggestedCategory || 'Achievements')}
+                    </span>
+                    <select
+                      data-item-reassign="${u.id}:${it.id}"
+                      class="rounded-md border border-line bg-surface px-2 py-1 text-xs text-ink focus:outline-none focus:border-ink cursor-pointer"
+                    >
+                      <option value="custom" ${it.assignedCategory === 'custom' || !it.assignedCategory ? 'selected' : ''}>Keep as Custom</option>
+                      <option value="certifications" ${it.assignedCategory === 'certifications' ? 'selected' : ''}>Certifications</option>
+                      <option value="experience" ${it.assignedCategory === 'experience' ? 'selected' : ''}>Work Experience</option>
+                      <option value="projects" ${it.assignedCategory === 'projects' ? 'selected' : ''}>Projects</option>
+                      <option value="publications" ${it.assignedCategory === 'publications' ? 'selected' : ''}>Publications</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <!-- Raw Text View Toggle -->
+        <div class="mt-3 pt-2 border-t border-line/30 flex items-center justify-between">
+          <button
+            type="button"
+            data-toggle-raw="${u.id}"
+            class="text-[11px] font-medium text-ink-muted hover:text-ink transition-colors cursor-pointer"
+          >
+            Show raw section text
+          </button>
+        </div>
+        <div class="mt-2 hidden" data-raw-drawer="${u.id}">
+          <textarea
+            data-raw-textarea="${u.id}"
+            rows="5"
+            class="w-full rounded-lg border border-line bg-surface p-2 text-xs font-mono text-ink leading-relaxed focus:outline-none focus:border-ink"
+          >${esc(u.content)}</textarea>
+        </div>
+      </div>
+        `;
+      })
       .join('');
 
-    // Reassignment listeners
-    list.querySelectorAll<HTMLSelectElement>('[data-reassign]').forEach((select) => {
+    attachUnmappedSectionListeners(list);
+  }
+
+  function attachUnmappedSectionListeners(list: HTMLElement): void {
+    // 1. Toggle Items Visibility
+    list.querySelectorAll<HTMLButtonElement>('[data-toggle-items]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const uId = btn.dataset.toggleItems!;
+        const container = list.querySelector<HTMLElement>(`[data-items-container="${uId}"]`);
+        if (container) {
+          container.classList.toggle('hidden');
+          btn.textContent = container.classList.contains('hidden')
+            ? `[View all items]`
+            : `[Collapse items]`;
+        }
+      });
+    });
+
+    // 2. Toggle Raw Textarea
+    list.querySelectorAll<HTMLButtonElement>('[data-toggle-raw]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const uId = btn.dataset.toggleRaw!;
+        const drawer = list.querySelector<HTMLElement>(`[data-raw-drawer="${uId}"]`);
+        if (drawer) {
+          drawer.classList.toggle('hidden');
+          btn.textContent = drawer.classList.contains('hidden')
+            ? 'Show raw section text'
+            : 'Hide raw section text';
+        }
+      });
+    });
+
+    // 3. Raw Textarea Edits
+    list.querySelectorAll<HTMLTextAreaElement>('[data-raw-textarea]').forEach((ta) => {
+      ta.addEventListener('input', () => {
+        if (!parsed) return;
+        const uId = ta.dataset.rawTextarea!;
+        const item = parsed.unmappedSections.find((u) => u.id === uId);
+        if (item) {
+          item.content = ta.value;
+          syncCustomSectionsToData(parsed);
+        }
+      });
+    });
+
+    // 4. Individual Item Reassign
+    list.querySelectorAll<HTMLSelectElement>('[data-item-reassign]').forEach((select) => {
       select.addEventListener('change', () => {
-        const id = select.dataset.reassign;
-        const target = select.value;
-        handleReassignSection(id!, target);
+        const [uId, itId] = select.dataset.itemReassign!.split(':');
+        const target = select.value as ItemCategory;
+        handleReassignItem(uId, itId, target);
+      });
+    });
+
+    // 5. Batch Reassign for Entire Section
+    list.querySelectorAll<HTMLSelectElement>('[data-reassign-batch]').forEach((select) => {
+      select.addEventListener('change', () => {
+        const uId = select.dataset.reassignBatch!;
+        const target = select.value as ItemCategory;
+        if (!target) return;
+        handleBatchReassignSection(uId, target);
       });
     });
   }
 
-  function handleReassignSection(unmappedId: string, targetSection: string): void {
+  function handleReassignItem(uId: string, itId: string, targetCategory: ItemCategory): void {
     if (!parsed) return;
-    const item = parsed.unmappedSections.find((u) => u.id === unmappedId);
+    const section = parsed.unmappedSections.find((u) => u.id === uId);
+    if (!section) return;
+    const item = section.items.find((it) => it.id === itId);
     if (!item) return;
 
-    if (targetSection === 'experience') {
-      parsed.data.experience.push({
-        id: uid('exp'),
-        role: item.rawHeading,
-        company: '',
-        location: '',
-        start: '',
-        end: '',
-        bullets: item.content,
-      });
-    } else if (targetSection === 'projects') {
-      parsed.data.projects.push({
-        id: uid('prj'),
-        name: item.rawHeading,
-        link: '',
-        tech: '',
-        description: item.content,
-      });
-    } else if (targetSection === 'certifications') {
+    item.assignedCategory = targetCategory;
+
+    // Clean up any existing instances of this item across standard arrays
+    parsed.data.certifications = parsed.data.certifications.filter((c) => c.id !== itId);
+    parsed.data.experience = parsed.data.experience.filter((e) => e.id !== itId);
+    parsed.data.projects = parsed.data.projects.filter((p) => p.id !== itId);
+    parsed.data.publications = parsed.data.publications.filter((p) => p.id !== itId);
+
+    // Place into target destination if not kept as custom
+    if (targetCategory === 'certifications') {
       parsed.data.certifications.push({
-        id: uid('crt'),
-        name: item.rawHeading,
-        issuer: '',
-        date: '',
+        id: itId,
+        name: item.name,
+        issuer: item.detail || section.rawHeading,
+        date: item.date || '',
       });
-    } else if (targetSection === 'publications') {
+    } else if (targetCategory === 'experience') {
+      parsed.data.experience.push({
+        id: itId,
+        role: item.name,
+        company: section.rawHeading,
+        location: '',
+        start: item.date || '',
+        end: '',
+        bullets: item.detail || item.text,
+      });
+    } else if (targetCategory === 'projects') {
+      parsed.data.projects.push({
+        id: itId,
+        name: item.name,
+        link: item.url || '',
+        tech: '',
+        description: item.detail || item.text,
+      });
+    } else if (targetCategory === 'publications') {
       parsed.data.publications.push({
-        id: uid('pub'),
-        title: item.rawHeading,
-        meta: item.content.slice(0, 80),
+        id: itId,
+        title: item.name,
+        meta: item.detail || item.text,
       });
     }
 
+    // Re-render affected standard sections
+    syncCustomSectionsToData(parsed);
+    renderCertificationsCards(parsed.data);
     renderExperienceCards(parsed.data);
-    renderEducationCards(parsed.data);
     renderProjectCards(parsed.data);
     renderChecklist(parsed);
+    renderStatsBar(parsed);
+  }
+
+  function handleBatchReassignSection(uId: string, targetCategory: ItemCategory): void {
+    if (!parsed) return;
+    const section = parsed.unmappedSections.find((u) => u.id === uId);
+    if (!section) return;
+
+    section.items.forEach((it) => {
+      handleReassignItem(uId, it.id, targetCategory);
+    });
+
+    // Update select dropdowns in DOM
+    const list = document.querySelector<HTMLElement>('[data-review-unmapped]');
+    if (list) {
+      section.items.forEach((it) => {
+        const sel = list.querySelector<HTMLSelectElement>(`[data-item-reassign="${uId}:${it.id}"]`);
+        if (sel) sel.value = targetCategory;
+      });
+    }
   }
 
   function bindInput(
@@ -479,19 +745,32 @@ export function initImportWizard(): void {
     }
   }
 
+  window.addEventListener('resize', () => {
+    if (templateStep && !templateStep.classList.contains('hidden')) {
+      refitTemplates();
+    }
+  });
+
   // Navigation between steps
-  document.querySelector<HTMLElement>('[data-action="to-template"]')?.addEventListener('click', () => {
-    renderTemplateCards();
-    setStep('template');
+  document.querySelectorAll<HTMLElement>('[data-action="to-template"]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      if (parsed) syncCustomSectionsToData(parsed);
+      setStep('template');
+      renderTemplateCards();
+    });
   });
 
-  document.querySelector<HTMLElement>('[data-action="to-review"]')?.addEventListener('click', () => {
-    setStep('review');
+  document.querySelectorAll<HTMLElement>('[data-action="to-review"]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      setStep('review');
+    });
   });
 
-  document.querySelector<HTMLElement>('[data-action="reupload"]')?.addEventListener('click', () => {
-    if (fileInput) fileInput.value = '';
-    setStep('upload');
+  document.querySelectorAll<HTMLElement>('[data-action="reupload"]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      if (fileInput) fileInput.value = '';
+      setStep('upload');
+    });
   });
 
   function renderTemplateCards(): void {
@@ -499,30 +778,32 @@ export function initImportWizard(): void {
     const grid = document.querySelector<HTMLElement>('[data-template-cards]');
     if (!grid) return;
 
+    if (unobserveCards) {
+      unobserveCards();
+      unobserveCards = null;
+    }
+
+    const style = sheetStyle(loadAccent(), { font: loadFont(), size: loadFontSize() });
+
     grid.innerHTML = TEMPLATES.map((t) => {
       const isSelected = t.id === selectedTemplate;
-      const html = renderResume(parsed!.data, t.id);
-      const style = sheetStyle('navy', { font: 'default', size: 's' });
+      const html = renderResume(parsed!.data, t.id, { links: false });
 
       return `
         <article class="template-choice group cursor-pointer" data-template-id="${t.id}">
-          <div class="relative overflow-hidden rounded-card border-2 transition-all duration-200 ${
+          <div class="template-card-box relative overflow-hidden rounded-card border-2 transition-all duration-200 ${
             isSelected ? 'border-clay shadow-lift ring-2 ring-clay/20' : 'border-line hover:border-line-strong'
           }">
-            <div class="aspect-[210/297] w-full overflow-hidden bg-white">
-              <div class="pointer-events-none origin-top-left scale-[0.38] sm:scale-[0.42] w-[794px] h-[1123px]">
-                <div class="${t.layout === 'sidebar' ? 't-atlas' : `t-${t.id}`}" style="${style}">
-                  ${html}
-                </div>
+            <div class="sheet-fit sheet-fit--page pointer-events-none bg-white" data-sheet-fit="page" aria-hidden="true">
+              <div class="${sheetClass(t.id)}" style="${style}">
+                ${html}
               </div>
             </div>
-            ${
-              isSelected
-                ? `<div class="absolute top-2 right-2 rounded-full bg-clay text-white p-1 shadow-sm">
-                    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" class="size-3.5"><path d="m3 8 3.5 3.5L13 5"/></svg>
-                  </div>`
-                : ''
-            }
+            <div data-check-badge class="absolute top-2.5 right-2.5 z-10 rounded-full bg-clay text-white p-1 shadow-sm ${
+              isSelected ? '' : 'hidden'
+            }">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" class="size-3.5"><path d="m3 8 3.5 3.5L13 5"/></svg>
+            </div>
           </div>
           <div class="mt-3 flex items-baseline justify-between">
             <h3 class="font-semibold text-sm text-ink">${t.name}</h3>
@@ -533,11 +814,28 @@ export function initImportWizard(): void {
       `;
     }).join('');
 
+    unobserveCards = observeSheets(grid);
+    requestAnimationFrame(() => {
+      refitTemplates();
+    });
+
     grid.querySelectorAll<HTMLElement>('[data-template-id]').forEach((card) => {
       card.addEventListener('click', () => {
         const id = card.dataset.templateId!;
         selectedTemplate = id;
-        renderTemplateCards();
+        grid.querySelectorAll<HTMLElement>('[data-template-id]').forEach((c) => {
+          const isCurrent = c.dataset.templateId === selectedTemplate;
+          const box = c.querySelector<HTMLElement>('.template-card-box');
+          const badge = c.querySelector<HTMLElement>('[data-check-badge]');
+          if (box) {
+            box.className = `template-card-box relative overflow-hidden rounded-card border-2 transition-all duration-200 ${
+              isCurrent ? 'border-clay shadow-lift ring-2 ring-clay/20' : 'border-line hover:border-line-strong'
+            }`;
+          }
+          if (badge) {
+            badge.classList.toggle('hidden', !isCurrent);
+          }
+        });
       });
     });
   }
@@ -545,6 +843,7 @@ export function initImportWizard(): void {
   // Final Action: Launch Editor
   document.querySelector<HTMLElement>('[data-action="launch-editor"]')?.addEventListener('click', () => {
     if (!parsed) return;
+    syncCustomSectionsToData(parsed);
     saveResume(parsed.data);
     saveTemplate(selectedTemplate);
     window.location.href = `/editor?template=${selectedTemplate}`;

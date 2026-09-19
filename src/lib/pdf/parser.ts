@@ -13,6 +13,9 @@ import type {
 import { uid } from '../store';
 import { EMPTY_RESUME } from '../sample';
 import type {
+  DetectedSectionStat,
+  ExtractedSectionItem,
+  ItemCategory,
   ParsedDocument,
   ParsedResumeResult,
   SectionConfidence,
@@ -259,6 +262,27 @@ export function parseResume(doc: ParsedDocument): ParsedResumeResult {
   });
   needsReviewCount += unmappedSections.length;
 
+  // Compute detailed section statistics tracking item counts and items for all detected sections
+  const sectionStats: DetectedSectionStat[] = sections.map((sec) => {
+    if (sec.key === 'unmapped') {
+      const unm = unmappedSections.find((u) => u.rawHeading === sec.rawHeading);
+      return {
+        heading: sec.rawHeading,
+        sectionKey: sec.key,
+        itemCount: unm?.itemCount ?? sec.lines.length,
+        items: unm?.items ?? extractSectionItems(sec.lines, sec.rawHeading),
+      };
+    }
+
+    const items = extractSectionItems(sec.lines, sec.rawHeading);
+    return {
+      heading: sec.rawHeading,
+      sectionKey: sec.key,
+      itemCount: items.length,
+      items,
+    };
+  });
+
   return {
     data: resultData,
     confidence,
@@ -267,6 +291,7 @@ export function parseResume(doc: ParsedDocument): ParsedResumeResult {
     stats: {
       pagesCount: doc.pages.length,
       detectedSections: sections.map((s) => s.rawHeading),
+      sectionStats,
       experienceCount: resultData.experience.length,
       educationCount: resultData.education.length,
       skillsCount: resultData.skills.length,
@@ -997,30 +1022,22 @@ function parseProjects(
 /**
  * Parses certifications section.
  */
+/**
+ * Parses certifications section.
+ */
 function parseCertifications(
   section: SemanticSectionBlock,
   data: ResumeData,
   confidence: Record<string, SectionConfidence>,
   sourceMapping: Record<string, SourceLocation>,
 ): void {
-  const items: CertificationItem[] = [];
-
-  for (const line of section.lines) {
-    const text = line.text.replace(BULLET_START_REGEX, '').trim();
-    if (!text) continue;
-
-    const dateMatch = text.match(SINGLE_YEAR_REGEX);
-    const date = dateMatch ? dateMatch[0] : '';
-    const cleanText = text.replace(SINGLE_YEAR_REGEX, '').trim();
-
-    const parts = cleanText.split(/[-–—|,]+/).map((s) => s.trim());
-    items.push({
-      id: uid('crt'),
-      name: parts[0] || cleanText,
-      issuer: parts[1] || '',
-      date,
-    });
-  }
+  const extracted = extractSectionItems(section.lines, section.rawHeading);
+  const items: CertificationItem[] = extracted.map((it) => ({
+    id: uid('crt'),
+    name: it.name || it.text,
+    issuer: it.detail || '',
+    date: it.date || '',
+  }));
 
   data.certifications = items;
   confidence['certifications'] = items.length > 0 ? 'high' : 'low';
@@ -1117,8 +1134,9 @@ function parseInterests(
 }
 
 /**
- * Mandatory Requirement 1 & 11: Never lose extracted information.
- * Preserves unmapped / custom sections with their raw heading, content, and source location.
+ * Mandatory Requirement: Never lose extracted information.
+ * Preserves unmapped / custom sections with their raw heading, complete content, and source location.
+ * Does NOT force mixed or unmapped items into standard sections automatically.
  */
 function handleUnmappedSection(
   section: SemanticSectionBlock,
@@ -1128,6 +1146,7 @@ function handleUnmappedSection(
 ): void {
   const headingLower = section.rawHeading.toLowerCase();
   const content = section.lines.map((l) => l.text.trim()).join('\n');
+  const items = extractSectionItems(section.lines, section.rawHeading);
   const source: SourceLocation = {
     page: section.headingLine?.page || 1,
     blockId: section.headingLine?.id || 'unmapped',
@@ -1136,20 +1155,8 @@ function handleUnmappedSection(
 
   let suggestedCategory: SectionKey | undefined;
 
-  if (/award|honor|achievement/i.test(headingLower)) {
-    suggestedCategory = 'certifications';
-    section.lines.forEach((l) => {
-      const txt = l.text.replace(BULLET_START_REGEX, '').trim();
-      if (txt) {
-        data.certifications.push({
-          id: uid('crt'),
-          name: txt,
-          issuer: section.rawHeading,
-          date: '',
-        });
-      }
-    });
-  } else if (/volunteer|leadership|community|board/i.test(headingLower)) {
+  // Provide high-level section suggested category if unambiguous
+  if (/volunteer|leadership|community|board/i.test(headingLower)) {
     suggestedCategory = 'experience';
   } else if (/patent|publication|paper/i.test(headingLower)) {
     suggestedCategory = 'publications';
@@ -1162,5 +1169,216 @@ function handleUnmappedSection(
     confidence: 'low',
     suggestedCategory,
     source,
+    itemCount: items.length,
+    items,
   });
+}
+
+/**
+ * Classifies an individual extracted item semantically.
+ * Distinguishes achievements, coding profiles, certifications, experience, projects, and publications.
+ */
+export function classifyItemSemantic(
+  text: string,
+  rawHeading = '',
+): { category: ItemCategory; label: string } {
+  const t = text.toLowerCase();
+
+  // 1. Coding Profiles & Competitive Coding Platforms (LeetCode, CodeChef, Codeforces, GeeksforGeeks, etc.)
+  if (
+    /\b(leetcode|codechef|geeksforgeeks|codeforces|hackerrank|hackerearth|atcoder|topcoder|kaggle)\b/i.test(t) ||
+    /\b(contest\s*rating|global\s*best\s*rank|global\s*rank|problems\s*solved)\b/i.test(t)
+  ) {
+    return { category: 'achievements', label: 'Achievements / Coding Profiles' };
+  }
+
+  // 2. Competitive Contests, Hackathons, Olympiads, Regional Contests (ICPC, etc.)
+  if (
+    /\b(icpc|hackathon|olympiad|amritapuri|finalist|runner[\s-]*up|champion|1st\s+place|2nd\s+place|gold\s+medal|qualified\s+for|regionals)\b/i.test(t)
+  ) {
+    return { category: 'achievements', label: 'Achievements' };
+  }
+
+  // 3. Honors & Awards
+  if (
+    /\b(award|scholarship|fellowship|honor|merit|dean's\s+list|won\b)\b/i.test(t) &&
+    !/\b(certif|course|coursera|ibm\s+certif)\b/i.test(t)
+  ) {
+    return { category: 'achievements', label: 'Achievements' };
+  }
+
+  // 4. Certifications & Courses (Coursera, IBM Certified, Udemy, edX, etc.)
+  if (
+    /\b(coursera|udemy|edx|udacity|linkedin\s+learning|pluralsight|codecademy)\b/i.test(t) ||
+    /\b(certified|certification|certificate|license|licence|credential|accreditation)\b/i.test(t) ||
+    /\b(ibm\s+certified|aws\s+certified|google\s+cloud|azure\s+certified)\b/i.test(t)
+  ) {
+    return { category: 'certifications', label: 'Certifications' };
+  }
+
+  // 5. Publications & Patents
+  if (/\b(patent|publication|published|ieee|springer|acm|journal|proceedings)\b/i.test(t)) {
+    return { category: 'publications', label: 'Publications' };
+  }
+
+  // 6. Leadership & Experience
+  if (/\b(volunteer|leadership|community|mentor|board\s+member|advisor)\b/i.test(t)) {
+    return { category: 'experience', label: 'Work Experience' };
+  }
+
+  // 7. Projects
+  if (/\b(github\.com|demo|built|developed|designed|implemented)\b/i.test(t)) {
+    return { category: 'projects', label: 'Projects' };
+  }
+
+  return { category: 'custom', label: 'Custom' };
+}
+
+/**
+ * Extracts distinct semantic items from a list of text lines within a section.
+ * Handles:
+ * - Bullet-delimited items (•, *, -, numbers like 1., (1), etc.)
+ * - Multi-line wrapped bullets where continuation lines are joined seamlessly into the correct item
+ * - Standalone paragraphs or lines (patents, board memberships, etc.)
+ * - Links, metrics, bold text, numbers
+ * - Semantic classification for each extracted item
+ */
+export function extractSectionItems(lines: TextLine[], rawHeading = ''): ExtractedSectionItem[] {
+  if (!lines || !lines.length) return [];
+
+  const validLines = lines.filter((l) => l.text && l.text.trim().length > 0);
+  if (!validLines.length) return [];
+
+  const items: ExtractedSectionItem[] = [];
+  const hasBullets = validLines.some((l) => BULLET_START_REGEX.test(l.text.trim()));
+
+  if (hasBullets) {
+    let currentItemLines: string[] = [];
+
+    const flushCurrent = () => {
+      if (currentItemLines.length > 0) {
+        const fullText = currentItemLines.join(' ').replace(/\s+/g, ' ').trim();
+        if (fullText) {
+          items.push(buildExtractedItem(fullText, rawHeading));
+        }
+        currentItemLines = [];
+      }
+    };
+
+    for (const line of validLines) {
+      const trimmed = line.text.trim();
+      if (BULLET_START_REGEX.test(trimmed)) {
+        flushCurrent();
+        currentItemLines.push(trimmed);
+      } else {
+        // Continuation of current item
+        if (currentItemLines.length > 0) {
+          currentItemLines.push(trimmed);
+        } else {
+          currentItemLines.push(trimmed);
+        }
+      }
+    }
+    flushCurrent();
+  } else {
+    // Non-bulleted section (e.g. patents, board memberships)
+    let currentItemLines: string[] = [];
+
+    const flushCurrent = () => {
+      if (currentItemLines.length > 0) {
+        const fullText = currentItemLines.join(' ').replace(/\s+/g, ' ').trim();
+        if (fullText) {
+          items.push(buildExtractedItem(fullText, rawHeading));
+        }
+        currentItemLines = [];
+      }
+    };
+
+    for (let i = 0; i < validLines.length; i += 1) {
+      const line = validLines[i];
+      const trimmed = line.text.trim();
+      const isNumbered = /^\(?\d+[\.\)]\s+/.test(trimmed);
+      const isLargeGap = line.spacingBefore > line.height * 1.5;
+
+      if (currentItemLines.length > 0) {
+        if (isNumbered || isLargeGap) {
+          flushCurrent();
+          currentItemLines.push(trimmed);
+          continue;
+        }
+
+        const isStandaloneKeyword = /^(US\s+Patent|Patent\b|Member\b|Advisor\b|Certified\b|Award\b)/i.test(trimmed);
+        if (isStandaloneKeyword) {
+          flushCurrent();
+          currentItemLines.push(trimmed);
+          continue;
+        }
+
+        const prevText = currentItemLines.join(' ');
+        if ((/[.;)]$/.test(prevText) && trimmed.length > 15) || DATE_RANGE_REGEX.test(trimmed)) {
+          flushCurrent();
+          currentItemLines.push(trimmed);
+          continue;
+        }
+      }
+
+      currentItemLines.push(trimmed);
+    }
+    flushCurrent();
+  }
+
+  // Fallback if empty
+  if (items.length === 0 && validLines.length > 0) {
+    for (const line of validLines) {
+      const trimmed = line.text.trim();
+      if (trimmed) {
+        items.push(buildExtractedItem(trimmed, rawHeading));
+      }
+    }
+  }
+
+  return items;
+}
+
+function buildExtractedItem(fullText: string, rawHeading = ''): ExtractedSectionItem {
+  const cleanFull = fullText.replace(BULLET_START_REGEX, '').trim();
+
+  // Extract year/date if present
+  const dateMatch = cleanFull.match(SINGLE_YEAR_REGEX) || cleanFull.match(DATE_RANGE_REGEX);
+  const date = dateMatch ? dateMatch[0] : undefined;
+
+  // Extract URL if present
+  const urlMatch = cleanFull.match(URL_REGEX);
+  const url = urlMatch ? urlMatch[0] : undefined;
+
+  let name = cleanFull;
+  let detail: string | undefined;
+
+  const dashSplit = cleanFull.split(/\s+[—–]\s+|\s+--\s+/);
+  if (dashSplit.length >= 2) {
+    name = dashSplit[0].trim();
+    detail = dashSplit.slice(1).join(' — ').trim();
+  } else if (cleanFull.includes(' - ')) {
+    const parts = cleanFull.split(' - ');
+    name = parts[0].trim();
+    detail = parts.slice(1).join(' - ').trim();
+  } else if (cleanFull.includes(' : ') && cleanFull.length > 40) {
+    const parts = cleanFull.split(' : ');
+    name = parts[0].trim();
+    detail = parts.slice(1).join(' : ').trim();
+  }
+
+  const { category, label } = classifyItemSemantic(cleanFull, rawHeading);
+
+  return {
+    id: uid('item'),
+    text: fullText,
+    name: name || cleanFull,
+    detail,
+    date,
+    url,
+    suggestedCategory: category,
+    suggestedCategoryLabel: label,
+    assignedCategory: 'custom',
+  };
 }

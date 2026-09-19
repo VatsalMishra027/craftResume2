@@ -1,6 +1,8 @@
 import type {
   CertificationItem,
   CoverLetter,
+  CustomSection,
+  CustomSectionItem,
   EducationItem,
   ExperienceItem,
   InterestItem,
@@ -76,9 +78,8 @@ function migrateSkills(value: unknown): SkillItem[] {
 function sectionMeta(raw: unknown): ResumeData['sections'] {
   if (!isRecord(raw)) return undefined;
 
-  const out: Partial<Record<(typeof SECTION_KEYS)[number], SectionMeta>> = {};
-  for (const key of SECTION_KEYS) {
-    const entry = raw[key];
+  const out: Record<string, SectionMeta> = {};
+  for (const [key, entry] of Object.entries(raw)) {
     if (!isRecord(entry)) continue;
     const label = str(entry.label).trim();
     const hidden = entry.hidden === true;
@@ -95,19 +96,25 @@ function sectionMeta(raw: unknown): ResumeData['sections'] {
  * names are dropped and anything the stored list never mentioned keeps its
  * default place at the end. An order matching the default is not worth storing.
  */
-function sectionOrder(raw: unknown): SectionKey[] | undefined {
+function sectionOrder(raw: unknown, customSectionIds: string[] = []): string[] | undefined {
   if (!Array.isArray(raw)) return undefined;
 
-  const seen = new Set<SectionKey>();
+  const validKeys = new Set<string>([...SECTION_KEYS, ...customSectionIds]);
+  const seen = new Set<string>();
   for (const entry of raw) {
     if (typeof entry !== 'string') continue;
-    const key = entry as SectionKey;
-    if (SECTION_KEYS.includes(key)) seen.add(key);
+    if (validKeys.has(entry)) seen.add(entry);
   }
   if (!seen.size) return undefined;
 
-  const out = [...seen, ...SECTION_KEYS.filter((key) => !seen.has(key))];
-  return out.every((key, i) => key === SECTION_KEYS[i]) ? undefined : out;
+  const out = [
+    ...seen,
+    ...SECTION_KEYS.filter((key) => !seen.has(key)),
+    ...customSectionIds.filter((id) => !seen.has(id)),
+  ];
+  return out.every((key, i) => key === SECTION_KEYS[i]) && out.length === SECTION_KEYS.length
+    ? undefined
+    : out;
 }
 
 /**
@@ -140,7 +147,7 @@ function coverLetter(raw: unknown): CoverLetter {
  * Rebuilds a known-good shape from whatever is in storage. Anything missing or
  * of the wrong type falls back to empty rather than throwing at render time.
  */
-function normalise(raw: unknown): ResumeData {
+export function normalise(raw: unknown): ResumeData {
   if (!isRecord(raw)) return structuredClone(SAMPLE_RESUME);
 
   const basics = isRecord(raw.basics) ? raw.basics : {};
@@ -219,9 +226,37 @@ function normalise(raw: unknown): ResumeData {
       const i = isRecord(item) ? item : {};
       return { id: str(i.id) || uid('int'), name: str(i.name) };
     }),
+    customSections: arr(raw.customSections).map((item): CustomSection => {
+      const c = isRecord(item) ? item : {};
+      const items = arr(c.items).map((it): CustomSectionItem => {
+        const i = isRecord(it) ? it : {};
+        return {
+          id: str(i.id) || uid('cit'),
+          text: str(i.text),
+          name: str(i.name),
+          detail: str(i.detail),
+          date: str(i.date),
+          url: str(i.url),
+        };
+      });
+      return {
+        id: str(c.id) || uid('csec'),
+        title: str(c.title) || 'Custom Section',
+        type: 'custom',
+        items,
+        description: str(c.description),
+        bullets: arr(c.bullets).map(str),
+        hidden: c.hidden === true,
+      };
+    }),
     coverLetter: coverLetter(raw.coverLetter),
     sections: sectionMeta(raw.sections),
-    order: sectionOrder(raw.order),
+    order: sectionOrder(
+      raw.order,
+      arr(raw.customSections)
+        .map((c) => (isRecord(c) ? str(c.id) : ''))
+        .filter(Boolean),
+    ),
   };
 }
 

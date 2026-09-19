@@ -214,7 +214,7 @@ function range(start: string, end: string): string {
 
 /** The sections to print, in order, with the heading the template gives each. */
 export interface ExportSection {
-  key: SectionKey;
+  key: string;
   heading: string;
 }
 
@@ -247,7 +247,7 @@ function heading(text: string, accent: string): string {
   });
 }
 
-function sectionBody(data: ResumeData, key: SectionKey): string {
+function sectionBody(data: ResumeData, key: string): string {
   switch (key) {
     case 'experience':
       return data.experience
@@ -308,11 +308,13 @@ function sectionBody(data: ResumeData, key: SectionKey): string {
               (clean(item.link) ? tab() + run(clean(item.link), { size: 18 }) : ''),
             { before: 120, after: 0, tabRight: true },
           );
-          const desc = clean(item.description) ? para(run(clean(item.description))) : '';
           const tech = clean(item.tech)
-            ? para(run(`Technologies: ${clean(item.tech)}`, { italic: true, size: 18 }))
+            ? para(run(`Technologies: ${clean(item.tech)}`, { italic: true, size: 18 }), { after: 30 })
             : '';
-          return head + desc + tech;
+          const bullets = bulletLines(item.description)
+            .map((line) => para(run('•  ') + run(line), { after: 30, bullet: true }))
+            .join('');
+          return head + tech + bullets;
         })
         .join('');
 
@@ -345,8 +347,31 @@ function sectionBody(data: ResumeData, key: SectionKey): string {
       return names.length ? para(run(names.join('  ·  '))) : '';
     }
 
-    default:
+    default: {
+      const customSec = data.customSections?.find((s) => s.id === key);
+      if (customSec) {
+        if (customSec.items && customSec.items.length > 0) {
+          return customSec.items
+            .map((item) => {
+              const text =
+                clean(item.text) || [clean(item.name), clean(item.detail)].filter(Boolean).join(' — ');
+              return text ? para(run('•  ') + run(text), { after: 30, bullet: true }) : '';
+            })
+            .join('');
+        }
+        if (customSec.bullets && customSec.bullets.length > 0) {
+          return customSec.bullets
+            .map(clean)
+            .filter(Boolean)
+            .map((b) => para(run('•  ') + run(b), { after: 30, bullet: true }))
+            .join('');
+        }
+        if (clean(customSec.description)) {
+          return para(run(clean(customSec.description)));
+        }
+      }
       return '';
+    }
   }
 }
 
@@ -418,13 +443,29 @@ function documentXml(data: ResumeData, options: ExportOptions): string {
     })
     .join('');
 
+  const renderedKeys = new Set(options.sections.map((s) => s.key));
+  const fallbackCustomBody = (data.customSections ?? [])
+    .filter(
+      (sec) =>
+        !sec.hidden &&
+        !renderedKeys.has(sec.id) &&
+        ((sec.items && sec.items.length > 0) ||
+          (sec.bullets && sec.bullets.length > 0) ||
+          clean(sec.description)),
+    )
+    .map((sec) => {
+      const content = sectionBody(data, sec.id);
+      return content ? heading(sec.title || 'Custom Section', accent) + content : '';
+    })
+    .join('');
+
   const letter =
     options.coverLetter && data.coverLetter
       ? letterParagraphs(data.coverLetter, data, accent)
       : '';
 
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>${header}${summary}${body}${letter}<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="850" w:right="850" w:bottom="850" w:left="850" w:header="0" w:footer="0" w:gutter="0"/></w:sectPr></w:body></w:document>`;
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>${header}${summary}${body}${fallbackCustomBody}${letter}<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="850" w:right="850" w:bottom="850" w:left="850" w:header="0" w:footer="0" w:gutter="0"/></w:sectPr></w:body></w:document>`;
 }
 
 const STYLES_XML = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -528,8 +569,11 @@ export function buildPlainText(data: ResumeData, options: ExportOptions): string
       for (const item of data.projects) {
         if (!clean(item.name) && !clean(item.description)) continue;
         lines.push([clean(item.name), clean(item.link)].filter(Boolean).join(' — '));
-        if (clean(item.description)) lines.push(clean(item.description));
         if (clean(item.tech)) lines.push(`Technologies: ${clean(item.tech)}`);
+        const bullets = bulletLines(item.description);
+        if (bullets.length) {
+          bullets.forEach((b) => lines.push(`• ${b}`));
+        }
         lines.push('');
       }
     } else if (entry.key === 'certifications') {
@@ -548,6 +592,23 @@ export function buildPlainText(data: ResumeData, options: ExportOptions): string
     } else if (entry.key === 'interests') {
       const names = data.interests.map((item) => clean(item.name)).filter(Boolean);
       if (names.length) lines.push(names.join(', '));
+    } else {
+      const customSec = data.customSections?.find((s) => s.id === entry.key);
+      if (customSec) {
+        if (customSec.items && customSec.items.length > 0) {
+          for (const item of customSec.items) {
+            const text =
+              clean(item.text) || [clean(item.name), clean(item.detail)].filter(Boolean).join(' — ');
+            if (text) lines.push(`• ${text}`);
+          }
+        } else if (customSec.bullets && customSec.bullets.length > 0) {
+          for (const b of customSec.bullets.map(clean).filter(Boolean)) {
+            lines.push(`• ${b}`);
+          }
+        } else if (clean(customSec.description)) {
+          lines.push(clean(customSec.description));
+        }
+      }
     }
 
     while (lines.length && lines[lines.length - 1] === '') lines.pop();
@@ -556,6 +617,34 @@ export function buildPlainText(data: ResumeData, options: ExportOptions): string
     push();
     push(entry.heading.toUpperCase());
     lines.forEach(push);
+  }
+
+  const plainRenderedKeys = new Set(options.sections.map((s) => s.key));
+  if (data.customSections && data.customSections.length > 0) {
+    for (const sec of data.customSections) {
+      if (sec.hidden || plainRenderedKeys.has(sec.id)) continue;
+      const cLines: string[] = [];
+      if (sec.items && sec.items.length > 0) {
+        for (const item of sec.items) {
+          const text =
+            clean(item.text) || [clean(item.name), clean(item.detail)].filter(Boolean).join(' — ');
+          if (text) cLines.push(`• ${text}`);
+        }
+      } else if (sec.bullets && sec.bullets.length > 0) {
+        for (const b of sec.bullets.map(clean).filter(Boolean)) {
+          cLines.push(`• ${b}`);
+        }
+      } else if (clean(sec.description)) {
+        cLines.push(clean(sec.description));
+      }
+
+      while (cLines.length && cLines[cLines.length - 1] === '') cLines.pop();
+      if (!cLines.length) continue;
+
+      push();
+      push((sec.title || 'CUSTOM SECTION').toUpperCase());
+      cLines.forEach(push);
+    }
   }
 
   if (options.coverLetter) {
@@ -671,3 +760,526 @@ export async function copyText(text: string): Promise<boolean> {
     return false;
   }
 }
+
+/**
+ * Assembles a self-contained, clean HTML document for the isolated print sandbox.
+ * Contains only the required Google Font declarations, cloned parent stylesheet links,
+ * the dedicated print-only precision CSS rules, and the rendered resume sheets.
+ */
+export function buildPrintDocument(sheetsHtml: string, documentTitle = 'Resume'): string {
+  const title = String(documentTitle || 'Resume')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+
+  // Gather parent stylesheets and links if running in a browser DOM environment
+  const styleNodes: string[] = [];
+  if (typeof document !== 'undefined') {
+    document.querySelectorAll<HTMLLinkElement | HTMLStyleElement>(
+      'link[rel="stylesheet"], link[rel="preconnect"], style'
+    ).forEach((el) => {
+      // Avoid re-injecting any duplicate print engine styles
+      if (el.id !== 'craftresume-print-engine') {
+        styleNodes.push(el.outerHTML);
+      }
+    });
+  }
+
+  // Font declarations ensuring Google Fonts are available in the print frame
+  const fontLinks = `
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=Space+Grotesk:wght@500;600;700&family=Lato:wght@400;700&family=Roboto:wght@400;500;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap" rel="stylesheet" />
+  `;
+
+  // Dedicated Print-Only Precision Stylesheet (all print overrides isolated here)
+  const printStyles = `
+    <style id="craftresume-print-engine">
+      @page {
+        size: 210mm 297mm;
+        margin: 0mm;
+        margin-top: 16mm;
+        margin-bottom: 12mm;
+        margin-left: 0mm;
+        margin-right: 0mm;
+      }
+      *, *::before, *::after {
+        box-sizing: border-box;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      html, body {
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 210mm !important;
+        background: #fff !important;
+        color: #14140f;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      /* Ensure print container and sheet are strictly visible */
+      body > .print-root,
+      .print-root {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 210mm !important;
+        background: #fff !important;
+      }
+      .resume-sheet {
+        visibility: visible !important;
+        opacity: 1 !important;
+        margin: 0 !important;
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+        border: none !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        transform: none !important;
+        width: 210mm !important;
+        min-height: auto !important;
+        height: auto !important;
+        box-sizing: border-box !important;
+        page-break-after: always;
+        break-after: page;
+        position: relative !important;
+      }
+      .resume-sheet:last-child {
+        page-break-after: auto !important;
+        break-after: auto !important;
+      }
+      /* Zero out vertical padding on rail/main/sidebar so @page uniform margins govern all pages */
+      .rs-rail,
+      .rs-main,
+      .rs-sidebar {
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+      }
+
+      /* =========================================================================
+         Multi-Column & Sidebar Print Precision Grid Engine
+         Locks sidebar and main content into physical parallel tracks across pages
+         ========================================================================= */
+
+      /* 1. Single-Column Templates: Pure vertical block flow */
+      .t-ledger,
+      .t-scholar,
+      .t-beacon,
+      .t-meridian,
+      .t-cascade,
+      .t-helix,
+      .t-aperture,
+      .t-anchor {
+        display: block !important;
+      }
+
+      /* 2. Sidebar Templates: Fixed-width parallel physical tracks */
+      .t-cameo {
+        display: grid !important;
+        grid-template-columns: 63mm 147mm !important;
+        padding: 0 !important;
+        width: 210mm !important;
+      }
+      .t-cameo > .rs-rail {
+        grid-column: 1 !important;
+        width: 63mm !important;
+        box-sizing: border-box !important;
+      }
+      .t-cameo > .rs-main {
+        grid-column: 2 !important;
+        width: 147mm !important;
+        box-sizing: border-box !important;
+      }
+
+      .t-prism {
+        display: grid !important;
+        grid-template-columns: 60mm 150mm !important;
+        padding: 0 !important;
+        width: 210mm !important;
+      }
+      .t-prism > .rs-rail {
+        grid-column: 1 !important;
+        width: 60mm !important;
+        box-sizing: border-box !important;
+      }
+      .t-prism > .rs-main {
+        grid-column: 2 !important;
+        width: 150mm !important;
+        box-sizing: border-box !important;
+      }
+
+      .t-atlas {
+        display: grid !important;
+        grid-template-columns: 66mm 144mm !important;
+        padding: 0 !important;
+        width: 210mm !important;
+      }
+      .t-atlas > .rs-rail {
+        grid-column: 1 !important;
+        width: 66mm !important;
+        box-sizing: border-box !important;
+      }
+      .t-atlas > .rs-main {
+        grid-column: 2 !important;
+        width: 144mm !important;
+        box-sizing: border-box !important;
+      }
+
+      .t-harbor {
+        display: grid !important;
+        grid-template-columns: 62mm 148mm !important;
+        padding: 0 !important;
+        width: 210mm !important;
+      }
+      .t-harbor > .rs-rail {
+        grid-column: 1 !important;
+        width: 62mm !important;
+        box-sizing: border-box !important;
+      }
+      .t-harbor > .rs-main {
+        grid-column: 2 !important;
+        width: 148mm !important;
+        box-sizing: border-box !important;
+      }
+
+      .t-summit {
+        display: grid !important;
+        grid-template-columns: 138mm 72mm !important;
+        padding: 0 !important;
+        width: 210mm !important;
+      }
+      .t-summit > .rs-main {
+        grid-column: 1 !important;
+        width: 138mm !important;
+        box-sizing: border-box !important;
+      }
+      .t-summit > .rs-rail {
+        grid-column: 2 !important;
+        width: 72mm !important;
+        box-sizing: border-box !important;
+      }
+
+      /* 3. Balanced Two-Column Split Templates */
+      .t-vertex,
+      .t-lattice,
+      .t-pulse,
+      .t-orbit {
+        display: block !important;
+      }
+
+      .t-vertex .rs-columns {
+        display: grid !important;
+        grid-template-columns: 108mm 102mm !important;
+        min-height: auto !important;
+        height: auto !important;
+        width: 210mm !important;
+      }
+      .t-vertex .rs-col--main {
+        grid-column: 1 !important;
+        width: 108mm !important;
+        box-sizing: border-box !important;
+      }
+      .t-vertex .rs-col--side {
+        grid-column: 2 !important;
+        width: 102mm !important;
+        box-sizing: border-box !important;
+      }
+
+      .t-lattice .rs-columns {
+        display: grid !important;
+        grid-template-columns: 92mm 82mm !important;
+        gap: 8mm !important;
+        min-height: auto !important;
+        height: auto !important;
+        width: 182mm !important;
+      }
+      .t-lattice .rs-col--main {
+        grid-column: 1 !important;
+        width: 92mm !important;
+        box-sizing: border-box !important;
+      }
+      .t-lattice .rs-col--side {
+        grid-column: 2 !important;
+        width: 82mm !important;
+        box-sizing: border-box !important;
+      }
+
+      .t-pulse .rs-columns {
+        display: grid !important;
+        grid-template-columns: 128mm 82mm !important;
+        min-height: auto !important;
+        height: auto !important;
+        width: 210mm !important;
+      }
+      .t-pulse .rs-col--main {
+        grid-column: 1 !important;
+        width: 128mm !important;
+        box-sizing: border-box !important;
+      }
+      .t-pulse .rs-col--side {
+        grid-column: 2 !important;
+        width: 82mm !important;
+        box-sizing: border-box !important;
+      }
+
+      .t-orbit .rs-columns {
+        display: grid !important;
+        grid-template-columns: 105mm 70mm !important;
+        gap: 9mm !important;
+        min-height: auto !important;
+        height: auto !important;
+        width: 184mm !important;
+      }
+      .t-orbit .rs-col--main {
+        grid-column: 1 !important;
+        width: 105mm !important;
+        box-sizing: border-box !important;
+      }
+      .t-orbit .rs-col--side {
+        grid-column: 2 !important;
+        width: 70mm !important;
+        box-sizing: border-box !important;
+      }
+
+      /* =========================================================================
+         Print Pagination & Page-Break Hierarchy
+         ========================================================================= */
+
+      /* 1. Prevent orphan section heading at the bottom of a page */
+      .rs-section-title {
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+        break-after: avoid-page !important;
+        page-break-after: avoid !important;
+      }
+
+      /* 2. Bind section heading to section body content */
+      .rs-section-body {
+        break-before: avoid-page !important;
+        page-break-before: avoid !important;
+      }
+      .rs-section-body > *:first-child {
+        break-before: avoid-page !important;
+        page-break-before: avoid !important;
+      }
+
+      /* 3. Sections allow entries to flow naturally across pages */
+      .rs-section {
+        break-inside: auto !important;
+        page-break-inside: auto !important;
+      }
+
+      /* 4. Entries break internally between bullets to fill available space on Page 1 */
+      .rs-entry {
+        break-inside: auto !important;
+        page-break-inside: auto !important;
+        margin-bottom: 3.5mm !important;
+      }
+
+      /* 5. Short non-bullet entries stay intact */
+      .rs-entry:not(:has(.rs-bullets)) {
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+      }
+
+      /* 6. Keep entry title, subtitle, organization, and tech tags bound together
+            and bound forward to the first content item */
+      .rs-entry-head {
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+      }
+      .rs-entry-head:not(:last-child) {
+        break-after: avoid-page !important;
+        page-break-after: avoid !important;
+      }
+
+      .rs-entry-sub,
+      .rs-tech,
+      .rs-chips,
+      .rs-entry-org,
+      .rs-entry-where {
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+      }
+      .rs-entry-sub:not(:last-child),
+      .rs-tech:not(:last-child),
+      .rs-chips:not(:last-child),
+      .rs-entry-org:not(:last-child),
+      .rs-entry-where:not(:last-child) {
+        break-after: avoid-page !important;
+        page-break-after: avoid !important;
+      }
+
+      /* 7. Bind first bullet to entry header so entry header never sits alone */
+      .rs-bullets {
+        break-inside: auto !important;
+        page-break-inside: auto !important;
+      }
+
+      .rs-bullets > li:first-child {
+        break-before: avoid-page !important;
+        page-break-before: avoid !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+      }
+
+      /* 8. Individual bullet points never slice horizontally in half */
+      .rs-bullets li {
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+      }
+
+      /* 9. Discrete items that should never fracture across pages */
+      .rs-header,
+      .rs-photo,
+      .rs-skill-group,
+      .rs-skill-chip,
+      .rs-mini,
+      .rs-meters li,
+      .rs-dotrows li,
+      .rs-grid li,
+      .rs-interests li,
+      .rs-inline li,
+      .rs-plainlist li,
+      .rs-pairs li,
+      .rs-pubs li {
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+      }
+
+      /* 10. Typography orphan and widow protection */
+      html, body, .resume-sheet, p, li {
+        orphans: 2;
+        widows: 2;
+      }
+
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+    </style>
+  `;
+
+  return `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>${title}</title>
+    ${fontLinks}
+    ${styleNodes.join('\n')}
+    ${printStyles}
+  </head>
+  <body>
+    <div class="print-root">
+      ${sheetsHtml}
+    </div>
+  </body>
+</html>`;
+}
+
+/**
+ * Client-side isolated print sandbox.
+ * Creates an off-screen iframe, writes the self-contained print document,
+ * waits for fonts and layout stabilization (with fallback safety timeout),
+ * invokes the browser's native print engine, and cleanly removes the iframe.
+ */
+export async function printResumeIframe(sheetsHtml: string, documentTitle = 'Resume'): Promise<void> {
+  if (typeof document === 'undefined') return;
+
+  return new Promise<void>((resolve) => {
+    // Remove any previous print iframe
+    document.getElementById('craftresume-print-frame')?.remove();
+
+    const iframe = document.createElement('iframe');
+    iframe.id = 'craftresume-print-frame';
+    iframe.style.position = 'fixed';
+    iframe.style.top = '0';
+    iframe.style.left = '0';
+    iframe.style.width = '210mm';
+    iframe.style.height = '297mm';
+    iframe.style.border = 'none';
+    iframe.style.opacity = '0';
+    iframe.style.pointerEvents = 'none';
+    iframe.style.zIndex = '-9999';
+    iframe.setAttribute('aria-hidden', 'true');
+
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentDocument || iframe.contentWindow?.document;
+    const win = iframe.contentWindow;
+
+    if (!doc || !win) {
+      iframe.remove();
+      window.print();
+      resolve();
+      return;
+    }
+
+    const htmlContent = buildPrintDocument(sheetsHtml, documentTitle);
+
+    doc.open();
+    doc.write(htmlContent);
+    doc.close();
+
+    let cleanedUp = false;
+    const cleanup = () => {
+      if (cleanedUp) return;
+      cleanedUp = true;
+      try {
+        iframe.remove();
+      } catch {
+        // Ignore
+      }
+      resolve();
+    };
+
+    // Clean up when print dialog finishes (either printed or cancelled)
+    win.addEventListener('afterprint', cleanup, { once: true });
+    window.addEventListener('afterprint', cleanup, { once: true });
+
+    // Fallback safety timeout (60s) so the iframe is never deleted while the user has the print dialog open
+    setTimeout(cleanup, 60000);
+
+    const triggerPrint = () => {
+      try {
+        win.focus();
+        win.print();
+      } catch (err) {
+        console.error('[CraftResume Print] Iframe print failed, using standard fallback:', err);
+        window.print();
+        cleanup();
+      }
+    };
+
+    // Layout stabilization: wait for styles, fonts, and full layout stabilization
+    const waitForReady = async () => {
+      try {
+        if (doc.fonts && typeof doc.fonts.ready?.then === 'function') {
+          // Await font loading directly to prevent layout shift; generous safety ceiling prevents permanent hang
+          await Promise.race([
+            doc.fonts.ready,
+            new Promise((r) => setTimeout(r, 8000)),
+          ]);
+        }
+      } catch {
+        // If an error occurs, the standard CSS font fallback stack takes over
+      }
+
+      // Small delay ensuring the browser's rendering engine has painted the DOM before opening the modal
+      setTimeout(() => {
+        triggerPrint();
+      }, 150);
+    };
+
+    if (doc.readyState === 'complete') {
+      void waitForReady();
+    } else {
+      iframe.addEventListener('load', () => void waitForReady(), { once: true });
+      setTimeout(() => void waitForReady(), 3000);
+    }
+  });
+}
+

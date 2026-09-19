@@ -36,11 +36,20 @@ import {
   copyText,
   downloadBlob,
   exportFilename,
+  printResumeIframe,
 } from '../lib/export';
 import type { ExportSection } from '../lib/export';
 import { fitSheet } from '../lib/fit';
 import { SECTION_KEYS as SECTIONS } from '../lib/types';
-import type { AnyItem, PanelKey, ResumeData, SectionKey, SectionMeta } from '../lib/types';
+import type {
+  AnyItem,
+  CustomSection,
+  CustomSectionItem,
+  PanelKey,
+  ResumeData,
+  SectionKey,
+  SectionMeta,
+} from '../lib/types';
 import { parsePdfResume } from '../lib/pdf';
 
 const CONTROL =
@@ -52,6 +61,10 @@ function escAttr(value: string): string {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+}
+
+function clean(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : '';
 }
 
 interface FieldSpec {
@@ -127,18 +140,19 @@ const SECTION_FIELDS: Record<SectionKey, FieldSpec[]> = {
     { key: 'name', label: 'Project', placeholder: 'Fieldnote' },
     { key: 'link', label: 'Link', placeholder: 'fieldnote.app' },
     {
-      key: 'description',
-      label: 'Description',
-      rows: 3,
-      full: true,
-      placeholder: 'An offline-first research notebook. 4,000 monthly users.',
-    },
-    {
       key: 'tech',
       label: 'Built with',
       full: true,
       placeholder: 'Figma, React, IndexedDB',
       hint: 'Separate with commas.',
+    },
+    {
+      key: 'description',
+      label: 'Description',
+      rows: 4,
+      full: true,
+      placeholder: 'An offline-first research notebook.\nOver 4,000 active monthly users.',
+      hint: 'One bullet per line. Achievements will render as clean bullet points.',
     },
   ],
   certifications: [
@@ -380,6 +394,7 @@ export function initEditor(): void {
 
   function renderAllSections(): void {
     SECTIONS.forEach(renderSection);
+    renderCustomSections();
   }
 
   /* --- Headshot -------------------------------------------------------------
@@ -496,35 +511,23 @@ export function initEditor(): void {
   });
 
   // --- Section rail -------------------------------------------------------
-  const railButtons = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-goto]'));
-  const panelEls = Array.from(form.querySelectorAll<HTMLElement>('[data-panel]'));
-
-  function showPanel(next: PanelKey): void {
-    panel = next;
-    panelEls.forEach((el) => {
+  function showPanel(next: string): void {
+    panel = next as PanelKey;
+    form.querySelectorAll<HTMLElement>('[data-panel]').forEach((el) => {
       el.hidden = el.dataset.panel !== next;
     });
-    railButtons.forEach((button) => {
+    document.querySelectorAll<HTMLButtonElement>('[data-goto]').forEach((button) => {
       button.setAttribute('aria-current', String(button.dataset.goto === next));
     });
-    form!.scrollTop = 0;
+    form.scrollTop = 0;
   }
-
-  railButtons.forEach((button) => {
-    button.addEventListener('click', () => {
-      showPanel(button.dataset.goto as PanelKey);
-      // On a narrow screen the rail and the form share the viewport, so a tap
-      // on a section should land on the form rather than leaving it offscreen.
-      setView('edit');
-    });
-  });
 
   // --- Section headings: rename, remove, put back --------------------------
   // Each rail row owns its own menu. The server-rendered label is the app's
   // default name for the section; anything the user types replaces the heading
   // the template would otherwise have printed.
-  const railRows = new Map<SectionKey, HTMLElement>();
-  const defaultTitles = new Map<SectionKey, string>();
+  const railRows = new Map<string, HTMLElement>();
+  const defaultTitles = new Map<string, string>();
 
   document.querySelectorAll<HTMLElement>('[data-rail]').forEach((row) => {
     const key = row.dataset.rail as SectionKey;
@@ -555,21 +558,18 @@ export function initEditor(): void {
   }
 
   /** The heading this section prints under right now, rename included. */
-  function headingFor(key: SectionKey): string {
+  function headingFor(key: string): string {
+    const customSec = data.customSections?.find((s) => s.id === key);
     return (
       data.sections?.[key]?.label?.trim() ||
-      templateTitles.get(key) ||
+      customSec?.title ||
+      templateTitles.get(key as SectionKey) ||
       defaultTitles.get(key) ||
       key
     );
   }
 
-  const sectionMenus = Array.from(document.querySelectorAll<HTMLElement>('[data-section-panel]'));
-  const sectionMenuButtons = Array.from(
-    document.querySelectorAll<HTMLElement>('[data-section-menu]'),
-  );
-
-  function metaFor(key: SectionKey): SectionMeta {
+  function metaFor(key: string): SectionMeta {
     const sections = (data.sections ??= {});
     return (sections[key] ??= {});
   }
@@ -577,7 +577,8 @@ export function initEditor(): void {
   /** Keeps storage to the sections the user has actually changed. */
   function pruneSections(): void {
     if (!data.sections) return;
-    SECTIONS.forEach((key) => {
+    const allKeys = [...SECTIONS, ...(data.customSections ?? []).map((s) => s.id)];
+    allKeys.forEach((key) => {
       const meta = data.sections![key];
       if (meta && !meta.label && !meta.hidden) delete data.sections![key];
     });
@@ -585,8 +586,16 @@ export function initEditor(): void {
   }
 
   /** The order in force: the user's arrangement, or the template's own. */
-  function currentOrder(): SectionKey[] {
-    return data.order?.length ? [...data.order] : [...templateOrder];
+  function currentOrder(): string[] {
+    const customIds = new Set((data.customSections ?? []).map((s) => s.id));
+    const validKeys = new Set<string>([...SECTIONS, ...customIds]);
+    const base = (data.order?.length ? data.order : templateOrder).filter((k) => validKeys.has(k));
+    for (const id of customIds) {
+      if (!base.includes(id)) {
+        base.push(id);
+      }
+    }
+    return base;
   }
 
   /**
@@ -619,25 +628,19 @@ export function initEditor(): void {
   /**
    * `keyboard` says how the move was asked for, and it decides what happens to
    * focus afterwards.
-   *
-   * Moving a row detaches and re-appends it, which drops focus. Putting focus
-   * back is right for a keyboard user — it is how a section gets walked up the
-   * list with repeated presses — but wrong for a mouse user: restoring focus
-   * programmatically counts as :focus-visible, which pinned the hover controls
-   * open on a row the pointer had already left. So the mouse path deliberately
-   * leaves focus off the button and lets the strip go with the pointer.
    */
-  function moveSection(key: SectionKey, delta: number, keyboard = false): void {
+  function moveSection(key: string, delta: number, keyboard = false): void {
     const order = currentOrder();
     const from = order.indexOf(key);
     const to = from + delta;
     if (from < 0 || to < 0 || to >= order.length) return;
 
     order.splice(to, 0, ...order.splice(from, 1));
-    // Back at the template's own order is the same as never having arranged
-    // anything, and storing nothing lets a later template switch take over.
-    if (order.every((entry, i) => entry === templateOrder[i])) delete data.order;
-    else data.order = order;
+    if (!data.customSections?.length && order.every((entry, i) => entry === templateOrder[i])) {
+      delete data.order;
+    } else {
+      data.order = order;
+    }
 
     syncSectionOrder();
     paintPreview();
@@ -645,9 +648,6 @@ export function initEditor(): void {
 
     if (!keyboard) return;
 
-    // Keyboard only: put focus back on the button that was pressed so the
-    // section can be walked up the list with repeated presses — or on its
-    // opposite once this one has run out of travel.
     const row = railRows.get(key);
     const moved = row?.querySelector<HTMLButtonElement>(
       `[data-section-move][data-direction="${delta < 0 ? 'up' : 'down'}"]`,
@@ -659,7 +659,8 @@ export function initEditor(): void {
   }
 
   function syncSectionHeadings(): void {
-    SECTIONS.forEach((key) => {
+    const allKeys = [...SECTIONS, ...(data.customSections ?? []).map((s) => s.id)];
+    allKeys.forEach((key) => {
       const row = railRows.get(key);
       if (!row) return;
 
@@ -678,17 +679,24 @@ export function initEditor(): void {
 
       const panelTitle = document.querySelector<HTMLElement>(`[data-panel-title="${key}"]`);
       if (panelTitle) panelTitle.textContent = label;
+
+      const customTitleInput = document.querySelector<HTMLInputElement>(`[data-custom-title="${key}"]`);
+      if (customTitleInput && customTitleInput.value !== label) {
+        customTitleInput.value = label;
+      }
     });
   }
 
   function closeSectionMenus(): void {
-    sectionMenus.forEach((menu) => {
+    document.querySelectorAll<HTMLElement>('[data-section-panel]').forEach((menu) => {
       menu.hidden = true;
     });
-    sectionMenuButtons.forEach((button) => button.setAttribute('aria-expanded', 'false'));
+    document.querySelectorAll<HTMLElement>('[data-section-menu]').forEach((button) => {
+      button.setAttribute('aria-expanded', 'false');
+    });
   }
 
-  function openSectionMenu(key: SectionKey): void {
+  function openSectionMenu(key: string): void {
     const button = document.querySelector<HTMLElement>(`[data-section-menu="${key}"]`);
     const menu = document.querySelector<HTMLElement>(`[data-section-panel="${key}"]`);
     if (!button || !menu) return;
@@ -698,7 +706,6 @@ export function initEditor(): void {
     menu.hidden = false;
     button.setAttribute('aria-expanded', 'true');
 
-    // The rail scrolls, so the menu is fixed and placed against the button.
     const rect = button.getBoundingClientRect();
     const left = Math.max(8, Math.min(rect.right - menu.offsetWidth, window.innerWidth - menu.offsetWidth - 8));
     const top = Math.max(8, Math.min(rect.bottom + 6, window.innerHeight - menu.offsetHeight - 8));
@@ -706,17 +713,15 @@ export function initEditor(): void {
     menu.style.top = `${top}px`;
   }
 
-  function startRename(key: SectionKey): void {
+  function startRename(key: string): void {
     const row = railRows.get(key);
     if (!row || row.dataset.renaming === 'true') return;
 
     const input = document.createElement('input');
     input.type = 'text';
     input.className = 'rail-rename';
-    // Seeded with the heading the sheet is printing right now, template
-    // wording and all, so renaming starts from what is on the page.
     input.value = headingFor(key);
-    input.placeholder = templateTitles.get(key) ?? defaultTitles.get(key) ?? '';
+    input.placeholder = templateTitles.get(key as SectionKey) ?? defaultTitles.get(key) ?? '';
     input.setAttribute('aria-label', `Heading for ${defaultTitles.get(key) ?? key}`);
 
     row.dataset.renaming = 'true';
@@ -733,9 +738,16 @@ export function initEditor(): void {
       if (commit) {
         const next = input.value.trim();
         const meta = metaFor(key);
-        // Emptied on purpose means "give me the template's own heading back".
-        if (next) meta.label = next;
-        else delete meta.label;
+        const customSec = data.customSections?.find((s) => s.id === key);
+        if (customSec) {
+          if (next) {
+            customSec.title = next;
+            meta.label = next;
+          }
+        } else {
+          if (next) meta.label = next;
+          else delete meta.label;
+        }
         pruneSections();
         syncSectionHeadings();
         paintPreview();
@@ -759,57 +771,327 @@ export function initEditor(): void {
     input.addEventListener('blur', () => finish(true));
   }
 
-  sectionMenuButtons.forEach((button) => {
-    button.addEventListener('click', () => {
-      const key = button.dataset.sectionMenu as SectionKey;
+  function deleteCustomSection(key: string): void {
+    const customSec = data.customSections?.find((s) => s.id === key);
+    const title = customSec?.title || 'this custom section';
+    if (!window.confirm(`Delete "${title}"? This will remove it from the resume.`)) return;
+
+    data.customSections = (data.customSections ?? []).filter((s) => s.id !== key);
+    if (data.sections?.[key]) delete data.sections[key];
+    if (data.order) data.order = data.order.filter((k) => k !== key);
+
+    const row = railRows.get(key);
+    if (row) {
+      row.remove();
+      railRows.delete(key);
+    }
+    defaultTitles.delete(key);
+
+    renderCustomSections();
+    syncSectionOrder();
+    paintPreview();
+    markSaved();
+    showPanel('basics');
+  }
+
+  function renderCustomSections(): void {
+    const host = document.querySelector<HTMLElement>('[data-custom-panels-host]');
+    const railList = document.querySelector<HTMLElement>('.rail-list');
+    if (!host || !railList) return;
+
+    const customSections = data.customSections ?? [];
+
+    for (const sec of customSections) {
+      if ((!sec.items || !sec.items.length) && sec.bullets?.length) {
+        sec.items = sec.bullets.map((b) => ({
+          id: uid('citm'),
+          text: b,
+          name: b,
+        }));
+      } else if ((!sec.items || !sec.items.length) && sec.description) {
+        sec.items = [
+          {
+            id: uid('citm'),
+            text: sec.description,
+            name: sec.description,
+          },
+        ];
+      }
+    }
+
+    const currentCustomIds = new Set(customSections.map((s) => s.id));
+    for (const [key, row] of railRows.entries()) {
+      if (!SECTIONS.includes(key as SectionKey) && !currentCustomIds.has(key)) {
+        row.remove();
+        railRows.delete(key);
+        defaultTitles.delete(key);
+      }
+    }
+
+    for (const sec of customSections) {
+      let row = railRows.get(sec.id);
+      const title = headingFor(sec.id);
+      const itemCount = sec.items?.length || 0;
+
+      if (!row) {
+        row = document.createElement('li');
+        row.className = 'rail-row';
+        row.dataset.rail = sec.id;
+        row.innerHTML = `
+          <button type="button" data-goto="${escAttr(sec.id)}" aria-current="false" class="rail-item">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" class="size-4 flex-none text-ink-muted" aria-hidden="true">
+              <circle cx="8" cy="6.2" r="3.8"/><path d="M5.6 9.5 4.6 14 8 12.4 11.4 14l-1-4.5"/>
+            </svg>
+            <span class="rail-label truncate" data-rail-label="${escAttr(sec.id)}">${escAttr(title)}</span>
+            <span class="rail-count" data-count="${escAttr(sec.id)}">${itemCount ? String(itemCount) : ''}</span>
+          </button>
+          <span class="rail-actions">
+            <button type="button" class="rail-btn" data-section-move="${escAttr(sec.id)}" data-direction="up" aria-label="Move ${escAttr(title)} up" title="Move ${escAttr(title)} up">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="size-3.5" aria-hidden="true">
+                <path d="M8 12.8V3.4M8 3.4 4.2 7.2M8 3.4l3.8 3.8" />
+              </svg>
+            </button>
+            <button type="button" class="rail-btn" data-section-move="${escAttr(sec.id)}" data-direction="down" aria-label="Move ${escAttr(title)} down" title="Move ${escAttr(title)} down">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="size-3.5" aria-hidden="true">
+                <path d="M8 3.2v9.4M8 12.6l3.8-3.8M8 12.6 4.2 8.8" />
+              </svg>
+            </button>
+            <button type="button" class="rail-btn" data-section-menu="${escAttr(sec.id)}" aria-expanded="false" aria-label="Rename or remove ${escAttr(title)}" title="Rename or remove ${escAttr(title)}">
+              <svg viewBox="0 0 16 16" fill="currentColor" class="size-3.5" aria-hidden="true">
+                <circle cx="3.6" cy="8" r="1.2" />
+                <circle cx="8" cy="8" r="1.2" />
+                <circle cx="12.4" cy="8" r="1.2" />
+              </svg>
+            </button>
+          </span>
+          <div class="rail-menu" data-section-panel="${escAttr(sec.id)}" hidden>
+            <button type="button" class="rail-menu-item" data-section-rename="${escAttr(sec.id)}">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" class="rail-menu-icon" aria-hidden="true">
+                <path d="M11.2 2.6 13.4 4.8 5.9 12.3 3 13l.7-2.9z" />
+              </svg>
+              Rename heading
+            </button>
+            <button type="button" class="rail-menu-item" data-section-toggle="${escAttr(sec.id)}">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" class="rail-menu-icon" aria-hidden="true">
+                <path d="M2.2 8s2.4-4.2 5.8-4.2S13.8 8 13.8 8s-2.4 4.2-5.8 4.2S2.2 8 2.2 8z" />
+                <circle cx="8" cy="8" r="1.6" />
+                <path d="M2.8 2.8 13.2 13.2" data-toggle-slash />
+              </svg>
+              <span data-toggle-label>Remove from resume</span>
+            </button>
+            <button type="button" class="rail-menu-item text-clay hover:text-clay" data-custom-delete="${escAttr(sec.id)}">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" class="rail-menu-icon" aria-hidden="true">
+                <path d="M3 4.5h10M6 4.5V3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1.5M12.5 4.5l-.8 9a1.5 1.5 0 0 1-1.5 1.4H5.8a1.5 1.5 0 0 1-1.5-1.4l-.8-9" />
+              </svg>
+              Delete section
+            </button>
+          </div>
+        `;
+        railList.appendChild(row);
+        railRows.set(sec.id, row);
+        defaultTitles.set(sec.id, sec.title);
+      } else {
+        const labelEl = row.querySelector<HTMLElement>('[data-rail-label]');
+        if (labelEl) labelEl.textContent = title;
+        const countEl = row.querySelector<HTMLElement>('[data-count]');
+        if (countEl) countEl.textContent = itemCount ? String(itemCount) : '';
+      }
+    }
+
+    host.innerHTML = customSections
+      .map((sec) => {
+        const title = headingFor(sec.id);
+        const items = sec.items ?? [];
+        const itemsHtml = items.length
+          ? items
+              .map((it, idx) => {
+                const previewTitle =
+                  clean(it.name) || clean(it.text)?.split('\n')[0] || `Item ${idx + 1}`;
+                return `<article class="rounded-xl border border-line bg-paper/60 p-4" data-custom-section="${escAttr(sec.id)}" data-custom-item="${escAttr(it.id)}">
+                  <div class="mb-3 flex items-center justify-between gap-3">
+                    <span class="truncate text-xs font-semibold tracking-[-0.01em]">${escAttr(previewTitle)}</span>
+                    <button type="button" data-remove-custom-item="${escAttr(sec.id)}" data-item-id="${escAttr(it.id)}" class="flex-none rounded-md px-2 py-1 text-xs text-ink-muted transition-colors hover:bg-clay-soft hover:text-clay cursor-pointer">Remove</button>
+                  </div>
+                  <div class="grid gap-3 sm:grid-cols-2">
+                    <label class="block sm:col-span-2">
+                      <span class="text-xs font-medium text-ink-soft">Content / Bullets</span>
+                      <textarea
+                        data-custom-item-text="${escAttr(sec.id)}"
+                        data-item-id="${escAttr(it.id)}"
+                        rows="3"
+                        class="${CONTROL} resize-y leading-relaxed"
+                        placeholder="Achievement description, award details, or bullet point"
+                      >${escAttr(it.text || it.name || '')}</textarea>
+                      <span class="mt-1 block text-[11px] text-ink-faint">Rendered as a clean bullet item in your resume template.</span>
+                    </label>
+                  </div>
+                </article>`;
+              })
+              .join('')
+          : `<p class="rounded-xl border border-dashed border-line px-4 py-6 text-center text-sm text-ink-faint">No items in this section yet. Click "+ Add an item" above to add one.</p>`;
+
+        return `<section data-panel="${escAttr(sec.id)}" hidden>
+          <div class="flex items-center justify-between gap-4">
+            <h2 class="panel-title" data-panel-title="${escAttr(sec.id)}">
+              ${escAttr(title)}
+            </h2>
+            <button
+              type="button"
+              data-add-custom-item="${escAttr(sec.id)}"
+              class="inline-flex flex-none items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-medium text-ink transition-colors duration-200 hover:bg-paper-sunk cursor-pointer"
+            >
+              <span aria-hidden="true">+</span>
+              Add an item
+            </button>
+          </div>
+
+          <div class="mt-4 rounded-xl border border-line bg-surface/50 p-4">
+            <label class="block">
+              <span class="text-xs font-medium text-ink-soft">Section title (e.g. Achievements)</span>
+              <input
+                data-custom-title="${escAttr(sec.id)}"
+                type="text"
+                value="${escAttr(title)}"
+                class="${CONTROL}"
+                placeholder="e.g. Achievements"
+              />
+              <span class="mt-1.5 block text-[11px] leading-relaxed text-ink-faint">
+                Rename this section to anything you like. It updates across all templates.
+              </span>
+            </label>
+          </div>
+
+          <div class="mt-5 space-y-3" data-custom-items-list="${escAttr(sec.id)}">
+            ${itemsHtml}
+          </div>
+
+          <div class="mt-8 border-t border-line pt-4 flex justify-between items-center">
+            <p class="text-xs text-ink-faint">Custom section kept from your import.</p>
+            <button
+              type="button"
+              data-custom-delete-btn="${escAttr(sec.id)}"
+              class="rounded-full border border-line px-3 py-1.5 text-xs font-medium text-ink-muted transition-colors duration-200 hover:border-clay hover:text-clay cursor-pointer"
+            >
+              Delete this section
+            </button>
+          </div>
+        </section>`;
+      })
+      .join('');
+  }
+
+  const railNav = document.querySelector<HTMLElement>('.pane-rail');
+  railNav?.addEventListener('click', (event) => {
+    const target = event.target as HTMLElement;
+
+    const gotoBtn = target.closest<HTMLButtonElement>('[data-goto]');
+    if (gotoBtn) {
+      showPanel(gotoBtn.dataset.goto!);
+      setView('edit');
+      return;
+    }
+
+    const moveBtn = target.closest<HTMLButtonElement>('[data-section-move]');
+    if (moveBtn) {
+      closeSectionMenus();
+      const keyboard = (event as MouseEvent).detail === 0;
+      if (!keyboard) moveBtn.blur();
+      moveSection(
+        moveBtn.dataset.sectionMove!,
+        moveBtn.dataset.direction === 'up' ? -1 : 1,
+        keyboard,
+      );
+      return;
+    }
+
+    const menuBtn = target.closest<HTMLButtonElement>('[data-section-menu]');
+    if (menuBtn) {
+      const key = menuBtn.dataset.sectionMenu!;
       const menu = document.querySelector<HTMLElement>(`[data-section-panel="${key}"]`);
       if (menu && !menu.hidden) closeSectionMenus();
       else openSectionMenu(key);
-    });
-  });
+      return;
+    }
 
-  document.querySelectorAll<HTMLElement>('[data-section-move]').forEach((button) => {
-    button.addEventListener('click', (event) => {
+    const renameBtn = target.closest<HTMLButtonElement>('[data-section-rename]');
+    if (renameBtn) {
       closeSectionMenus();
-      // A click from Enter or Space reports no click count; a real press has
-      // one. That is the cleanest signal for which input actually moved this.
-      const keyboard = (event as MouseEvent).detail === 0;
-      if (!keyboard) button.blur();
-      moveSection(
-        button.dataset.sectionMove as SectionKey,
-        button.dataset.direction === 'up' ? -1 : 1,
-        keyboard,
-      );
-    });
-  });
+      startRename(renameBtn.dataset.sectionRename!);
+      return;
+    }
 
-  document.querySelectorAll<HTMLElement>('[data-section-rename]').forEach((button) => {
-    button.addEventListener('click', () => {
+    const toggleBtn = target.closest<HTMLButtonElement>('[data-section-toggle]');
+    if (toggleBtn) {
       closeSectionMenus();
-      startRename(button.dataset.sectionRename as SectionKey);
-    });
-  });
-
-  document.querySelectorAll<HTMLElement>('[data-section-toggle]').forEach((button) => {
-    button.addEventListener('click', () => {
-      closeSectionMenus();
-      const key = button.dataset.sectionToggle as SectionKey;
+      const key = toggleBtn.dataset.sectionToggle!;
       const meta = metaFor(key);
-      if (meta.hidden) delete meta.hidden;
-      else meta.hidden = true;
+      const customSec = data.customSections?.find((s) => s.id === key);
+      if (meta.hidden) {
+        delete meta.hidden;
+        if (customSec) customSec.hidden = false;
+      } else {
+        meta.hidden = true;
+        if (customSec) customSec.hidden = true;
+      }
       pruneSections();
       syncSectionHeadings();
       paintPreview();
       markSaved();
-    });
+      return;
+    }
+
+    const deleteBtn = target.closest<HTMLButtonElement>('[data-custom-delete]');
+    if (deleteBtn) {
+      closeSectionMenus();
+      deleteCustomSection(deleteBtn.dataset.customDelete!);
+      return;
+    }
   });
 
   window.addEventListener('resize', closeSectionMenus);
+
 
   // --- Editing events -----------------------------------------------------
   form.addEventListener('input', (event) => {
     const el = event.target as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
     if (!el.dataset) return;
+
+    const customTitleInput = el.closest<HTMLInputElement>('[data-custom-title]');
+    if (customTitleInput) {
+      const secId = customTitleInput.dataset.customTitle!;
+      const sec = data.customSections?.find((s) => s.id === secId);
+      if (sec) {
+        const next = customTitleInput.value.trim();
+        sec.title = next || 'Custom Section';
+        const meta = metaFor(secId);
+        if (next) meta.label = next;
+        else delete meta.label;
+        syncSectionHeadings();
+        paintPreview();
+        markSaved();
+      }
+      return;
+    }
+
+    const customItemText = el.closest<HTMLTextAreaElement>('[data-custom-item-text]');
+    if (customItemText) {
+      const secId = customItemText.dataset.customItemText!;
+      const itemId = customItemText.dataset.itemId!;
+      const sec = data.customSections?.find((s) => s.id === secId);
+      const item = sec?.items?.find((it) => it.id === itemId);
+      if (item) {
+        item.text = customItemText.value;
+        item.name = customItemText.value.split('\n')[0] || '';
+        const card = customItemText.closest<HTMLElement>('[data-custom-item]');
+        const headingEl = card?.querySelector<HTMLElement>('span');
+        if (headingEl) {
+          headingEl.textContent = item.name.slice(0, 40) || 'Item';
+        }
+        paintPreview();
+        markSaved();
+      }
+      return;
+    }
 
     const card = el.closest<HTMLElement>('[data-item]');
     if (card && el.dataset.key) {
@@ -843,6 +1125,50 @@ export function initEditor(): void {
 
   form.addEventListener('click', (event) => {
     const target = event.target as HTMLElement;
+
+    const addCustomItemBtn = target.closest<HTMLElement>('[data-add-custom-item]');
+    if (addCustomItemBtn) {
+      const secId = addCustomItemBtn.dataset.addCustomItem!;
+      const sec = data.customSections?.find((s) => s.id === secId);
+      if (sec) {
+        sec.items ??= [];
+        const newItem: CustomSectionItem = {
+          id: uid('citm'),
+          text: '',
+          name: '',
+        };
+        sec.items.push(newItem);
+        renderCustomSections();
+        paintPreview();
+        markSaved();
+        const ta = form!.querySelector<HTMLTextAreaElement>(
+          `[data-custom-item-text="${secId}"][data-item-id="${newItem.id}"]`,
+        );
+        ta?.focus();
+      }
+      return;
+    }
+
+    const removeCustomItemBtn = target.closest<HTMLElement>('[data-remove-custom-item]');
+    if (removeCustomItemBtn) {
+      const secId = removeCustomItemBtn.dataset.removeCustomItem!;
+      const itemId = removeCustomItemBtn.dataset.itemId!;
+      const sec = data.customSections?.find((s) => s.id === secId);
+      if (sec && sec.items) {
+        sec.items = sec.items.filter((it) => it.id !== itemId);
+        renderCustomSections();
+        paintPreview();
+        markSaved();
+      }
+      return;
+    }
+
+    const deleteCustomBtn = target.closest<HTMLElement>('[data-custom-delete-btn]');
+    if (deleteCustomBtn) {
+      const secId = deleteCustomBtn.dataset.customDeleteBtn!;
+      deleteCustomSection(secId);
+      return;
+    }
 
     const addBtn = target.closest<HTMLElement>('[data-add]');
     if (addBtn) {
@@ -900,6 +1226,16 @@ export function initEditor(): void {
         return;
       }
       focusControl(form!.querySelector<HTMLElement>(`[data-field="basics.${parts[1]}"]`));
+      return;
+    }
+
+    if (parts[0] === 'custom') {
+      const [, secId, itemId] = parts;
+      showPanel(secId);
+      const ta = form!.querySelector<HTMLElement>(
+        `[data-custom-item-text="${secId}"][data-item-id="${itemId}"]`,
+      );
+      if (ta) focusControl(ta);
       return;
     }
 
@@ -1122,6 +1458,11 @@ export function initEditor(): void {
   document.querySelector<HTMLElement>('[data-clear]')?.addEventListener('click', () => {
     const ok = window.confirm('Clear every field and start from a blank resume?');
     if (!ok) return;
+    (data.customSections ?? []).forEach((sec) => {
+      railRows.get(sec.id)?.remove();
+      railRows.delete(sec.id);
+      defaultTitles.delete(sec.id);
+    });
     data = structuredClone(EMPTY_RESUME);
     hydrateStaticFields();
     renderAllSections();
@@ -1251,6 +1592,11 @@ export function initEditor(): void {
     const ok = window.confirm('Replace your current resume draft with the imported details?');
     if (!ok) return;
 
+    (data.customSections ?? []).forEach((sec) => {
+      railRows.get(sec.id)?.remove();
+      railRows.delete(sec.id);
+      defaultTitles.delete(sec.id);
+    });
     data = structuredClone(pendingImportData);
     hydrateStaticFields();
     renderAllSections();
@@ -1276,7 +1622,12 @@ export function initEditor(): void {
   /** Sections in printed order, skipping the ones taken off the sheet. */
   function exportSections(): ExportSection[] {
     return currentOrder()
-      .filter((key) => data.sections?.[key]?.hidden !== true)
+      .filter((key) => {
+        if (data.sections?.[key]?.hidden === true) return false;
+        const customSec = data.customSections?.find((s) => s.id === key);
+        if (customSec?.hidden === true) return false;
+        return true;
+      })
       .map((key) => ({ key, heading: headingFor(key) }));
   }
 
@@ -1294,13 +1645,13 @@ export function initEditor(): void {
         `<div class="${letterClass(letterId)}" style="${style}">${renderCoverLetter(data, letterId)}</div>`,
       );
     }
-    printRoot!.innerHTML = sheets.join('');
 
     // Browsers seed the "Save as PDF" filename from the document title.
     const name = documentName();
     const label = includeCover() ? 'Resume and cover letter' : 'Resume';
-    document.title = name ? `${name} — ${label}` : label;
-    window.print();
+    const title = name ? `${name} — ${label}` : label;
+
+    void printResumeIframe(sheets.join('\n'), title);
   }
 
   function downloadWord(): void {

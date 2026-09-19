@@ -308,10 +308,36 @@ import '../styles/resume.css';
             <div class="space-y-3" data-review-projects></div>
           </div>
 
+          <!-- Certifications -->
+          <div data-review-certifications-container class="hidden">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-sm font-semibold tracking-wide text-ink uppercase">Certifications</h3>
+            </div>
+            <div class="space-y-3" data-review-certifications></div>
+          </div>
+
           <!-- Unmapped / Preserved Sections -->
           <div data-review-unmapped-container class="hidden">
             <h3 class="text-sm font-semibold tracking-wide text-ink uppercase mb-3">Custom / Preserved Sections</h3>
             <div class="space-y-3" data-review-unmapped></div>
+          </div>
+
+          <!-- Bottom Action Bar -->
+          <div class="pt-6 border-t border-line flex items-center justify-between">
+            <button
+              type="button"
+              data-action="reupload"
+              class="rounded-full border border-line bg-surface px-4 py-2 text-xs font-medium text-ink-soft hover:text-ink hover:border-line-strong transition-colors"
+            >
+              Upload different file
+            </button>
+            <button
+              type="button"
+              data-action="to-template"
+              class="inline-flex h-10 items-center rounded-full bg-ink px-6 text-xs font-semibold text-paper shadow-sm transition-transform duration-200 hover:-translate-y-px active:translate-y-0"
+            >
+              Continue to Template Selection →
+            </button>
           </div>
         </div>
       </div>

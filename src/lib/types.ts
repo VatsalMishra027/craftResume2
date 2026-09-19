@@ -110,6 +110,25 @@ export interface CoverLetter {
   signOff: string;
 }
 
+export interface CustomSectionItem {
+  id: string;
+  text: string;
+  name?: string;
+  detail?: string;
+  date?: string;
+  url?: string;
+}
+
+export interface CustomSection {
+  id: string;
+  title: string;
+  type?: 'custom' | string;
+  items: CustomSectionItem[];
+  description?: string;
+  bullets?: string[];
+  hidden?: boolean;
+}
+
 export interface ResumeData {
   basics: Basics;
   experience: ExperienceItem[];
@@ -120,15 +139,16 @@ export interface ResumeData {
   certifications: CertificationItem[];
   publications: PublicationItem[];
   interests: InterestItem[];
+  customSections?: CustomSection[];
   /** Absent until the user opens the cover letter for the first time. */
   coverLetter?: CoverLetter;
   /** Renamed or removed headings. Only holds the sections the user has touched. */
-  sections?: Partial<Record<SectionKey, SectionMeta>>;
+  sections?: Partial<Record<string, SectionMeta>>;
   /**
    * The order the user has arranged the sections into, as a complete list.
    * Absent means every template keeps the order it was designed around.
    */
-  order?: SectionKey[];
+  order?: string[];
 }
 
 /** Every repeatable list. `basics` is the one singleton and is handled apart.

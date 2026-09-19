@@ -1,5 +1,6 @@
 import type {
   CertificationItem,
+  CustomSection,
   EducationItem,
   ExperienceItem,
   InterestItem,
@@ -292,9 +293,6 @@ function projectsBlock(items: ProjectItem[], withChips: boolean, allowLinks: boo
             allowLinks ? linkOrText(link) : esc(link)
           }</span>`
         : '';
-      const desc = clean(item.description)
-        ? `<p class="rs-entry-note"${hook(`projects|${item.id}|description`)}>${esc(clean(item.description))}</p>`
-        : '';
       let techHtml = '';
       if (tech.length) {
         techHtml = withChips
@@ -303,7 +301,13 @@ function projectsBlock(items: ProjectItem[], withChips: boolean, allowLinks: boo
               .join('')}</ul>`
           : `<p class="rs-tech"${hook(`projects|${item.id}|tech`)}>Technologies: ${esc(tech.join(', '))}</p>`;
       }
-      return `<article class="rs-entry rs-project"><div class="rs-entry-head"><h3 class="rs-entry-title"${hook(`projects|${item.id}|name`)}>${esc(clean(item.name))}</h3>${linkHtml}</div>${desc}${techHtml}</article>`;
+      const bullets = lines(item.description);
+      const listHtml = bullets.length
+        ? `<ul class="rs-bullets"${hook(`projects|${item.id}|description`)}>${bullets
+            .map((b) => `<li>${esc(b)}</li>`)
+            .join('')}</ul>`
+        : '';
+      return `<article class="rs-entry rs-project"><div class="rs-entry-head"><h3 class="rs-entry-title"${hook(`projects|${item.id}|name`)}>${esc(clean(item.name))}</h3>${linkHtml}</div>${techHtml}${listHtml}</article>`;
     })
     .join('');
 }
@@ -466,6 +470,60 @@ function interestInline(items: InterestItem[]): string {
     .join('')}</ul>`;
 }
 
+function customSectionBlock(sec: CustomSection): string {
+  if (sec.items && sec.items.length > 0) {
+    const listItems = sec.items
+      .map((item) => {
+        const text =
+          clean(item.text) || [clean(item.name), clean(item.detail)].filter(Boolean).join(' — ');
+        if (!text) return '';
+        return `<li${hook(`custom|${sec.id}|${item.id}`)}>${esc(text)}</li>`;
+      })
+      .filter(Boolean);
+
+    if (listItems.length) {
+      return `<ul class="rs-bullets">${listItems.join('')}</ul>`;
+    }
+  }
+
+  if (sec.bullets && sec.bullets.length > 0) {
+    const listItems = sec.bullets
+      .map((b) => clean(b))
+      .filter(Boolean)
+      .map((b) => `<li>${esc(b)}</li>`);
+    if (listItems.length) {
+      return `<ul class="rs-bullets">${listItems.join('')}</ul>`;
+    }
+  }
+
+  if (clean(sec.description)) {
+    return `<p class="rs-summary">${esc(clean(sec.description))}</p>`;
+  }
+
+  return '';
+}
+
+function renderCustomSection(sec: CustomSection, extraClass = 'rs-section--custom'): string {
+  if (sec.hidden) return '';
+  const body = customSectionBlock(sec);
+  if (!body) return '';
+  return section(sec.title || 'Custom Section', body, sec.id, extraClass);
+}
+
+function renderBadgedCustomSection(sec: CustomSection, iconName = 'award'): string {
+  if (sec.hidden) return '';
+  const body = customSectionBlock(sec);
+  if (!body) return '';
+  return badgedSection(sec.title || 'Custom Section', body, sec.id, iconName);
+}
+
+function customSectionsHtml(data: ResumeData, badged = false, iconName = 'award'): string[] {
+  if (!data.customSections || !data.customSections.length) return [];
+  return data.customSections
+    .map((sec) => (badged ? renderBadgedCustomSection(sec, iconName) : renderCustomSection(sec)))
+    .filter(Boolean);
+}
+
 /* --- Headshot ------------------------------------------------------------- */
 
 /**
@@ -559,6 +617,7 @@ function renderAtlas(data: ResumeData, allowLinks: boolean): string {
     section('Projects', projectsBlock(data.projects, true, allowLinks), 'projects'),
     section('Publications & Patents', publicationBlock(data.publications, false), 'publications'),
     section('Interests', interestInline(data.interests), 'interests'),
+    ...customSectionsHtml(data),
   ]);
 
   return `<aside class="rs-rail">${rail}</aside><div class="rs-main">${main}</div>`;
@@ -585,6 +644,7 @@ function renderLedger(data: ResumeData, allowLinks: boolean): string {
     duo.length ? `<div class="rs-duo">${duo.join('')}</div>` : '',
     section('Publications & Patents', publicationBlock(data.publications, false), 'publications'),
     section('Interests', interestInline(data.interests), 'interests'),
+    ...customSectionsHtml(data),
   ]);
 }
 
@@ -609,6 +669,7 @@ function renderScholar(data: ResumeData, allowLinks: boolean): string {
     section('Language Proficiencies', languageInline(data.languages), 'languages'),
     section('Publications & Patents', publicationBlock(data.publications, true), 'publications'),
     section('Interests', interestInline(data.interests), 'interests'),
+    ...customSectionsHtml(data),
   ]);
 }
 
@@ -645,6 +706,7 @@ function renderVertex(data: ResumeData, allowLinks: boolean): string {
     badgedSection('Personal Projects', projectsBlock(data.projects, false, allowLinks), 'projects', 'spark'),
     badgedSection('Publications', publicationBlock(data.publications, false), 'publications', 'book'),
     badgedSection('Interests', interestBadges(data.interests), 'interests', 'heart'),
+    ...customSectionsHtml(data, true, 'award'),
   ]);
 
   return `${masthead}<div class="rs-columns"><div class="rs-col rs-col--main">${left}</div><div class="rs-col rs-col--side">${right}</div></div>`;
@@ -675,6 +737,7 @@ function renderBeacon(data: ResumeData, allowLinks: boolean): string {
     section('Languages', languageInline(data.languages), 'languages'),
     section('Publications', publicationBlock(data.publications, false), 'publications'),
     section('Interests', interestInline(data.interests), 'interests'),
+    ...customSectionsHtml(data),
   ]);
 }
 
@@ -697,6 +760,7 @@ function renderMeridian(data: ResumeData, allowLinks: boolean): string {
     ]),
     section('Speaking & Publications', publicationBlock(data.publications, false), 'publications'),
     section('Interests', interestInline(data.interests), 'interests'),
+    ...customSectionsHtml(data),
   ]);
 }
 
@@ -711,6 +775,7 @@ function renderSummit(data: ResumeData, allowLinks: boolean): string {
     section('Education', educationBlock(data.education, true), 'education'),
     section('Selected Initiatives', projectsBlock(data.projects, false, allowLinks), 'projects'),
     section('Speaking & Publications', publicationBlock(data.publications, false), 'publications'),
+    ...customSectionsHtml(data),
   ]);
 
   const rail = compose([
@@ -748,6 +813,7 @@ function renderCascade(data: ResumeData, allowLinks: boolean): string {
     ]),
     section('Publications & Talks', publicationBlock(data.publications, false), 'publications'),
     section('Interests', interestInline(data.interests), 'interests'),
+    ...customSectionsHtml(data),
   ]);
 }
 
@@ -770,6 +836,7 @@ function renderLattice(data: ResumeData, allowLinks: boolean): string {
     section('Languages', languageRows(data.languages), 'languages'),
     section('Publications', publicationBlock(data.publications, false), 'publications'),
     section('Interests', interestInline(data.interests), 'interests'),
+    ...customSectionsHtml(data),
   ]);
 
   return `${header}<div class="rs-columns"><div class="rs-col rs-col--main">${left}</div><div class="rs-col rs-col--side">${right}</div></div>`;
@@ -794,6 +861,7 @@ function renderHarbor(data: ResumeData, allowLinks: boolean): string {
     section('Education', educationBlock(data.education, true), 'education'),
     section('Projects', projectsBlock(data.projects, false, allowLinks), 'projects'),
     section('Publications', publicationBlock(data.publications, false), 'publications'),
+    ...customSectionsHtml(data),
   ]);
 
   return `<aside class="rs-rail">${rail}</aside><div class="rs-main">${main}</div>`;
@@ -825,6 +893,7 @@ function renderPulse(data: ResumeData, allowLinks: boolean): string {
     section('Languages', languageRows(data.languages), 'languages'),
     section('Published & Spoken', publicationBlock(data.publications, false), 'publications'),
     section('Interests', interestBadges(data.interests), 'interests'),
+    ...customSectionsHtml(data),
   ]);
 
   return `${band}<div class="rs-columns"><div class="rs-col rs-col--main">${left}</div><div class="rs-col rs-col--side">${right}</div></div>`;
@@ -858,6 +927,7 @@ function renderHelix(data: ResumeData, allowLinks: boolean): string {
       section('Languages', languageInline(data.languages), 'languages'),
       section('Professional Interests', interestInline(data.interests), 'interests'),
     ]),
+    ...customSectionsHtml(data),
   ]);
 }
 
@@ -885,6 +955,7 @@ function renderAperture(data: ResumeData, allowLinks: boolean): string {
     ]),
     section('Publications & Talks', publicationBlock(data.publications, false), 'publications'),
     section('Interests', interestInline(data.interests), 'interests'),
+    ...customSectionsHtml(data),
   ]);
 }
 
@@ -910,6 +981,7 @@ function renderCameo(data: ResumeData, allowLinks: boolean): string {
     section('Education', educationBlock(data.education, true), 'education'),
     section('Projects', projectsBlock(data.projects, false, allowLinks), 'projects'),
     section('Publications', publicationBlock(data.publications, false), 'publications'),
+    ...customSectionsHtml(data),
   ]);
 
   return `<aside class="rs-rail">${rail}</aside><div class="rs-main">${main}</div>`;
@@ -940,6 +1012,7 @@ function renderAnchor(data: ResumeData, allowLinks: boolean): string {
     ]),
     section('Speaking & Publications', publicationBlock(data.publications, false), 'publications'),
     section('Interests', interestInline(data.interests), 'interests'),
+    ...customSectionsHtml(data),
   ]);
 }
 
@@ -968,6 +1041,7 @@ function renderOrbit(data: ResumeData, allowLinks: boolean): string {
     section('Languages', languageRows(data.languages), 'languages'),
     section('Publications', publicationBlock(data.publications, false), 'publications'),
     section('Interests', interestInline(data.interests), 'interests'),
+    ...customSectionsHtml(data),
   ]);
 
   return `${head}<div class="rs-columns"><div class="rs-col rs-col--main">${left}</div><div class="rs-col rs-col--side">${right}</div></div>`;
@@ -996,6 +1070,7 @@ function renderPrism(data: ResumeData, allowLinks: boolean): string {
     section('Certifications', certificationLines(data.certifications), 'certifications'),
     section('Projects', projectsBlock(data.projects, false, allowLinks), 'projects'),
     section('Publications', publicationBlock(data.publications, false), 'publications'),
+    ...customSectionsHtml(data),
   ]);
 
   return `<aside class="rs-rail">${rail}</aside><div class="rs-main">${main}</div>`;

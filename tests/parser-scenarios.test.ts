@@ -316,11 +316,63 @@ assert(bullets[0]?.includes('42% reduction') === true, 'First bullet retained ex
 assert(bullets[1]?.includes('from 45 minutes to 8 minutes') === true, 'Second bullet retained exact numbers');
 assert(bullets[2]?.includes('$2.4M') === true, 'Third bullet retained budget metric');
 
+// -----------------------------------------------------------------------------
+// Scenario 10: Mixed Multi-Item Custom Section (ACHIEVEMENTS & CERTIFICATES)
+// -----------------------------------------------------------------------------
+console.log('\nScenario 10: Mixed Multi-Item Custom Section & Independent Classification');
+const doc10 = createMockDoc([
+  line('Vatsal Mishra', { fontSize: 18 }),
+  line('vatsal@example.com | Bangalore, India', {}),
+  line('EXPERIENCE', { isAllUpper: true, fontSize: 13 }),
+  line('Software Engineer | Tech Corp', {}),
+  line('2022 — Present', {}),
+  line('• Engineered distributed transaction systems.', {}),
+  line('ACHIEVEMENTS & CERTIFICATES', { isAllUpper: true, fontSize: 13 }),
+  line('• ICPC Regionals : Certificate — Qualified for the Amritapuri Regionals, Kerala in the International', {}),
+  line('Collegiate Programming Contest (ICPC) as part of team Binary Brain.', {}),
+  line('• LeetCode : VatsalMishra27 — Achieved a peak contest rating of 1654 with approximately 600+ problems solved, demonstrating strong problem-solving skills; best contest rank of 2908 globally among thousands of participants.', {}),
+  line('• CodeChef : vatsalmishra27 — Max Rating 1459; secured a global best rank of 279 in an official contest, showcasing strong problem-solving and analytical thinking under competitive pressure.', {}),
+  line('• GeeksforGeeks : vatsal_mishra27 — Achieved a Contest Rating of 1558 in Data Structures & Algorithms challenges.', {}),
+  line('• Codeforces : Vatsal_Mishra — Reached a maximum rating of 1029 through consistent participation in algorithmic contests.', {}),
+  line('• Coursera : Certificate — IBM Certified in React, focusing on UI development, state management, and hooks.', {}),
+]);
+
+const res10 = parseResume(doc10);
+assert(res10.unmappedSections.length === 1, 'Custom section preserved in unmappedSections');
+const achSection = res10.unmappedSections[0];
+assert(achSection?.rawHeading === 'ACHIEVEMENTS & CERTIFICATES', 'Correct section rawHeading');
+assert(achSection?.itemCount === 6, 'Exactly 6 separate items detected');
+assert(achSection?.items.length === 6, 'All 6 items preserved in items array');
+
+// Verify wrapped multi-line bullet is joined intact without fragmentation
+assert(
+  achSection?.items[0]?.text.includes('Qualified for the Amritapuri Regionals') &&
+    achSection?.items[0]?.text.includes('team Binary Brain.'),
+  'Multi-line bullet joined intact into a single item without line loss',
+);
+
+// Verify independent semantic classification
+assert(achSection?.items[0]?.suggestedCategory === 'achievements', 'ICPC classified as Achievements');
+assert(achSection?.items[1]?.suggestedCategory === 'achievements', 'LeetCode classified as Achievements');
+assert(achSection?.items[2]?.suggestedCategory === 'achievements', 'CodeChef classified as Achievements');
+assert(achSection?.items[3]?.suggestedCategory === 'achievements', 'GeeksforGeeks classified as Achievements');
+assert(achSection?.items[4]?.suggestedCategory === 'achievements', 'Codeforces classified as Achievements');
+assert(achSection?.items[5]?.suggestedCategory === 'certifications', 'Coursera classified as Certifications');
+
+// Verify zero silent forcing into data.certifications
+assert(res10.data.certifications.length === 0, 'Zero items forced into data.certifications automatically');
+
+// Verify section statistics tracking
+const achStat = res10.stats.sectionStats?.find((s) => s.heading === 'ACHIEVEMENTS & CERTIFICATES');
+assert(achStat !== undefined, 'Section statistics recorded for ACHIEVEMENTS & CERTIFICATES');
+assert(achStat?.itemCount === 6, 'Section stats records itemCount === 6');
+assert(achStat?.items.length === 6, 'Section stats records 6 items');
+
 console.log('\n====================================================');
 console.log(`TEST RESULTS: ${passedTests} / ${totalTests} ASSERTIONS PASSED`);
 console.log('====================================================');
 if (passedTests === totalTests) {
-  console.log('ALL 9 QUALITY SCENARIOS VERIFIED SUCCESSFULLY! 🎉\n');
+  console.log('ALL 10 QUALITY SCENARIOS VERIFIED SUCCESSFULLY! 🎉\n');
 } else {
   process.exit(1);
 }

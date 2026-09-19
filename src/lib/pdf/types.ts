@@ -86,7 +86,40 @@ export interface SourceLocation {
   rawText: string;
 }
 
-export type SectionConfidence = 'high' | 'medium' | 'low';
+export type ItemCategory =
+  | 'achievements'
+  | 'codingProfiles'
+  | 'certifications'
+  | 'experience'
+  | 'projects'
+  | 'publications'
+  | 'custom';
+
+/**
+ * Extracted item within a detected section or unmapped block.
+ * Preserves multi-line content, bullets, bold labels, dates, links, and metrics.
+ */
+export interface ExtractedSectionItem {
+  id: string;
+  text: string;
+  name: string;
+  detail?: string;
+  date?: string;
+  url?: string;
+  suggestedCategory?: ItemCategory;
+  suggestedCategoryLabel?: string;
+  assignedCategory?: ItemCategory;
+}
+
+/**
+ * Statistics and extracted item breakdown for each detected section.
+ */
+export interface DetectedSectionStat {
+  heading: string;
+  sectionKey: SectionKey | 'summary' | 'unmapped';
+  itemCount: number;
+  items: ExtractedSectionItem[];
+}
 
 /**
  * Any section that cannot be confidently mapped to a standard section.
@@ -99,6 +132,8 @@ export interface UnmappedSection {
   confidence: 'low';
   suggestedCategory?: SectionKey;
   source: SourceLocation;
+  itemCount: number;
+  items: ExtractedSectionItem[];
 }
 
 /**
@@ -112,6 +147,7 @@ export interface ParsedResumeResult {
   stats: {
     pagesCount: number;
     detectedSections: string[];
+    sectionStats: DetectedSectionStat[];
     experienceCount: number;
     educationCount: number;
     skillsCount: number;
