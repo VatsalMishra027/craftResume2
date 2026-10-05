@@ -1250,7 +1250,7 @@ interface LetterParts {
   signOff: string;
 }
 
-/** "Ananya Rao" becomes "AR". Two letters at most, so the disc stays a disc. */
+/** "Alex Martin" becomes "AM". Two letters at most, so the disc stays a disc. */
 function initialsOf(name: string): string {
   const words = clean(name).split(/\s+/).filter(Boolean);
   if (!words.length) return '';

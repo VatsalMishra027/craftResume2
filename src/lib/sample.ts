@@ -1,4 +1,6 @@
 import type { CoverLetter, ResumeData } from './types';
+import { templateUsesPhoto } from './templates';
+import { SAMPLE_PORTRAIT } from './sample-photo';
 
 /** A blank letter, carrying the two lines almost every letter opens and closes on. */
 export const EMPTY_COVER_LETTER: CoverLetter = {
@@ -21,7 +23,7 @@ export const SAMPLE_COVER_LETTER: CoverLetter = {
   recipient: 'Hiring Manager',
   recipientTitle: '',
   company: 'Northwind Systems',
-  companyAddress: 'Bengaluru, India',
+  companyAddress: 'London, UK',
   role: 'Senior Product Designer',
   date: '',
   greeting: 'Dear Hiring Manager,',
@@ -45,13 +47,13 @@ export const SAMPLE_COVER_LETTER: CoverLetter = {
  */
 export const SAMPLE_RESUME: ResumeData = {
   basics: {
-    fullName: 'Ananya Rao',
+    fullName: 'Alex Martin',
     title: 'Senior Product Designer',
-    email: 'ananya.rao@email.com',
-    phone: '+91 98200 41122',
-    location: 'Bengaluru, India',
-    website: 'ananyarao.design',
-    linkedin: 'linkedin.com/in/ananyarao',
+    email: 'alex.martin@email.com',
+    phone: '+44 20 7946 0958',
+    location: 'London, UK',
+    website: 'alexmartin.design',
+    linkedin: 'linkedin.com/in/alexmartin',
     github: '',
     summary:
       'Product designer with 7 years on B2B software, from research through shipped interface. I care about information density, empty states and the seams between teams.',
@@ -61,7 +63,7 @@ export const SAMPLE_RESUME: ResumeData = {
       id: 'exp-1',
       role: 'Senior Product Designer',
       company: 'Northwind Systems',
-      location: 'Bengaluru',
+      location: 'London',
       start: '2022',
       end: 'Present',
       bullets:
@@ -82,8 +84,8 @@ export const SAMPLE_RESUME: ResumeData = {
     {
       id: 'edu-1',
       degree: 'B.Des, Interaction Design',
-      school: 'National Institute of Design',
-      location: 'Ahmedabad',
+      school: 'Westbrook University',
+      location: 'London',
       start: '2015',
       end: '2019',
       note: 'Graduated with distinction. Thesis on interfaces for dense operational data.',
@@ -108,7 +110,7 @@ export const SAMPLE_RESUME: ResumeData = {
   ],
   languages: [
     { id: 'lng-1', name: 'English', level: 'Native / Bilingual' },
-    { id: 'lng-2', name: 'Hindi', level: 'Native / Bilingual' },
+    { id: 'lng-2', name: 'Spanish', level: 'Native / Bilingual' },
   ],
   certifications: [
     {
@@ -132,6 +134,133 @@ export const SAMPLE_RESUME: ResumeData = {
   ],
   coverLetter: SAMPLE_COVER_LETTER,
 };
+
+/**
+ * The same record under a different name, for the layouts that carry a
+ * headshot. The photo gallery cards and a fresh photo-layout editor open on
+ * this one, so a stand-in portrait and the name beside it agree.
+ */
+export const SAMPLE_RESUME_PHOTO: ResumeData = {
+  ...SAMPLE_RESUME,
+  basics: {
+    ...SAMPLE_RESUME.basics,
+    fullName: 'Sofia Martin',
+    email: 'sofia.martin@email.com',
+    website: 'sofiamartin.design',
+    linkedin: 'linkedin.com/in/sofiamartin',
+    photo: SAMPLE_PORTRAIT,
+  },
+};
+
+/**
+ * How much extra record each layout gets on top of the base sample.
+ *
+ * The base sample is sized for the tightest layouts (Anchor, Scholar, Beacon),
+ * which leaves the roomier ones — a wide rail, a card grid, a generous header —
+ * looking half empty on a gallery card. Each layout is given the highest
+ * `enrich` level (see below) that still lands on one A4 sheet, measured in the
+ * browser; layouts missing from the table already fill the page.
+ */
+const FILL_LEVEL: Record<string, number> = {
+  ledger: 2,
+  cascade: 2,
+  atlas: 4,
+  summit: 4,
+  vertex: 2,
+  pulse: 3,
+  lattice: 6,
+  harbor: 3,
+  aperture: 1,
+  cameo: 5,
+  orbit: 3,
+  prism: 3,
+};
+
+/**
+ * Adds record to the base sample one step at a time, so each layout can be
+ * given the most its single A4 sheet will hold.
+ *   1 three more skills        2 a fourth bullet on the latest role
+ *   3 a third role             4 a second project and certification
+ *   5 a second qualification, a language and an interest
+ *   6 two publications
+ */
+export function enrich(base: ResumeData, level: number): ResumeData {
+  const d = structuredClone(base);
+  if (level >= 1) {
+    d.skills.push(
+      { id: 'skl-7', name: 'Information architecture', level: 4 },
+      { id: 'skl-8', name: 'Usability testing', level: 5 },
+      { id: 'skl-9', name: 'Workshop facilitation', level: 4 },
+    );
+  }
+  if (level >= 2) {
+    d.experience[0].bullets +=
+      '\nMentored three designers into senior roles and ran the quarterly design critique.';
+  }
+  if (level >= 3) {
+    d.experience.push({
+      id: 'exp-3',
+      role: 'UX Designer',
+      company: 'Brightside Agency',
+      location: 'London',
+      start: '2017',
+      end: '2019',
+      bullets:
+        'Designed web and mobile products for 14 clients across retail and fintech.\nRan weekly usability sessions that shaped three successful launches.',
+    });
+  }
+  if (level >= 4) {
+    d.projects.push({
+      id: 'prj-2',
+      name: 'Palette Check',
+      link: 'palettecheck.dev',
+      description: 'A free colour-contrast checker used by 9,000 designers a month.',
+      tech: 'TypeScript, Astro',
+    });
+    d.certifications.push({
+      id: 'crt-2',
+      name: 'Certified Scrum Product Owner',
+      issuer: 'Scrum Alliance',
+      date: '2021',
+    });
+  }
+  if (level >= 5) {
+    d.education.push({
+      id: 'edu-2',
+      degree: 'Diploma, Art and Design',
+      school: 'Westbrook College',
+      location: 'London',
+      start: '2013',
+      end: '2015',
+      note: '',
+    });
+    d.languages.push({ id: 'lng-3', name: 'French', level: 'Conversational (B1)' });
+    d.interests.push({ id: 'int-4', name: 'Sketching' });
+  }
+  if (level >= 6) {
+    d.publications = [
+      { id: 'pub-1', title: 'Designing for dense data', meta: 'Smashing Magazine, 2023' },
+      { id: 'pub-2', title: 'Empty states that teach', meta: 'UX Collective, 2022' },
+    ];
+  }
+  return d;
+}
+
+const sampleCache = new Map<string, ResumeData>();
+
+/**
+ * The sample that belongs with a layout: Sofia on photo layouts, Alex elsewhere,
+ * with as much extra record as that layout has room for.
+ */
+export function sampleFor(templateId: string): ResumeData {
+  const hit = sampleCache.get(templateId);
+  if (hit) return hit;
+  const base = templateUsesPhoto(templateId) ? SAMPLE_RESUME_PHOTO : SAMPLE_RESUME;
+  const level = FILL_LEVEL[templateId];
+  const out = level ? enrich(base, level) : base;
+  sampleCache.set(templateId, out);
+  return out;
+}
 
 /** Shape used when someone clears everything out and starts clean. */
 export const EMPTY_RESUME: ResumeData = {

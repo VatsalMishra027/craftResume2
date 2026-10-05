@@ -3,7 +3,7 @@
  *
  * The cards are rendered on the server, where the only content there is to
  * render is the shared sample — so a visitor who already has a draft saw
- * Ananya Rao on the card and their own name a click later. Two different
+ * Alex Martin on the card and their own name a click later. Two different
  * documents in two consecutive screens reads as a bug, and it is: the card is
  * meant to be a preview, not an advert.
  *

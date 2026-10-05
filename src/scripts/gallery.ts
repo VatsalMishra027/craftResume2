@@ -25,7 +25,12 @@ export function initGallery(): void {
   // The layout cards preview whatever this visitor has already written, so
   // clicking one does not open a different person's resume. Blueprint cards
   // carry their own content and are left showing it.
-  if (paintResumeThumbs(root) && draftNote) draftNote.hidden = false;
+  // (Deliberately not repainted from the visitor's draft: the cards always show
+  // the fixed demo resume, so "Clear everything" in the editor cannot blank the
+  // gallery. paintResumeThumbs in draft-thumbs.ts is the old behaviour, kept
+  // for reference and no longer called.)
+  void paintResumeThumbs;
+  void draftNote;
 
   // One filter per tab, remembered so switching back restores the choice.
   const filter: Record<TabKey, string> = { layouts: 'all', roles: 'all' };

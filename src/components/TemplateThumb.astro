@@ -1,6 +1,6 @@
 ---
 import { renderResume, sheetClass, sheetStyle } from '../lib/render';
-import { SAMPLE_RESUME } from '../lib/sample';
+import { sampleFor } from '../lib/sample';
 import { DEFAULT_ACCENT } from '../lib/templates';
 import type { ResumeData } from '../lib/types';
 import '../styles/resume.css';
@@ -16,7 +16,7 @@ interface Props {
 const {
   templateId,
   accentId = DEFAULT_ACCENT,
-  data = SAMPLE_RESUME,
+  data = sampleFor(templateId),
   class: className = '',
 } = Astro.props;
 // Decorative, and often wrapped in a link of its own — so no anchors inside.
@@ -29,7 +29,7 @@ const html = renderResume(data, templateId, { links: false });
 // whatever draft this visitor has saved, so the sheet on the card is the sheet
 // the editor opens for *them*. A card given its own content — a role
 // blueprint — is showing that blueprint on purpose and is left alone.
-const showsSample = data === SAMPLE_RESUME;
+const showsSample = Astro.props.data === undefined;
 ---
 
 <div class={`sheet-fit sheet-fit--page ${className}`} data-sheet-fit="page" aria-hidden="true">
