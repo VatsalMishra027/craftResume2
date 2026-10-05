@@ -10,7 +10,7 @@
     "build": "node --max-old-space-size=4096 ./node_modules/astro/bin/astro.mjs build",
     "preview": "astro preview",
     "astro": "astro",
-    "test": "npx tsx tests/parser-scenarios.test.ts && npx tsx tests/projects-rendering.test.ts && npx tsx tests/custom-sections.test.ts && npx tsx tests/pdf-export.test.ts"
+    "test": "npx tsx tests/parser-scenarios.test.ts && npx tsx tests/projects-rendering.test.ts && npx tsx tests/custom-sections.test.ts && npx tsx tests/pdf-export.test.ts && npx tsx tests/design.test.ts"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",

@@ -1,0 +1,195 @@
+---
+/**
+ * Design: tweaks laid over whichever layout is picked — a custom colour, page
+ * margins, section spacing and line height — plus "My templates", saved looks
+ * that put template, colour, typeface and these tweaks back in one click.
+ *
+ * It reuses the bar's own menu plumbing (`data-menu`), so opening, closing and
+ * Escape behave exactly like the Type and Color menus. Everything it changes
+ * is stored apart from the resume, so the content is never touched.
+ */
+---
+
+<div class="relative" data-menu="design" data-design-root>
+  <button type="button" data-menu-button aria-expanded="false" class="bar-button">
+    <svg viewBox="0 0 16 16" fill="none" class="size-3.5 text-ink-muted" aria-hidden="true">
+      <path
+        d="M3 4.5h6M12 4.5h1M3 11.5h1M7 11.5h6"
+        stroke="currentColor"
+        stroke-width="1.3"
+        stroke-linecap="round"></path>
+      <circle cx="10.5" cy="4.5" r="1.6" stroke="currentColor" stroke-width="1.3"></circle>
+      <circle cx="5.5" cy="11.5" r="1.6" stroke="currentColor" stroke-width="1.3"></circle>
+    </svg>
+    <span class="hidden sm:inline">Design</span>
+    <span class="text-ink-faint" aria-hidden="true">▾</span>
+  </button>
+
+  <div
+    data-menu-panel
+    hidden
+    class="menu-panel absolute left-0 top-11 z-40 max-h-[min(36rem,75vh)] w-[19rem] overflow-y-auto overscroll-contain p-3"
+  >
+    <p class="menu-group !px-0">Custom colour</p>
+    <div class="flex items-center gap-2">
+      <input
+        type="color"
+        data-design-color
+        value="#1e3a5f"
+        aria-label="Custom accent colour"
+        class="design-swatch"
+      />
+      <span class="flex-1 text-[12px] text-ink-muted" data-design-color-note>
+        Using the preset colour
+      </span>
+      <button type="button" data-design-color-clear class="design-link" hidden>Use preset</button>
+    </div>
+
+    <p class="menu-group !px-0 mt-3">Layout</p>
+
+    <label class="design-row">
+      <span class="design-label">Page margins <b data-design-out="margin"></b></span>
+      <input type="range" data-design-range="margin" class="design-range" />
+    </label>
+    <p class="design-note" data-design-margin-note hidden>
+      This layout draws its own edges, so margins stay as designed.
+    </p>
+
+    <label class="design-row">
+      <span class="design-label">Section spacing <b data-design-out="space"></b></span>
+      <input type="range" data-design-range="space" class="design-range" />
+    </label>
+
+    <label class="design-row">
+      <span class="design-label">Line height <b data-design-out="lineHeight"></b></span>
+      <input type="range" data-design-range="lineHeight" class="design-range" />
+    </label>
+
+    <button type="button" data-design-reset class="design-link mt-1">Reset design</button>
+
+    <p class="menu-group !px-0 mt-3 border-t border-line-strong pt-3">My templates</p>
+    <p class="design-note !mt-0 mb-2">
+      Save this layout, colour, typeface and design as a one-click look.
+    </p>
+    <form class="flex gap-1.5" data-design-save-form>
+      <input
+        type="text"
+        data-design-name
+        maxlength="40"
+        placeholder="Name this look"
+        aria-label="Name for this look"
+        class="min-w-0 flex-1 rounded-lg border border-line bg-surface px-2.5 py-1.5 text-[13px] text-ink placeholder:text-ink-faint focus:border-ink focus:outline-none"
+      />
+      <button type="submit" class="design-save">Save</button>
+    </form>
+    <ul class="mt-2 grid gap-1" data-design-looks></ul>
+    <p class="design-note" data-design-looks-empty>Nothing saved yet.</p>
+  </div>
+</div>
+
+<style is:global>
+  .design-swatch {
+    width: 2.25rem;
+    height: 2.25rem;
+    padding: 0;
+    border: 1px solid var(--color-line-strong);
+    border-radius: 0.625rem;
+    background: none;
+    cursor: pointer;
+  }
+  .design-swatch::-webkit-color-swatch-wrapper {
+    padding: 3px;
+  }
+  .design-swatch::-webkit-color-swatch {
+    border: 0;
+    border-radius: 0.4rem;
+  }
+  .design-swatch::-moz-color-swatch {
+    border: 0;
+    border-radius: 0.4rem;
+  }
+  .design-row {
+    display: block;
+    margin-top: 0.625rem;
+  }
+  .design-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--color-ink-soft);
+  }
+  .design-label b {
+    font-weight: 500;
+    color: var(--color-ink-muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .design-range {
+    width: 100%;
+    margin-top: 0.375rem;
+    accent-color: var(--color-clay);
+  }
+  .design-range:disabled {
+    opacity: 0.4;
+  }
+  .design-note {
+    margin-top: 0.375rem;
+    font-size: 11px;
+    line-height: 1.45;
+    color: var(--color-ink-faint);
+  }
+  .design-link {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--color-clay);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .design-save {
+    padding: 0.375rem 0.75rem;
+    border-radius: 0.5rem;
+    background: var(--color-ink);
+    color: var(--color-paper);
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .design-save:hover {
+    background: var(--color-clay);
+    color: #fff;
+  }
+  .design-look {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    border: 1px solid var(--color-line);
+    border-radius: 0.5rem;
+    padding: 0.125rem 0.125rem 0.125rem 0.625rem;
+  }
+  .design-look-apply {
+    flex: 1;
+    min-width: 0;
+    text-align: left;
+    font-size: 13px;
+    padding: 0.3rem 0;
+    color: var(--color-ink);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .design-look-apply small {
+    margin-left: 0.4rem;
+    color: var(--color-ink-faint);
+    font-size: 11px;
+  }
+  .design-look-del {
+    padding: 0.3rem 0.5rem;
+    font-size: 15px;
+    line-height: 1;
+    color: var(--color-ink-faint);
+    border-radius: 0.375rem;
+  }
+  .design-look-del:hover {
+    color: var(--color-clay);
+    background: var(--color-clay-soft);
+  }
+</style>
