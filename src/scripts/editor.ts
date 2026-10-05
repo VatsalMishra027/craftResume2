@@ -28,6 +28,10 @@ import {
   uid,
 } from '../lib/store';
 import { resolveAccent, resolveTemplate, templateUsesPhoto } from '../lib/templates';
+import { sampleFor } from '../lib/sample';
+import { initYearDial, usesYearDial, yearDialButton } from './year-dial';
+import { initDesignMenu } from './design-menu';
+import { currentDesignClass, currentDesignStyle } from '../lib/design';
 import { initTypeMenu } from './type-menu';
 import { getBlueprint } from '../lib/blueprints';
 import {
@@ -95,6 +99,10 @@ function fieldHtml(spec: FieldSpec, value: string): string {
     control = `<textarea data-key="${spec.key}" rows="${spec.rows}" placeholder="${escAttr(spec.placeholder ?? '')}" class="${CONTROL} resize-y leading-relaxed">${escAttr(value)}</textarea>`;
   } else {
     control = `<input data-key="${spec.key}" type="text" value="${escAttr(value)}" placeholder="${escAttr(spec.placeholder ?? '')}" class="${CONTROL}" />`;
+  }
+
+  if (usesYearDial(spec.key)) {
+    control = `<span class="relative block">${control.replace('class="', 'style="padding-right:2.5rem" class="')}${yearDialButton()}</span>`;
   }
 
   return `<label class="block ${spec.full ? 'sm:col-span-2' : ''}">
@@ -249,6 +257,9 @@ export function initEditor(): void {
   const params = new URLSearchParams(location.search);
   let data: ResumeData = loadResume();
   let template = params.has('template') ? resolveTemplate(params.get('template')) : loadTemplate();
+  // A first visit opens on the sample that belongs with the chosen layout:
+  // Sofia on the headshot layouts, Alex on the rest.
+  if (!hasSavedResume()) data = structuredClone(sampleFor(template));
   let accent = params.has('accent') ? resolveAccent(params.get('accent')).id : loadAccent();
   let panel: PanelKey = 'basics';
   let font = loadFont();
@@ -341,8 +352,8 @@ export function initEditor(): void {
   }
 
   function paintPreview(): void {
-    preview!.className = `${sheetClass(template)} resume-sheet--live`;
-    preview!.setAttribute('style', sheetStyle(accent, sheetType()));
+    preview!.className = `${sheetClass(template)} resume-sheet--live${currentDesignClass(template)}`;
+    preview!.setAttribute('style', sheetStyle(accent, sheetType()) + currentDesignStyle());
     preview!.innerHTML = renderResume(data, template);
     fitSheet(previewFit!);
     reportPageCount();
@@ -1126,6 +1137,8 @@ export function initEditor(): void {
     markSaved();
   });
 
+  initYearDial(form);
+
   form.addEventListener('click', (event) => {
     const target = event.target as HTMLElement;
 
@@ -1340,8 +1353,62 @@ export function initEditor(): void {
     });
   }
 
+  /* --- Page flip ------------------------------------------------------------
+     Switching layouts turns the old page away like a leaf while the new one
+     rises into place. The old page is a throwaway clone laid over the live
+     preview, so the real sheet — and everything bound to it — is already the
+     new layout underneath. Skipped for people who ask for less motion.
+  --------------------------------------------------------------------------- */
+  function flipOut(): HTMLElement | null {
+    document.querySelectorAll('[data-page-ghost]').forEach((node) => node.remove());
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return null;
+    const ghost = previewFit!.cloneNode(true) as HTMLElement;
+    [ghost, ...Array.from(ghost.querySelectorAll<HTMLElement>('*'))].forEach((node) => {
+      node.removeAttribute('data-preview');
+      node.removeAttribute('data-sheet-fit');
+      node.removeAttribute('data-e');
+    });
+    ghost.setAttribute('data-page-ghost', '');
+    ghost.setAttribute('aria-hidden', 'true');
+    ghost.style.cssText += `;position:absolute;z-index:20;pointer-events:none;left:${previewFit!.offsetLeft}px;top:${previewFit!.offsetTop}px;width:${previewFit!.offsetWidth}px;height:${previewFit!.offsetHeight}px;transform-origin:left center;backface-visibility:hidden`;
+    previewFit!.after(ghost);
+    return ghost;
+  }
+
+  function flipIn(ghost: HTMLElement | null): void {
+    if (!ghost) return;
+    previewFit!.animate(
+      [
+        { opacity: 0, transform: 'translateY(16px) scale(0.985)' },
+        { opacity: 1, transform: 'none' },
+      ],
+      { duration: 560, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' },
+    );
+    ghost
+      .animate(
+        [
+          { transform: 'perspective(2200px) rotateY(0deg)', opacity: 1, filter: 'brightness(1)' },
+          {
+            transform: 'perspective(2200px) rotateY(-62deg) translateX(-2%)',
+            opacity: 0.85,
+            filter: 'brightness(0.92)',
+            offset: 0.6,
+          },
+          {
+            transform: 'perspective(2200px) rotateY(-98deg) translateX(-4%)',
+            opacity: 0,
+            filter: 'brightness(0.8)',
+          },
+        ],
+        { duration: 620, easing: 'cubic-bezier(0.5, 0, 0.3, 1)', fill: 'forwards' },
+      )
+      .finished.then(() => ghost.remove())
+      .catch(() => ghost.remove());
+  }
+
   templateButtons.forEach((button) => {
     button.addEventListener('click', () => {
+      const ghost = flipOut();
       template = resolveTemplate(button.dataset.template);
       saveTemplate(template);
       syncTemplateButtons();
@@ -1353,6 +1420,7 @@ export function initEditor(): void {
       syncSectionOrder();
       syncPhoto();
       paintPreview();
+      flipIn(ghost);
       closeMenus();
     });
   });
@@ -1372,7 +1440,23 @@ export function initEditor(): void {
     if (accentDot) accentDot.style.background = resolveAccent(accent).hex;
   }
 
+  /* Hover or focus a swatch to try it on the page; leave and it reverts. The
+     sheet's colour is two custom properties, so previewing is two writes — no
+     re-render, and the registered properties in resume.css make it glide. */
+  function previewAccent(id: string | undefined): void {
+    const meta = resolveAccent(id);
+    preview!.style.setProperty('--rs-accent', meta.hex);
+    preview!.style.setProperty('--rs-accent-hi', meta.hi);
+    if (accentDot) accentDot.style.background = meta.hex;
+  }
+
   accentButtons.forEach((button) => {
+    const tryIt = () => previewAccent(button.dataset.accent);
+    const revert = () => previewAccent(accent);
+    button.addEventListener('pointerenter', tryIt);
+    button.addEventListener('focus', tryIt);
+    button.addEventListener('pointerleave', revert);
+    button.addEventListener('blur', revert);
     button.addEventListener('click', () => {
       accent = resolveAccent(button.dataset.accent).id;
       saveAccent(accent);
@@ -1652,7 +1736,7 @@ export function initEditor(): void {
   function printDocuments(): void {
     const style = sheetStyle(accent, sheetType());
     const sheets = [
-      `<div class="${sheetClass(template)}" style="${style}">${renderResume(data, template)}</div>`,
+      `<div class="${sheetClass(template)}${currentDesignClass(template)}" style="${style}${currentDesignStyle()}">${renderResume(data, template)}</div>`,
     ];
     if (includeCover()) {
       sheets.push(
@@ -1734,6 +1818,8 @@ export function initEditor(): void {
   viewButtons.forEach((button) => {
     button.addEventListener('click', () => setView(button.dataset.view!));
   });
+
+  initDesignMenu(() => paintPreview());
 
   // --- Boot ---------------------------------------------------------------
   readTemplateSections();

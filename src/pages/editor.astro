@@ -6,6 +6,7 @@ import Field from '../components/editor/Field.astro';
 import TemplateMenu from '../components/editor/TemplateMenu.astro';
 import AccentMenu from '../components/editor/AccentMenu.astro';
 import TypeMenu from '../components/editor/TypeMenu.astro';
+import DesignMenu from '../components/editor/DesignMenu.astro';
 import DocLabel from '../components/editor/DocLabel.astro';
 import SizeStepper from '../components/editor/SizeStepper.astro';
 import DownloadMenu from '../components/editor/DownloadMenu.astro';
@@ -60,6 +61,7 @@ const listPanels = panels.filter((panel) => panel.key !== 'basics');
           <AccentMenu />
           <TypeMenu />
           <SizeStepper />
+          <DesignMenu />
         </div>
       </div>
 
@@ -253,7 +255,7 @@ const listPanels = panels.filter((panel) => panel.key !== 'basics');
           <section data-panel="basics" hidden>
             <h2 class="panel-title">Personal Info</h2>
             <div class="mt-4 grid gap-3 sm:grid-cols-2">
-              <Field label="Full name" field="basics.fullName" placeholder="Ananya Rao" />
+              <Field label="Full name" field="basics.fullName" placeholder="Alex Martin" />
               <Field label="Job title" field="basics.title" placeholder="Senior Product Designer" />
               <Field label="Email" field="basics.email" type="email" placeholder="you@email.com" />
               <Field label="Phone" field="basics.phone" placeholder="+91 98200 41122" />

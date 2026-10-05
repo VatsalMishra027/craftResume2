@@ -1,3 +1,19 @@
+/* Registered so the accent glides when a swatch is previewed or picked,
+   instead of snapping. Every layout reads its colour from these two. */
+@property --rs-accent {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #1e3a5f;
+}
+@property --rs-accent-hi {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #2ec4b6;
+}
+.resume-sheet--live {
+  transition: --rs-accent 0.38s ease, --rs-accent-hi 0.38s ease;
+}
+
 /* ---------------------------------------------------------------------------
    Resume sheet styles.
    Deliberately plain CSS, not Tailwind: these rules need mm/pt units so the
@@ -2543,4 +2559,53 @@
 
 .cl-monogram .cl-name {
   font-size: calc(19pt * var(--rs-scale, 1));
+}
+
+/* ===========================================================================
+   Design layer — tweaks laid over any layout (see src/lib/design.ts).
+
+   Every rule here is gated on a class the sheet only carries once someone has
+   moved a control, so a sheet with no tweaks is untouched. Nothing above this
+   line was edited for it. The margin rules carry each layout's own padding as
+   the base (keep them in step with the `.t-*` rules above, and with
+   MARGIN_TEMPLATES in design.ts).
+=========================================================================== */
+.resume-sheet.ds-mg.t-ledger {
+  padding: calc(14mm * var(--ds-mg, 1)) calc(15mm * var(--ds-mg, 1));
+}
+.resume-sheet.ds-mg.t-scholar {
+  padding: calc(15mm * var(--ds-mg, 1)) calc(18mm * var(--ds-mg, 1));
+}
+.resume-sheet.ds-mg.t-beacon {
+  padding: calc(14mm * var(--ds-mg, 1)) calc(16mm * var(--ds-mg, 1));
+}
+.resume-sheet.ds-mg.t-meridian {
+  padding: calc(15mm * var(--ds-mg, 1)) calc(17mm * var(--ds-mg, 1));
+}
+.resume-sheet.ds-mg.t-cascade {
+  padding: calc(14mm * var(--ds-mg, 1)) calc(15mm * var(--ds-mg, 1));
+}
+.resume-sheet.ds-mg.t-lattice {
+  padding: calc(13mm * var(--ds-mg, 1)) calc(14mm * var(--ds-mg, 1));
+}
+.resume-sheet.ds-mg.t-helix {
+  padding: calc(14mm * var(--ds-mg, 1)) calc(15mm * var(--ds-mg, 1));
+}
+.resume-sheet.ds-mg.t-orbit {
+  padding: calc(13mm * var(--ds-mg, 1)) calc(13mm * var(--ds-mg, 1));
+}
+
+.resume-sheet.ds-sp .rs-section:not(:last-child):not(.rs-duo .rs-section) {
+  margin-bottom: calc(4.4mm * var(--ds-sp, 1));
+}
+.resume-sheet.ds-sp.t-ledger .rs-section:not(:last-child),
+.resume-sheet.ds-sp.t-beacon .rs-section:not(:last-child) {
+  margin-bottom: calc(5mm * var(--ds-sp, 1));
+}
+.resume-sheet.ds-sp.t-lattice .rs-section:not(:last-child) {
+  margin-bottom: calc(5.5mm * var(--ds-sp, 1));
+}
+
+.resume-sheet.ds-lh {
+  line-height: var(--ds-lh, 1.45);
 }

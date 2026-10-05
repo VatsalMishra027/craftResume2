@@ -312,3 +312,164 @@
 .print-root {
   display: none;
 }
+
+/* ---------------------------------------------------------------------------
+   Year dial — the drum-roll picker behind the From / To fields in the editor.
+--------------------------------------------------------------------------- */
+.year-dial-btn {
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  translate: 0 -50%;
+  border-radius: 0.5rem;
+  color: var(--color-ink-muted);
+  transition: color 150ms, background-color 150ms, transform 200ms;
+}
+.year-dial-btn:hover {
+  color: var(--color-clay);
+  background: var(--color-clay-soft);
+  transform: rotate(-24deg);
+}
+
+.year-dial {
+  position: fixed;
+  z-index: 80;
+  width: 15rem;
+  padding: 0.875rem;
+  border: 1px solid var(--color-line-strong);
+  border-radius: 1rem;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-lift), 0 24px 48px -16px rgb(22 21 15 / 0.35);
+  animation: yd-in 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  transform-origin: top left;
+}
+.year-dial[hidden] {
+  display: none;
+}
+.year-dial[data-side='above'] {
+  transform-origin: bottom left;
+}
+@keyframes yd-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.96);
+  }
+}
+.yd-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 0 0.25rem 0.5rem;
+}
+.yd-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+}
+.yd-readout {
+  font-family: var(--font-serif);
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--color-clay);
+}
+.yd-wheel {
+  position: relative;
+  height: 200px;
+  border-radius: 0.75rem;
+  background: var(--color-paper-sunk);
+  overflow: hidden;
+  perspective: 420px;
+  -webkit-mask-image: linear-gradient(transparent, #000 28%, #000 72%, transparent);
+  mask-image: linear-gradient(transparent, #000 28%, #000 72%, transparent);
+}
+.yd-band {
+  position: absolute;
+  inset-inline: 0.5rem;
+  top: 80px;
+  height: 40px;
+  border-radius: 0.625rem;
+  border: 1px solid color-mix(in srgb, var(--color-clay) 45%, transparent);
+  background: var(--color-clay-soft);
+  pointer-events: none;
+}
+.yd-list {
+  position: relative;
+  height: 100%;
+  margin: 0;
+  padding: 80px 0;
+  list-style: none;
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none;
+  outline: none;
+  cursor: grab;
+  overscroll-behavior: contain;
+}
+.yd-list::-webkit-scrollbar {
+  display: none;
+}
+.yd-list.is-dragging {
+  cursor: grabbing;
+  scroll-snap-type: none;
+}
+.yd-list li {
+  height: 40px;
+  display: grid;
+  place-items: center;
+  scroll-snap-align: center;
+  font-family: var(--font-numeral);
+  font-size: 1.25rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-ink-soft);
+  user-select: none;
+  will-change: transform, opacity;
+}
+.yd-list li.is-centre {
+  color: var(--color-ink);
+  font-weight: 600;
+}
+.year-dial.is-present .yd-list {
+  opacity: 0.45;
+}
+.yd-foot {
+  display: flex;
+  gap: 0.375rem;
+  margin-top: 0.625rem;
+}
+.yd-chip {
+  flex: 1;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--color-line-strong);
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-ink-soft);
+  transition: background-color 150ms, color 150ms, border-color 150ms;
+}
+.yd-chip:hover,
+.yd-chip.is-on {
+  border-color: var(--color-clay);
+  color: var(--color-clay);
+  background: var(--color-clay-soft);
+}
+.yd-chip--primary {
+  background: var(--color-ink);
+  border-color: var(--color-ink);
+  color: var(--color-paper);
+}
+.yd-chip--primary:hover {
+  background: var(--color-clay);
+  border-color: var(--color-clay);
+  color: #fff;
+}
+@media (prefers-reduced-motion: reduce) {
+  .year-dial {
+    animation: none;
+  }
+}
