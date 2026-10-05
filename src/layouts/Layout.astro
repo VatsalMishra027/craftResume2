@@ -1,5 +1,6 @@
 ---
 import '../styles/global.css';
+import '../styles/ui-polish.css';
 
 interface Props {
   title: string;
@@ -62,5 +63,10 @@ const {
   </head>
   <body class={bare ? 'h-dvh overflow-hidden' : ''}>
     <slot />
+    <script>
+      import { initCardTilt } from '../scripts/ui-polish';
+
+      initCardTilt();
+    </script>
   </body>
 </html>

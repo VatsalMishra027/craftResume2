@@ -338,13 +338,22 @@ const listPanels = panels.filter((panel) => panel.key !== 'basics');
                 <p class="max-w-xs text-xs leading-relaxed text-ink-faint">
                   Everything here is stored in this browser only. Nothing is uploaded.
                 </p>
-                <button
-                  type="button"
-                  data-clear
-                  class="rounded-full border border-line px-3.5 py-1.5 text-xs font-medium text-ink-muted transition-colors duration-200 hover:border-clay hover:text-clay"
-                >
-                  Clear everything
-                </button>
+                <div class="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    data-demo-fill
+                    class="rounded-full border border-line px-3.5 py-1.5 text-xs font-medium text-ink-muted transition-colors duration-200 hover:border-clay hover:text-clay"
+                  >
+                    Fill with demo data
+                  </button>
+                  <button
+                    type="button"
+                    data-clear
+                    class="rounded-full border border-line px-3.5 py-1.5 text-xs font-medium text-ink-muted transition-colors duration-200 hover:border-clay hover:text-clay"
+                  >
+                    Clear everything
+                  </button>
+                </div>
               </div>
             </div>
           </section>
@@ -449,6 +458,11 @@ const listPanels = panels.filter((panel) => panel.key !== 'basics');
 
 <script>
   import { initEditor } from '../scripts/editor';
+  import { initEditorPolish } from '../scripts/ui-polish';
+  import { initUndoSafety } from '../scripts/undo-safety';
 
+  // Armed first, so it can copy the draft aside before anything replaces it.
+  initUndoSafety();
   initEditor();
+  initEditorPolish();
 </script>
