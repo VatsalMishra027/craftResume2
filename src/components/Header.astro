@@ -19,17 +19,23 @@ const links = [
   <div class="shell flex h-16 items-center justify-between gap-6">
     <Logo />
 
-    <nav class="hidden items-center gap-1 text-sm text-ink-soft sm:flex" aria-label="Main">
+    <nav
+      class="site-nav relative hidden items-center gap-1 text-sm text-ink-soft sm:flex"
+      aria-label="Main"
+      data-site-nav
+    >
+      <span class="nav-blob" aria-hidden="true"></span>
       {
         links.map((link) => (
           <a
             href={link.href}
+            aria-current={active === link.key ? 'page' : undefined}
             class:list={[
-              'nav-link rounded-full px-3.5 py-2 transition-colors duration-200 hover:text-ink',
+              'nav-link rounded-full px-3.5 py-2 hover:text-ink',
               active === link.key && 'text-ink font-medium',
             ]}
           >
-            {link.label}
+            <span class="nav-link-label">{link.label}</span>
           </a>
         ))
       }
@@ -39,15 +45,16 @@ const links = [
       <ThemeToggle />
       <a
         href="/editor"
-        class="inline-flex h-9 items-center rounded-full bg-ink px-4 text-sm font-medium text-paper transition-transform duration-200 ease-(--ease-out-soft) hover:-translate-y-px active:translate-y-0"
+        class="cta-btn inline-flex h-9 items-center gap-1.5 rounded-full bg-ink px-4 text-sm font-medium text-paper"
       >
-        Build my resume
+        <span>Build my resume</span>
+        <span class="cta-arrow" aria-hidden="true">→</span>
       </a>
     </div>
   </div>
 </header>
 
-<style>
+<style is:global>
   /* The bar is glass first and a border second: the hairline is drawn as a
      gradient so it fades out at the edges rather than ruling the page in two.
      `glass-bar` supplies the tint and the blur. */
@@ -55,13 +62,193 @@ const links = [
     border-bottom: 1px solid color-mix(in srgb, var(--color-line) 55%, transparent);
   }
 
-  /* A pill of glass behind the link the pointer is on, so the nav has the same
-     material as the bar it sits in. */
-  .nav-link {
-    position: relative;
+  /* --- Nav: one glowing pill that glides to whichever link is hovered ------
+     The pill is a single element moved by script (see the script below), so it
+     travels between links on a spring instead of fading in and out on each. */
+  .site-nav {
+    isolation: isolate;
   }
 
-  .nav-link:hover {
-    background: color-mix(in srgb, var(--color-surface) 55%, transparent);
+  .nav-link {
+    position: relative;
+    z-index: 1;
+    transition: color 200ms ease;
+  }
+
+  .nav-link-label {
+    display: inline-block;
+    transition: transform 260ms cubic-bezier(0.3, 1.5, 0.5, 1);
+  }
+
+  .nav-link:hover .nav-link-label,
+  .nav-link:focus-visible .nav-link-label {
+    transform: translateY(-1px);
+  }
+
+  .nav-blob {
+    position: absolute;
+    z-index: 0;
+    left: 0;
+    top: 0;
+    width: 0;
+    height: 0;
+    border-radius: 999px;
+    opacity: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(
+        120% 160% at 50% 0%,
+        color-mix(in srgb, var(--color-clay) 26%, transparent),
+        color-mix(in srgb, #f0a070 10%, transparent) 70%
+      ),
+      color-mix(in srgb, var(--color-surface) 40%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-clay) 32%, transparent);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.12),
+      0 8px 22px -10px color-mix(in srgb, var(--color-clay) 70%, transparent);
+    transition:
+      transform 380ms cubic-bezier(0.3, 1.35, 0.45, 1),
+      width 380ms cubic-bezier(0.3, 1.35, 0.45, 1),
+      height 380ms cubic-bezier(0.3, 1.35, 0.45, 1),
+      opacity 220ms ease;
+  }
+
+  .site-nav[data-hot] .nav-blob {
+    opacity: 1;
+  }
+
+  /* The page you are on keeps a small clay dot under it. */
+  .nav-link[aria-current='page']::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: 3px;
+    width: 4px;
+    height: 4px;
+    margin-left: -2px;
+    border-radius: 50%;
+    background: var(--color-clay);
+    box-shadow: 0 0 8px var(--color-clay);
+  }
+
+  /* --- The main button: a sweep of light and an arrow that leans in --------- */
+  .cta-btn {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    transition:
+      transform 220ms cubic-bezier(0.3, 1.4, 0.5, 1),
+      box-shadow 260ms ease,
+      background-color 260ms ease;
+  }
+
+  .cta-btn::before {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    inset: 0;
+    background: linear-gradient(100deg, var(--color-clay), #e8855a 60%, #f0a070);
+    opacity: 0;
+    transition: opacity 260ms ease;
+  }
+
+  .cta-btn::after {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    top: 0;
+    bottom: 0;
+    left: -60%;
+    width: 40%;
+    background: linear-gradient(100deg, transparent, rgb(255 255 255 / 0.45), transparent);
+    transform: skewX(-20deg);
+  }
+
+  .cta-btn:hover,
+  .cta-btn:focus-visible {
+    transform: translateY(-1px);
+    color: #fff;
+    box-shadow: 0 10px 24px -10px color-mix(in srgb, var(--color-clay) 80%, transparent);
+  }
+
+  .cta-btn:hover::before,
+  .cta-btn:focus-visible::before {
+    opacity: 1;
+  }
+
+  .cta-btn:hover::after,
+  .cta-btn:focus-visible::after {
+    left: 130%;
+    transition: left 650ms ease;
+  }
+
+  .cta-btn:active {
+    transform: translateY(0) scale(0.98);
+  }
+
+  .cta-arrow {
+    display: inline-block;
+    transition: transform 260ms cubic-bezier(0.3, 1.6, 0.5, 1);
+  }
+
+  .cta-btn:hover .cta-arrow,
+  .cta-btn:focus-visible .cta-arrow {
+    transform: translateX(3px);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .nav-blob,
+    .nav-link-label,
+    .cta-btn,
+    .cta-btn::before,
+    .cta-arrow {
+      transition: none;
+    }
+
+    .cta-btn:hover::after {
+      transition: none;
+    }
   }
 </style>
+
+<script>
+  // Glides the pill between nav links. Presentation only: it reads the links'
+  // positions and moves one decorative element, and never touches navigation.
+  const nav = document.querySelector<HTMLElement>('[data-site-nav]');
+  const blob = nav?.querySelector<HTMLElement>('.nav-blob');
+
+  if (nav && blob) {
+    const links = Array.from(nav.querySelectorAll<HTMLAnchorElement>('.nav-link'));
+    let placed = false;
+
+    const moveTo = (link: HTMLElement) => {
+      // First appearance: drop in at the link without sliding in from the corner.
+      if (!placed) {
+        blob.style.transition = 'none';
+      }
+      blob.style.width = `${link.offsetWidth}px`;
+      blob.style.height = `${link.offsetHeight}px`;
+      blob.style.transform = `translate(${link.offsetLeft}px, ${link.offsetTop}px)`;
+      if (!placed) {
+        void blob.offsetWidth;
+        blob.style.transition = '';
+        placed = true;
+      }
+      nav.setAttribute('data-hot', '');
+    };
+
+    const rest = () => {
+      nav.removeAttribute('data-hot');
+      placed = false;
+    };
+
+    links.forEach((link) => {
+      link.addEventListener('pointerenter', () => moveTo(link));
+      link.addEventListener('focus', () => moveTo(link));
+    });
+    nav.addEventListener('pointerleave', rest);
+    nav.addEventListener('focusout', (event) => {
+      if (!nav.contains(event.relatedTarget as Node)) rest();
+    });
+  }
+</script>
