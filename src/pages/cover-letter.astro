@@ -32,8 +32,8 @@ const icons: Record<string, string> = {
 ---
 
 <Layout
-  title="Cover letter — CraftResume"
-  description="Write a cover letter in its own editor — eight formats, and it borrows your resume's accent and type. Free, no account, nothing uploaded."
+  title="Free Cover Letter Maker Online | CraftResume"
+  description="Write a cover letter online that matches your resume — eight formats, guided writing and a free PDF download. No account, nothing uploaded."
   bare
 >
   <div class="flex h-dvh flex-col">
@@ -280,6 +280,8 @@ const icons: Record<string, string> = {
 
 <script>
   import { initCoverEditor } from '../scripts/cover';
+  import { initCoverPolish } from '../scripts/cover-polish';
 
   initCoverEditor();
+  initCoverPolish();
 </script>

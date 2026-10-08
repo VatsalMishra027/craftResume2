@@ -10,7 +10,8 @@ const reduceMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)')
 /* --- Gallery cards: gentle 3D tilt ----------------------------------------
    The lift, the shadow and the "Use this template" pill are CSS; this only
    feeds the pointer position to the card as two custom properties. */
-const CARD_LINK = '[data-card] a[aria-label^="Use the"], [data-card] a[aria-label^="Start from"]';
+const CARD_LINK =
+  '[data-card] a[aria-label^="Use the"], [data-card] a[aria-label^="Start from"], [data-card] a[aria-label^="Write a cover letter"]';
 
 export function initCardTilt(): void {
   if (!window.matchMedia('(hover: hover)').matches) return;

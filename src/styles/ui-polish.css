@@ -57,7 +57,8 @@
 /* --- Gallery cards: lift, tilt and a call to action ----------------------- */
 @media (hover: hover) {
   [data-card] a[aria-label^='Use the'],
-  [data-card] a[aria-label^='Start from'] {
+  [data-card] a[aria-label^='Start from'],
+  [data-card] a[aria-label^='Write a cover letter'] {
     position: relative;
     translate: none;
     transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg))
@@ -69,7 +70,8 @@
     will-change: transform;
   }
   [data-card] a[aria-label^='Use the']:hover,
-  [data-card] a[aria-label^='Start from']:hover {
+  [data-card] a[aria-label^='Start from']:hover,
+  [data-card] a[aria-label^='Write a cover letter']:hover {
     translate: none;
     --ty: -6px;
     border-color: color-mix(in srgb, var(--color-clay) 40%, var(--color-line-strong));
@@ -78,7 +80,8 @@
       0 28px 56px -22px color-mix(in srgb, var(--color-clay) 45%, rgb(22 21 15 / 0.4));
   }
   [data-card] a[aria-label^='Use the']::before,
-  [data-card] a[aria-label^='Start from']::before {
+  [data-card] a[aria-label^='Start from']::before,
+  [data-card] a[aria-label^='Write a cover letter']::before {
     content: '';
     position: absolute;
     inset: 0;
@@ -89,7 +92,8 @@
     pointer-events: none;
   }
   [data-card] a[aria-label^='Use the']::after,
-  [data-card] a[aria-label^='Start from']::after {
+  [data-card] a[aria-label^='Start from']::after,
+  [data-card] a[aria-label^='Write a cover letter']::after {
     content: 'Use this template  \2192';
     position: absolute;
     z-index: 3;
@@ -110,15 +114,18 @@
       transform 260ms cubic-bezier(0.2, 0.9, 0.3, 1.3);
     pointer-events: none;
   }
-  [data-card] a[aria-label^='Start from']::after {
+  [data-card] a[aria-label^='Start from']::after,
+  [data-card] a[aria-label^='Write a cover letter']::after {
     content: 'Start from this  \2192';
   }
   [data-card] a[aria-label^='Use the']:hover::before,
-  [data-card] a[aria-label^='Start from']:hover::before {
+  [data-card] a[aria-label^='Start from']:hover::before,
+  [data-card] a[aria-label^='Write a cover letter']:hover::before {
     opacity: 1;
   }
   [data-card] a[aria-label^='Use the']:hover::after,
-  [data-card] a[aria-label^='Start from']:hover::after {
+  [data-card] a[aria-label^='Start from']:hover::after,
+  [data-card] a[aria-label^='Write a cover letter']:hover::after {
     opacity: 1;
     transform: translate(-50%, 0);
   }
@@ -325,4 +332,212 @@
 }
 .undo-demo:hover {
   background: color-mix(in srgb, var(--color-paper) 14%, transparent);
+}
+
+/* The letter formats say "format", not "template". */
+@media (hover: hover) {
+  [data-card] a[aria-label^='Write a cover letter']::after {
+    content: 'Use this format  \2192';
+  }
+}
+
+/* --- Cover letter: length meter and guided writing (cover-polish.ts) ------- */
+.cl-meter {
+  margin-top: 0.75rem;
+}
+.cl-meter-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 11px;
+  color: var(--color-ink-muted);
+}
+.cl-meter-words {
+  font-variant-numeric: tabular-nums;
+}
+.cl-meter-status {
+  font-weight: 600;
+  text-align: right;
+  transition: color 250ms;
+}
+.cl-meter-track {
+  position: relative;
+  height: 6px;
+  margin-top: 0.4rem;
+  border-radius: 999px;
+  background: var(--color-line);
+  overflow: hidden;
+}
+.cl-meter-zone {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: color-mix(in srgb, var(--color-clay) 20%, transparent);
+}
+.cl-meter-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0;
+  border-radius: 999px;
+  background: var(--color-ink-faint);
+  transition: width 350ms cubic-bezier(0.3, 0.8, 0.2, 1), background-color 250ms;
+}
+.cl-meter[data-state='good'] .cl-meter-fill {
+  background: var(--color-clay);
+}
+.cl-meter[data-state='good'] .cl-meter-status {
+  color: var(--color-clay);
+}
+.cl-meter[data-state='long'] .cl-meter-fill {
+  background: #d98b3a;
+}
+.cl-meter[data-state='over'] .cl-meter-fill {
+  background: #b3382a;
+}
+.cl-meter[data-state='over'] .cl-meter-status,
+.cl-meter[data-state='long'] .cl-meter-status {
+  color: #b3382a;
+}
+
+.cl-writer {
+  display: block;
+}
+.cl-mode {
+  display: inline-flex;
+  padding: 3px;
+  border: 1px solid var(--color-line);
+  border-radius: 999px;
+  background: var(--color-paper-sunk);
+}
+.cl-mode button {
+  padding: 0.3rem 0.85rem;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-ink-muted);
+  transition: background-color 200ms, color 200ms, box-shadow 200ms;
+}
+.cl-mode button[aria-pressed='true'] {
+  background: var(--color-surface);
+  color: var(--color-ink);
+  box-shadow: 0 1px 3px rgb(22 21 15 / 0.12);
+}
+.cl-guided {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+.cl-guided[hidden] {
+  display: none;
+}
+.cl-block {
+  display: block;
+  padding: 0.75rem 0.875rem 0.875rem;
+  border: 1px solid var(--color-line);
+  border-radius: 0.875rem;
+  background: var(--color-surface);
+  transition: border-color 200ms, box-shadow 200ms;
+}
+.cl-block:focus-within {
+  border-color: var(--color-ink);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-clay) 14%, transparent);
+}
+.cl-block-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.cl-step {
+  display: grid;
+  place-items: center;
+  width: 1.375rem;
+  height: 1.375rem;
+  flex: none;
+  border-radius: 50%;
+  background: var(--color-clay-soft);
+  color: var(--color-clay);
+  font-size: 11px;
+  font-weight: 700;
+}
+.cl-block-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+.cl-block-count {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--color-ink-faint);
+  font-variant-numeric: tabular-nums;
+}
+.cl-block-tip {
+  display: block;
+  margin: 0.25rem 0 0.5rem 1.875rem;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--color-ink-muted);
+}
+.cl-block textarea {
+  width: 100%;
+  padding: 0.5rem 0.625rem;
+  border: 1px solid var(--color-line);
+  border-radius: 0.5rem;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-size: 14px;
+  line-height: 1.55;
+  resize: vertical;
+}
+.cl-block textarea:focus {
+  outline: none;
+  border-color: var(--color-line-strong);
+}
+.cl-block textarea::placeholder {
+  color: var(--color-ink-faint);
+}
+@media (prefers-reduced-motion: reduce) {
+  .cl-meter-fill,
+  .cl-meter-status,
+  .cl-mode button {
+    transition: none;
+  }
+}
+
+/* The letter fields live in a two-column grid; these span both. */
+.cl-writer,
+.cl-meter {
+  grid-column: 1 / -1;
+}
+
+/* --- Home: long-form "About CraftResume" copy ------------------------------ */
+.seo-copy {
+  max-width: 44rem;
+  font-size: 15.5px;
+  line-height: 1.75;
+  color: var(--color-ink-soft);
+}
+.seo-copy > * + * {
+  margin-top: 1rem;
+}
+.seo-copy h3 {
+  margin-top: 2.25rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.35;
+  color: var(--color-ink);
+}
+.seo-copy h3 + p {
+  margin-top: 0.625rem;
+}
+.seo-copy ol {
+  padding-left: 1.25rem;
+  list-style: decimal;
+}
+.seo-copy li + li {
+  margin-top: 0.375rem;
+}
+.seo-copy li::marker {
+  color: var(--color-clay);
+  font-weight: 600;
 }
