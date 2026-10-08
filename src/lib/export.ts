@@ -948,6 +948,57 @@ export function buildPrintDocument(sheetsHtml: string, documentTitle = 'Resume')
 }
 
 /**
+ * Rounds every sheet's height up to a whole number of A4 pages.
+ *
+ * A sheet is at least one page tall, but a long resume ends wherever its
+ * content does — so on the layouts that paint a rail, a band or a tinted
+ * column down the page, that colour stopped part-way down the last printed
+ * page (or vanished from it altogether, when the rail's own content had
+ * already finished). Giving the sheet a whole number of pages makes the last
+ * page as full-bleed as the others. It is one pixel short of the boundary so
+ * a sheet that exactly fills its pages cannot spill a blank extra one.
+ *
+ * Self-contained on purpose: it touches only the document it is given.
+ */
+export function padSheetsToFullPages(doc: Document): void {
+  const probe = doc.createElement('div');
+  probe.style.cssText = 'position:absolute;visibility:hidden;height:297mm;width:210mm';
+  doc.body.appendChild(probe);
+  const { width: pageW, height: pageH } = probe.getBoundingClientRect();
+  probe.remove();
+  if (!pageW || !pageH) return;
+
+  /**
+   * How many pages the browser will really print. The sheet's on-screen height
+   * undercounts: print keeps each entry whole (so a page ends early) and repeats
+   * the sheet's padding on every page. A column box exactly one page tall breaks
+   * content the same way, so the number of columns it spills into is the
+   * number of pages.
+   */
+  const pagesFor = (sheet: HTMLElement, minHeight = ''): number => {
+    const box = doc.createElement('div');
+    box.style.cssText =
+      `position:absolute;left:-99999px;top:0;width:${pageW}px;height:${pageH}px;` +
+      `column-width:${pageW}px;column-gap:0;column-fill:auto`;
+    const clone = sheet.cloneNode(true) as HTMLElement;
+    clone.style.minHeight = minHeight;
+    box.appendChild(clone);
+    doc.body.appendChild(box);
+    const pages = Math.max(1, Math.round(box.scrollWidth / pageW));
+    box.remove();
+    return pages;
+  };
+
+  doc.querySelectorAll<HTMLElement>('.resume-sheet').forEach((sheet) => {
+    const pages = pagesFor(sheet);
+    const padded = `calc(${pages * 297}mm - 1px)`;
+    // A sheet whose last page is already almost full can tip over into an empty
+    // extra page when padded. Only pad when the padded sheet measures the same.
+    if (pagesFor(sheet, padded) === pages) sheet.style.minHeight = padded;
+  });
+}
+
+/**
  * Client-side isolated print sandbox.
  * Creates an off-screen iframe, writes the self-contained print document,
  * waits for fonts and layout stabilization (with fallback safety timeout),
@@ -1058,6 +1109,13 @@ export async function printResumeIframe(sheetsHtml: string, documentTitle = 'Res
         }
       } catch {
         // If an error occurs, the standard CSS font fallback stack takes over
+      }
+
+      // Fonts are in, so heights are final: fill out the last page of each sheet.
+      try {
+        padSheetsToFullPages(doc);
+      } catch {
+        // Cosmetic only; printing without it is exactly what it did before.
       }
 
       // Small delay ensuring the browser's rendering engine has painted the DOM before opening the modal
