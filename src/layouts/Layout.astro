@@ -7,13 +7,28 @@ interface Props {
   description?: string;
   /** Editor uses a fixed, non-scrolling body shell. */
   bare?: boolean;
+  /** Social share image, relative to the site root. 1200×630 PNG. */
+  image?: string;
+  imageAlt?: string;
+  /** Keep a page out of search results (still followed for links). */
+  noindex?: boolean;
 }
 
 const {
   title,
-  description = 'CraftResume is a free resume builder. Pick a template, fill in your details, download a clean PDF. No account needed.',
+  description = 'CraftResume is a free resume builder and online resume maker. Pick a template, fill in your details and download a clean PDF. No account needed.',
   bare = false,
+  image = '/og-image.png',
+  imageAlt = 'CraftResume — free resume builder and resume maker with PDF download',
+  noindex = false,
 } = Astro.props;
+
+// Absolute URLs for canonical and social tags; `site` is set in astro.config.
+const site = Astro.site ?? new URL(Astro.url.origin);
+// No trailing slash (except the root), matching the site's own links and the sitemap.
+const path = Astro.url.pathname.replace(/\/+$/, '') || '/';
+const canonical = new URL(path, site).href;
+const imageUrl = new URL(image, site).href;
 ---
 
 <!doctype html>
@@ -22,12 +37,46 @@ const {
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="generator" content={Astro.generator} />
     <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <meta
+      name="robots"
+      content={noindex
+        ? 'noindex, follow'
+        : 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1'}
+    />
+
+    {/* Open Graph — Facebook, LinkedIn, WhatsApp, Slack and most link previews. */}
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="CraftResume" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:url" content={canonical} />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
-    <meta property="og:type" content="website" />
+    <meta property="og:image" content={imageUrl} />
+    <meta property="og:image:secure_url" content={imageUrl} />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={imageAlt} />
+
+    {/* Twitter / X. */}
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={imageUrl} />
+    <meta name="twitter:image:alt" content={imageAlt} />
+
+    <meta name="theme-color" content="#faf9f6" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#16150f" media="(prefers-color-scheme: dark)" />
+    <meta name="application-name" content="CraftResume" />
+    <meta name="apple-mobile-web-app-title" content="CraftResume" />
     <meta name="color-scheme" content="light dark" />
+
+    {/* Page-specific additions such as structured data. */}
+    <slot name="head" />
 
     {/* Runs before the first paint, so a dark-mode visitor never sees a white
         flash on the way in. Deliberately inline and deliberately tiny — an

@@ -75,10 +75,71 @@ const faqs = [
     q: 'How does the download work?',
     a: 'Download opens your print dialog with the resume already isolated on an A4 page. Choose “Save as PDF” and you get a clean, selectable-text file.',
   },
+  {
+    q: 'Can I download my resume as a PDF for free?',
+    a: 'Yes. Every download is free and unlimited, with no watermark. You can also export a Word file or copy the plain text if an application form asks for it.',
+  },
+  {
+    q: 'Is CraftResume an AI resume builder?',
+    a: 'Not in the sense of writing your resume for you — it never invents experience. It reads an existing PDF and fills in your sections automatically, guides your cover letter into three short blocks, and lays out anything you paste in, including bullet points drafted with an AI writing assistant.',
+  },
 ];
+
+/** Structured data: the app itself, the site, and the visible FAQ above. */
+const siteUrl = (Astro.site ?? new URL(Astro.url.origin)).href;
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'WebApplication',
+      '@id': `${siteUrl}#app`,
+      name: 'CraftResume',
+      alternateName: 'CraftResume Free Resume Builder',
+      url: siteUrl,
+      description:
+        'Free resume builder and online resume maker with ATS-friendly templates, a live preview and free PDF download. No account needed.',
+      applicationCategory: 'BusinessApplication',
+      operatingSystem: 'Any (web browser)',
+      browserRequirements: 'Requires a modern web browser with JavaScript enabled.',
+      isAccessibleForFree: true,
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+      featureList: [
+        `${TEMPLATES.length} resume templates`,
+        `${BLUEPRINTS.length} pre-filled role blueprints`,
+        `${LETTERS.length} cover letter formats`,
+        'Free PDF download with no watermark',
+        'Import an existing resume PDF',
+        'No account or sign-up',
+      ],
+      image: new URL('/og-image.png', siteUrl).href,
+    },
+    {
+      '@type': 'WebSite',
+      '@id': `${siteUrl}#website`,
+      name: 'CraftResume',
+      url: siteUrl,
+      inLanguage: 'en',
+    },
+    {
+      '@type': 'FAQPage',
+      '@id': `${siteUrl}#faq`,
+      mainEntity: faqs.map((faq) => ({
+        '@type': 'Question',
+        name: faq.q,
+        acceptedAnswer: { '@type': 'Answer', text: faq.a },
+      })),
+    },
+  ],
+};
 ---
 
-<Layout title="CraftResume — Free resume builder, no account needed">
+<Layout
+  title="Free Resume Builder & Resume Maker — Download PDF | CraftResume"
+  description={`Free resume builder and online resume maker. Choose from ${TEMPLATES.length} ATS-friendly templates, fill in your details and download a PDF — no sign-up, no watermark.`}
+>
+  <Fragment slot="head">
+    <script type="application/ld+json" set:html={JSON.stringify(structuredData)} />
+  </Fragment>
   <Header />
 
   <main>
@@ -103,6 +164,10 @@ const faqs = [
           </p>
 
           <h1 class="display mt-6 text-[clamp(2.6rem,7vw,4.4rem)]">
+            <span
+              class="mb-3 block font-sans text-[clamp(0.85rem,1.6vw,1rem)] font-semibold uppercase tracking-[0.12em] text-clay"
+              >Free resume builder &amp; resume maker</span
+            >
             Craft a resume<br />
             <span class="text-gradient-clay font-serif font-normal italic tracking-[-0.01em]"
               >worth reading.</span
@@ -285,17 +350,32 @@ const faqs = [
     </section>
 
     <!-- Promises -->
-    <section class="border-t border-line bg-surface/60">
-      <div class="shell py-20">
-        <p class="eyebrow">What you get</p>
-        <h2 class="display mt-3 max-w-2xl text-[clamp(1.9rem,4vw,2.7rem)]">
-          The parts other builders charge for.
-        </h2>
+    <section class="promise-section relative overflow-hidden border-t border-line" data-promises>
+      <div class="promise-bg" aria-hidden="true"></div>
+      <div class="shell relative py-24">
+        <div class="flex flex-wrap items-end justify-between gap-8">
+          <div>
+            <p class="eyebrow">What you get</p>
+            <h2 class="display mt-3 max-w-2xl text-[clamp(1.9rem,4vw,2.7rem)]">
+              The parts other builders <span class="promise-strike">charge for.</span>
+            </h2>
+          </div>
+
+          <div class="promise-price" aria-label="Your cost for all of it: zero, forever">
+            <span class="pp-label">Your cost for all of it</span>
+            <span class="pp-amount">$0</span>
+            <span class="pp-note">today, tomorrow, forever</span>
+          </div>
+        </div>
 
         <div class="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {
-            promises.map((item) => (
-              <div class="promise-card glass glass-edge rounded-card p-6">
+            promises.map((item, index) => (
+              <article class="promise-card" style={`--i:${index}`} data-promise-card>
+                <span class="promise-bar" aria-hidden="true" />
+                <span class="promise-num" aria-hidden="true">
+                  {String(index + 1).padStart(2, '0')}
+                </span>
                 <span class="promise-icon" aria-hidden="true">
                   <svg
                     viewBox="0 0 16 16"
@@ -304,16 +384,153 @@ const faqs = [
                     stroke-width="1.25"
                     stroke-linecap="round"
                     stroke-linejoin="round"
-                    class="size-[1.15rem]"
+                    class="size-[1.2rem]"
                     set:html={item.icon}
                   />
                 </span>
-                <h3 class="mt-5 text-[15px] font-semibold tracking-[-0.01em]">{item.title}</h3>
-                <p class="mt-2 text-sm leading-relaxed text-ink-muted">{item.body}</p>
-              </div>
+                <h3 class="relative mt-6 text-[15px] font-semibold tracking-[-0.01em]">
+                  {item.title}
+                </h3>
+                <p class="relative mt-2 text-sm leading-relaxed text-ink-muted">{item.body}</p>
+                <span class="promise-chip">
+                  <svg viewBox="0 0 12 12" fill="none" class="size-3" aria-hidden="true">
+                    <path
+                      d="m2.5 6.2 2.2 2.2 4.8-4.8"
+                      stroke="currentColor"
+                      stroke-width="1.6"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                  Included free
+                </span>
+              </article>
             ))
           }
         </div>
+      </div>
+    </section>
+
+    <!-- About the tool: long-form copy for readers who want the detail (and for search). -->
+    <section id="about" class="scroll-mt-20 border-t border-line">
+      <div class="shell grid gap-12 py-20 lg:grid-cols-[0.8fr_1.2fr]">
+        <div class="lg:sticky lg:top-24 lg:self-start">
+          <p class="eyebrow">About CraftResume</p>
+          <h2 class="display mt-3 text-[clamp(1.9rem,4vw,2.7rem)]">
+            A free resume builder that respects your time.
+          </h2>
+          <a
+            href="/editor"
+            class="mt-8 inline-flex h-11 items-center rounded-full bg-ink px-6 text-sm font-medium text-paper transition-transform duration-200 ease-(--ease-out-soft) hover:-translate-y-0.5"
+          >
+            Make my resume free
+          </a>
+        </div>
+
+        <article class="seo-copy">
+          <p>
+            CraftResume is a free resume builder and online resume maker for people who want a
+            polished, professional resume without the usual catches. Choose from {TEMPLATES.length} templates, type
+            your details into a simple form and watch the page update live. When it
+            looks right, download a clean PDF. There is no sign-up wall, no credit card, no trial that
+            expires halfway through, and no watermark stamped across the bottom of your page.
+          </p>
+
+          <h3>A resume builder free in every sense</h3>
+          <p>
+            Plenty of tools describe themselves as a resume builder free of charge, then ask for payment
+            the moment you try to download. CraftResume works the other way round. Every template, every
+            colour and every export is included, and you can download your resume as many times as you
+            like. It is a free resume maker in the plain sense of the word: you build the resume, you
+            keep the file, and nothing is held back for a paid tier because there isn't one. If you
+            need a resume maker free of hidden costs, you can stop looking.
+          </p>
+
+          <h3>Online resume maker with a free PDF download</h3>
+          <p>
+            CraftResume runs in your browser, so it works as an online resume maker on any laptop or
+            desktop with nothing to install. The download produces a true A4 PDF with selectable text,
+            which means recruiters can copy your details and applicant tracking systems can read every
+            word. If you have been searching for an online resume maker free PDF download that does not
+            turn your resume into a blurry image, this is exactly the problem it was built to solve.
+            Using the free resume builder and download takes a few clicks, all in one place.
+          </p>
+
+          <h3>Templates for every kind of job</h3>
+          <p>
+            The template gallery covers ATS-focused single-column layouts for finance, law and
+            government applications, modern two-column designs for engineering and data roles, executive
+            layouts for senior positions, academic formats for researchers and teachers, creative
+            designs for designers and marketers, and five layouts with space for a professional photo.
+            Each template shows who it suits best and how safely it parses in an applicant tracking
+            system, so choosing is quick. You can switch templates at any time and your content moves
+            with you, so trying a new look costs nothing.
+          </p>
+
+          <h3>Role blueprints and matching cover letters</h3>
+          <p>
+            Not sure what to write? Start from one of {BLUEPRINTS.length} role blueprints — complete
+            example resumes for engineering, product, data, finance, marketing and more — and replace the
+            sample details with your own. When a job asks for a cover letter, the same resume maker
+            includes a cover letter editor with {LETTERS.length} formats. It borrows your resume's colour
+            and typeface, so your application arrives looking like one consistent document.
+          </p>
+
+          <h3>Looking for an AI resume builder?</h3>
+          <p>
+            Many people search for an AI resume builder or an AI resume maker, hoping a tool will do the
+            hard part for them. CraftResume takes a practical approach: it never invents experience you
+            do not have, and instead gives you structure that makes good writing easier. Import an
+            existing PDF and the builder reads it automatically, sorting your roles, education and skills
+            into the right sections. The cover letter editor breaks the letter into three guided blocks,
+            and a live length meter tells you when it is the right size. If you like to draft bullet
+            points with an AI writing assistant, paste them straight in — CraftResume works well
+            alongside any resume builder AI tool and lays the result out properly. And unlike many "AI
+            resume builder free" trials, nothing here is locked behind a subscription.
+          </p>
+
+          <h3>Built for applicant tracking systems</h3>
+          <p>
+            Most large employers filter applications with an applicant tracking system before a person
+            ever reads them, and a resume that looks beautiful but parses badly can disappear at this
+            stage. Every CraftResume template uses standard section headings, real text and a single
+            reading order, and the photo layouts keep the headshot out of the text so parsers are never
+            confused. The result is a resume that reads cleanly for a human and scans cleanly for
+            software.
+          </p>
+
+          <h3>Private by design</h3>
+          <p>
+            Your resume holds personal details, so CraftResume keeps them on your device. Everything you
+            type is saved in your own browser and is never uploaded to a server. There is no account to
+            create and no data to delete later. Close the tab, come back tomorrow on the same device, and
+            your draft is waiting. Clear everything by mistake and an undo option brings it back.
+          </p>
+
+          <h3>Is it the best free resume builder for you?</h3>
+          <p>
+            The best resume builder is the one that gets a strong resume out of your head and into an
+            employer's inbox with the least friction. CraftResume focuses on the details that matter: a
+            live preview at true page size, layouts that hold a full career on one page, control over
+            colour, typeface, margins and spacing, and a download that looks exactly like the preview.
+            Those details make it a strong candidate for the best free resume builder for everyday job
+            hunting — whether you are a student writing a first resume, a professional changing careers or
+            an executive updating a long record.
+          </p>
+
+          <h3>How to make your resume in minutes</h3>
+          <ol>
+            <li>Open the editor — there is nothing to sign up for.</li>
+            <li>Pick a template, or start from a role blueprint.</li>
+            <li>Fill in your experience, education and skills; the preview updates as you type.</li>
+            <li>Adjust the colour, typeface and spacing until it feels like yours.</li>
+            <li>Download your resume as a PDF and start applying.</li>
+          </ol>
+          <p>
+            Using a resume builder for free should not mean settling for a worse resume. Start building
+            now and you can have a finished, professional PDF in about ten minutes.
+          </p>
+        </article>
       </div>
     </section>
 
@@ -447,33 +664,232 @@ const faqs = [
   }
 
   /* --- What you get ------------------------------------------------------- */
+  .promise-section {
+    background: color-mix(in srgb, var(--color-surface) 60%, transparent);
+  }
+
+  /* A faint ruled-paper grid with one warm glow — texture, not decoration. */
+  .promise-bg {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(
+        60% 70% at 85% 0%,
+        color-mix(in srgb, var(--color-clay) 13%, transparent),
+        transparent 70%
+      ),
+      linear-gradient(to right, color-mix(in srgb, var(--color-line) 55%, transparent) 1px, transparent 1px)
+        0 0 / 48px 48px,
+      linear-gradient(to bottom, color-mix(in srgb, var(--color-line) 55%, transparent) 1px, transparent 1px)
+        0 0 / 48px 48px;
+    -webkit-mask-image: radial-gradient(90% 80% at 50% 30%, #000 30%, transparent 85%);
+    mask-image: radial-gradient(90% 80% at 50% 30%, #000 30%, transparent 85%);
+  }
+
+  /* "charge for." gets a clay line struck through it — they charge, we don't. */
+  .promise-strike {
+    position: relative;
+    white-space: nowrap;
+  }
+
+  .promise-strike::after {
+    content: '';
+    position: absolute;
+    left: -2%;
+    right: -2%;
+    top: 54%;
+    height: 0.11em;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--color-clay), #e8855a);
+    transform: rotate(-3deg) scaleX(var(--strike, 1));
+    transform-origin: left center;
+    transition: transform 700ms cubic-bezier(0.6, 0, 0.2, 1) 200ms;
+  }
+
+  [data-promises][data-reveal='pending'] .promise-strike::after {
+    --strike: 0;
+  }
+
+  .promise-price {
+    display: grid;
+    justify-items: end;
+    text-align: right;
+  }
+
+  .pp-label,
+  .pp-note {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-ink-muted);
+  }
+
+  .pp-amount {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: clamp(3.2rem, 7vw, 4.6rem);
+    line-height: 1;
+    margin: 0.15rem 0 0.25rem;
+    background: linear-gradient(120deg, var(--color-clay), #e8855a 55%, #f0a070);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
   .promise-card {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    padding: 1.625rem 1.5rem 1.375rem;
+    border-radius: var(--radius-card);
+    border: 1px solid var(--color-line);
+    background:
+      linear-gradient(
+        160deg,
+        color-mix(in srgb, var(--color-surface) 92%, var(--color-clay)) 0%,
+        var(--color-surface) 45%
+      );
+    box-shadow: 0 1px 2px rgb(22 21 15 / 0.04);
     transition:
-      transform 300ms var(--ease-out-soft),
+      transform 350ms var(--ease-out-soft),
       border-color 300ms ease,
-      box-shadow 300ms ease;
+      box-shadow 350ms ease,
+      opacity 600ms ease;
+  }
+
+  /* A soft clay spotlight that follows the pointer across the card. */
+  .promise-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: radial-gradient(
+      220px circle at var(--mx, 50%) var(--my, 0%),
+      color-mix(in srgb, var(--color-clay) 16%, transparent),
+      transparent 70%
+    );
+    opacity: 0;
+    transition: opacity 300ms ease;
   }
 
   .promise-card:hover {
-    transform: translateY(-3px);
-    border-color: var(--color-line-strong);
-    box-shadow: var(--shadow-lift);
+    transform: translateY(-5px);
+    border-color: color-mix(in srgb, var(--color-clay) 35%, var(--color-line-strong));
+    box-shadow:
+      0 2px 4px rgb(22 21 15 / 0.05),
+      0 24px 48px -24px color-mix(in srgb, var(--color-clay) 45%, rgb(22 21 15 / 0.35));
+  }
+
+  .promise-card:hover::after {
+    opacity: 1;
+  }
+
+  /* A clay rule along the top edge that draws across on hover. */
+  .promise-bar {
+    position: absolute;
+    left: 1.5rem;
+    top: 0;
+    width: 1.75rem;
+    height: 2px;
+    border-radius: 0 0 2px 2px;
+    background: linear-gradient(90deg, var(--color-clay), #f0a070);
+    transition:
+      width 450ms var(--ease-out-soft),
+      left 450ms var(--ease-out-soft);
+  }
+
+  .promise-card:hover .promise-bar {
+    left: 0;
+    width: 100%;
+  }
+
+  .promise-num {
+    position: absolute;
+    right: 1.25rem;
+    top: 0.9rem;
+    font-family: var(--font-numeral);
+    font-size: 2.6rem;
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: -0.04em;
+    color: transparent;
+    -webkit-text-stroke: 1px var(--color-line-strong);
+    transition:
+      -webkit-text-stroke-color 300ms ease,
+      transform 400ms var(--ease-out-soft);
+  }
+
+  .promise-card:hover .promise-num {
+    -webkit-text-stroke-color: color-mix(in srgb, var(--color-clay) 60%, transparent);
+    transform: translateY(-2px);
   }
 
   .promise-icon {
+    position: relative;
     display: grid;
     place-items: center;
-    width: 2.5rem;
-    height: 2.5rem;
-    border-radius: 0.75rem;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 0.875rem;
     color: var(--color-clay);
-    background: var(--color-clay-soft);
-    border: 1px solid color-mix(in srgb, var(--color-clay) 18%, transparent);
-    transition: transform 300ms var(--ease-out-soft);
+    background:
+      linear-gradient(
+        145deg,
+        color-mix(in srgb, var(--color-clay-soft) 100%, transparent),
+        color-mix(in srgb, var(--color-clay) 14%, var(--color-surface))
+      );
+    border: 1px solid color-mix(in srgb, var(--color-clay) 24%, transparent);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.08);
+    transition:
+      transform 400ms cubic-bezier(0.3, 1.5, 0.5, 1),
+      box-shadow 300ms ease;
   }
 
   .promise-card:hover .promise-icon {
-    transform: translateY(-1px) rotate(-4deg);
+    transform: translateY(-2px) rotate(-6deg);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.08),
+      0 10px 22px -8px color-mix(in srgb, var(--color-clay) 60%, transparent);
+  }
+
+  .promise-chip {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    margin-top: 1.125rem;
+    padding: 0.2rem 0.6rem 0.2rem 0.45rem;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--color-clay) 22%, transparent);
+    background: color-mix(in srgb, var(--color-clay) 7%, transparent);
+    color: var(--color-clay);
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  /* Cards rise in one after another the first time the section is seen. */
+  [data-promises][data-reveal='pending'] .promise-card {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+
+  [data-promises] .promise-card {
+    transition-delay: calc(var(--i, 0) * 90ms), 0ms, 0ms, calc(var(--i, 0) * 90ms);
+  }
+
+  [data-promises] .promise-card:hover {
+    transition-delay: 0ms;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .promise-card,
+    .promise-bar,
+    .promise-num,
+    .promise-icon,
+    .promise-strike::after {
+      transition: none;
+    }
   }
 
   /* --- Closing panel ------------------------------------------------------
@@ -532,4 +948,30 @@ const faqs = [
 
   observeSheets();
   initBook();
+
+  // "What you get": cards rise in once, the strike draws across, and a soft
+  // spotlight follows the pointer. Decoration only — the cards are fully
+  // visible without this script.
+  const promises = document.querySelector<HTMLElement>('[data-promises]');
+  const calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (promises && !calm && 'IntersectionObserver' in window) {
+    promises.dataset.reveal = 'pending';
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          delete promises.dataset.reveal;
+          io.disconnect();
+        }
+      },
+      { threshold: 0.2 },
+    );
+    io.observe(promises);
+  }
+  promises?.querySelectorAll<HTMLElement>('[data-promise-card]').forEach((card) => {
+    card.addEventListener('pointermove', (event) => {
+      const r = card.getBoundingClientRect();
+      card.style.setProperty('--mx', `${event.clientX - r.left}px`);
+      card.style.setProperty('--my', `${event.clientY - r.top}px`);
+    });
+  });
 </script>
