@@ -1,6 +1,7 @@
 ---
 import '../styles/global.css';
 import '../styles/ui-polish.css';
+import CookieBanner from '../components/CookieBanner.astro';
 
 interface Props {
   title: string;
@@ -108,26 +109,72 @@ const imageUrl = new URL(image, site).href;
       rel="stylesheet"
     />
 
-    {/* Google Analytics: production builds only, so local development never
-        sends hits. Disclosed in the privacy policy. */}
-    {
-      import.meta.env.PROD && (
-        <Fragment>
-          <script is:inline async src="https://www.googletagmanager.com/gtag/js?id=G-Q4WYC1S31B" />
-          <script is:inline>
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', 'G-Q4WYC1S31B');
-          </script>
-        </Fragment>
-      )
-    }
+    {/* Google Analytics, consent first: nothing from Google loads until the
+        visitor accepts in the cookie banner (stored under `craftresume:consent:v1`).
+        Production builds only, so local development never sends hits. */}
+    <script is:inline define:vars={{ live: import.meta.env.PROD, gaId: 'G-Q4WYC1S31B' }}>
+      (function () {
+        var KEY = 'craftresume:consent:v1';
+        var loaded = false;
+        function read() {
+          try {
+            return localStorage.getItem(KEY);
+          } catch (e) {
+            return null;
+          }
+        }
+        function write(value) {
+          try {
+            localStorage.setItem(KEY, value);
+          } catch (e) {}
+        }
+        function load() {
+          if (!live || loaded) return;
+          loaded = true;
+          window['ga-disable-' + gaId] = false;
+          window.dataLayer = window.dataLayer || [];
+          window.gtag = function () {
+            window.dataLayer.push(arguments);
+          };
+          window.gtag('js', new Date());
+          window.gtag('config', gaId);
+          var tag = document.createElement('script');
+          tag.async = true;
+          tag.src = 'https://www.googletagmanager.com/gtag/js?id=' + gaId;
+          document.head.appendChild(tag);
+        }
+        function stop() {
+          window['ga-disable-' + gaId] = true;
+          // Remove the cookies Google Analytics already set on this site.
+          document.cookie.split(';').forEach(function (c) {
+            var name = c.split('=')[0].trim();
+            if (name === '_ga' || name.indexOf('_ga_') === 0 || name === '_gid') {
+              document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
+              document.cookie =
+                name + '=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=' + location.hostname;
+            }
+          });
+        }
+        window.__consent = {
+          get: read,
+          accept: function () {
+            write('granted');
+            load();
+          },
+          decline: function () {
+            write('denied');
+            stop();
+          },
+        };
+        if (read() === 'granted') load();
+      })();
+    </script>
 
     <title>{title}</title>
   </head>
   <body class={bare ? 'h-dvh overflow-hidden' : ''}>
     <slot />
+    <CookieBanner />
     <script>
       import { initCardTilt } from '../scripts/ui-polish';
 

@@ -1,0 +1,192 @@
+---
+/**
+ * Cookie consent. Hidden until the script decides it is needed: a visitor who
+ * has not chosen yet sees it; a returning one does not, and can reopen it from
+ * "Cookie settings" in the footer. Analytics only loads after "Accept".
+ */
+---
+
+<div
+  class="cookie-banner"
+  role="dialog"
+  aria-labelledby="cookie-title"
+  aria-describedby="cookie-text"
+  data-cookie-banner
+  hidden
+>
+  <div class="cookie-head">
+    <span class="cookie-icon" aria-hidden="true">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" class="size-[1.1rem]">
+        <path d="M14 8.4A6 6 0 1 1 7.6 2a2.6 2.6 0 0 0 3.2 3.2A2.4 2.4 0 0 0 14 8.4z" />
+        <path d="M6 7h.01M9 10.5h.01M5.5 10h.01" />
+      </svg>
+    </span>
+    <h2 id="cookie-title">Cookies, kept optional</h2>
+  </div>
+  <p id="cookie-text">
+    We use Google Analytics cookies to count visits and improve the site. Your resume never leaves
+    your browser. Nothing loads unless you accept.{' '}
+    <a href="/privacy#cookies">Read more</a>
+  </p>
+  <div class="cookie-actions">
+    <button type="button" class="cookie-btn cookie-btn--ghost" data-cookie-decline>Decline</button>
+    <button type="button" class="cookie-btn cookie-btn--solid" data-cookie-accept>Accept</button>
+  </div>
+</div>
+
+<style is:global>
+  .cookie-banner {
+    position: fixed;
+    z-index: 80;
+    left: 1rem;
+    bottom: 1rem;
+    width: min(23.5rem, calc(100vw - 2rem));
+    padding: 1.15rem 1.2rem 1.1rem;
+    border-radius: 1.1rem;
+    border: 1px solid var(--color-line-strong);
+    background: color-mix(in srgb, var(--color-surface) 94%, transparent);
+    -webkit-backdrop-filter: blur(16px) saturate(1.4);
+    backdrop-filter: blur(16px) saturate(1.4);
+    box-shadow:
+      0 1px 2px rgb(22 21 15 / 0.05),
+      0 24px 48px -20px rgb(22 21 15 / 0.35);
+    color: var(--color-ink-soft);
+    animation: cookie-in 420ms var(--ease-out-soft) both;
+  }
+
+  .cookie-banner[hidden] {
+    display: none;
+  }
+
+  @keyframes cookie-in {
+    from {
+      opacity: 0;
+      transform: translateY(14px);
+    }
+  }
+
+  .cookie-head {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+  }
+
+  .cookie-head h2 {
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--color-ink);
+  }
+
+  .cookie-icon {
+    display: grid;
+    place-items: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.6rem;
+    color: var(--color-clay);
+    background: var(--color-clay-soft);
+    border: 1px solid color-mix(in srgb, var(--color-clay) 22%, transparent);
+  }
+
+  .cookie-banner p {
+    margin-top: 0.7rem;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  .cookie-banner p a {
+    color: var(--color-clay);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    white-space: nowrap;
+  }
+
+  .cookie-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+  }
+
+  .cookie-btn {
+    flex: 1;
+    height: 2.4rem;
+    border-radius: 999px;
+    font-size: 13.5px;
+    font-weight: 500;
+    cursor: pointer;
+    transition:
+      transform 200ms var(--ease-out-soft),
+      background-color 200ms ease,
+      border-color 200ms ease;
+  }
+
+  .cookie-btn--solid {
+    background: var(--color-ink);
+    color: var(--color-paper);
+    border: 1px solid var(--color-ink);
+  }
+
+  .cookie-btn--ghost {
+    background: transparent;
+    color: var(--color-ink);
+    border: 1px solid var(--color-line-strong);
+  }
+
+  .cookie-btn--ghost:hover {
+    background: var(--color-paper-sunk);
+  }
+
+  .cookie-btn:hover {
+    transform: translateY(-1px);
+  }
+
+  /* On phones it spans the width and sits above the editor's Edit / Preview pill. */
+  @media (max-width: 639px) {
+    .cookie-banner {
+      left: 0.75rem;
+      right: 0.75rem;
+      width: auto;
+      bottom: 0.75rem;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cookie-banner {
+      animation: none;
+    }
+    .cookie-btn {
+      transition: none;
+    }
+  }
+</style>
+
+<script>
+  type Consent = { get(): string | null; accept(): void; decline(): void };
+  const consent = (window as unknown as { __consent?: Consent }).__consent;
+  const banner = document.querySelector<HTMLElement>('[data-cookie-banner]');
+
+  if (consent && banner) {
+    const close = () => {
+      banner.hidden = true;
+    };
+    const open = () => {
+      banner.hidden = false;
+      banner.querySelector<HTMLButtonElement>('[data-cookie-accept]')?.focus();
+    };
+
+    if (!consent.get()) open();
+
+    banner.querySelector('[data-cookie-accept]')?.addEventListener('click', () => {
+      consent.accept();
+      close();
+    });
+    banner.querySelector('[data-cookie-decline]')?.addEventListener('click', () => {
+      consent.decline();
+      close();
+    });
+    document.querySelectorAll('[data-cookie-settings]').forEach((el) => {
+      el.addEventListener('click', open);
+    });
+  }
+</script>
