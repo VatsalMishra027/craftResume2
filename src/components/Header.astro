@@ -118,7 +118,8 @@ const links = [
   }
 
   /* The page you are on keeps a small clay dot under it. */
-  .nav-link[aria-current='page']::after {
+  .nav-link[aria-current='page']::after,
+  .nav-link[aria-current='location']::after {
     content: '';
     position: absolute;
     left: 50%;
@@ -217,8 +218,27 @@ const links = [
   const nav = document.querySelector<HTMLElement>('[data-site-nav]');
   const blob = nav?.querySelector<HTMLElement>('.nav-blob');
 
+  // "How it works" is a section of the home page, not a page of its own, so it
+  // earns its dot while that section is on screen.
+  const howLink = nav?.querySelector<HTMLAnchorElement>('a[href="/#how"]');
+  const howSection = document.getElementById('how');
+  if (howLink && howSection && 'IntersectionObserver' in window) {
+    new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          howLink.setAttribute('aria-current', 'location');
+          howLink.classList.add('text-ink', 'font-medium');
+        } else {
+          howLink.removeAttribute('aria-current');
+          howLink.classList.remove('text-ink', 'font-medium');
+        }
+      },
+      { rootMargin: '-35% 0px -55% 0px' },
+    ).observe(howSection);
+  }
+
   if (nav && blob) {
-    const links = Array.from(nav.querySelectorAll<HTMLAnchorElement>('.nav-link'));
+    const links =Array.from(nav.querySelectorAll<HTMLAnchorElement>('.nav-link'));
     let placed = false;
 
     const moveTo = (link: HTMLElement) => {

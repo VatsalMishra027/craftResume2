@@ -4,14 +4,24 @@ import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import TemplateCard from '../components/TemplateCard.astro';
 import TemplateThumb from '../components/TemplateThumb.astro';
-import { TEMPLATES, TEMPLATE_CATEGORIES } from '../lib/templates';
+import { TEMPLATES } from '../lib/templates';
 import { BLUEPRINTS } from '../lib/blueprints';
 import { LETTERS } from '../lib/letters';
 
-/** One layout per shelf, so the grid shows the range without printing all 12. */
-const featured = TEMPLATE_CATEGORIES.map(
-  (category) => TEMPLATES.find((template) => template.category === category)!,
-).filter(Boolean);
+/** Six layouts that span the range (ATS to creative); /templates holds the rest. */
+const featuredIds = ['ledger', 'aperture', 'atlas', 'meridian', 'vertex', 'lattice'];
+const featured = featuredIds.map((id) => TEMPLATES.find((t) => t.id === id)!).filter(Boolean);
+
+const roleChips = [
+  'Engineering',
+  'Product',
+  'Data',
+  'Finance',
+  'Marketing',
+  'Design',
+  'Healthcare',
+  'Executive',
+];
 
 /** The hero stack turns through six layouts that look nothing like each other. */
 const bookIds = ['atlas', 'ledger', 'cameo', 'vertex', 'cascade', 'orbit'];
@@ -58,32 +68,118 @@ const promises = [
   },
 ];
 
-const faqs = [
+const faqGroups = [
   {
-    q: 'Is Free Resume Maker AI really free?',
-    a: 'Yes. Every template and unlimited downloads, with no watermark and no card required. There is no paid tier to upsell you to.',
+    id: 'free',
+    label: 'Free & safe',
+    items: [
+      {
+        q: 'Is it safe to use a resume builder?',
+        a: 'It depends on where your data goes. Many online resume builders ask you to create an account and store your details on their servers. Free Resume Maker AI works differently: everything you type is saved in your own browser and is never uploaded, so there is no account to hack and nothing to delete later. Whichever builder you use, avoid putting a full home address, date of birth or ID numbers on a resume.',
+      },
+      {
+        q: 'Is a resume maker safe?',
+        a: 'A resume maker is as safe as its privacy model. Check whether it needs an account, whether it uploads your content and whether it sells your details. Here there is no sign-up and no upload, which makes it a safe free resume maker to use. On a shared computer, clear your browser data when you finish.',
+      },
+      {
+        q: 'Which resume builder is 100% free?',
+        a: 'Free Resume Maker AI is a resume builder that is completely free: every template, every colour and typeface option, unlimited PDF downloads, the cover letter editor and PDF import, with no watermark, no trial and no card. Be cautious with builders that let you design for free and then charge at the download step.',
+      },
+      {
+        q: 'Does a resume builder make you pay?',
+        a: 'Many do. A common pattern is to let you build the whole resume, then ask for a subscription when you try to download it. Not every builder works that way, and this one never does. You can build, edit and download as many times as you like without paying or entering a card.',
+      },
+      {
+        q: 'Which CV maker is best?',
+        a: 'The best CV maker is the one that gets a clean, readable document out of your head and into an employer’s inbox with the least friction. Look for a live preview at true page size, ATS-friendly layouts with real text, full control over colour and type, and a download that matches the preview with no paywall. That is the standard Free Resume Maker AI is built to meet.',
+      },
+      {
+        q: 'What are the benefits of using a resume maker?',
+        a: 'A resume maker handles layout, spacing and consistent formatting so you can focus on the content. You also get a sensible section order, templates that applicant tracking systems can parse, an instant preview as you type, and the ability to switch designs without retyping anything. It saves hours compared with formatting a document by hand.',
+      },
+    ],
   },
   {
-    q: 'Do I need to create an account?',
-    a: 'No. Your resume is stored in your browser, so you can close the tab and pick it up later on the same device. Clearing your browser data clears the resume too.',
+    id: 'writing',
+    label: 'Writing a strong resume',
+    items: [
+      {
+        q: 'What are 10 tips for creating a strong resume?',
+        a: '1. Tailor it to each job posting. 2. Lead with a short, specific summary. 3. Put your most relevant experience first. 4. Start bullets with strong action verbs. 5. Quantify results with numbers, percentages or scale. 6. Mirror keywords from the job description. 7. Keep the design clean and consistent. 8. Use standard section headings. 9. Cut anything old or irrelevant, usually beyond 10 to 15 years. 10. Proofread, then export a PDF with selectable text.',
+      },
+      {
+        q: 'What is the 7 second rule for a CV?',
+        a: 'Recruiters often make a first judgement in roughly six to seven seconds of scanning. In that time they look at your name, current title, recent employers, dates and headings. To pass the scan, put your strongest and most relevant information at the top, use clear headings and generous spacing, and keep bullets short enough to skim.',
+      },
+      {
+        q: 'What are the 5 golden rules of resume writing?',
+        a: 'Keep it relevant, concise, specific, honest and error-free. Relevant means tailored to the role. Concise means one or two pages with no filler. Specific means measurable results instead of vague duties. Honest means never inventing experience. Error-free means checking spelling, dates and contact details before you send it.',
+      },
+      {
+        q: 'What skills should I list on a resume?',
+        a: 'List skills that match the job posting, split into hard skills (tools, software, languages, certifications) and a few soft skills shown through your bullet points rather than claimed in a list. Keep the section short and honest, group related skills together, and use the exact wording of the posting where it is true for you, since ATS filters often match on keywords.',
+      },
+      {
+        q: 'How should a 2026 CV look?',
+        a: 'Clean and easy to scan: a clear name and title, a two to three line summary, reverse-chronological experience with quantified results, and a short skills section. Use a readable modern typeface at 10 to 11 pt, restrained colour, and a layout an ATS can read. Skip graphics and skill bars, and add a photo only if your country or industry expects one.',
+      },
+    ],
   },
   {
-    q: 'Are the templates ATS friendly?',
-    a: `All ${TEMPLATES.length} use standard section headings, real text and a single reading order, and each card tells you how strictly it parses. Ledger, Beacon and Meridian are the safest bets when you know the application goes through an automated screen.`,
+    id: 'format',
+    label: 'Format & length',
+    items: [
+      {
+        q: 'What resume format is best?',
+        a: 'For most people the reverse-chronological format is best: it lists your newest role first and is the layout recruiters and applicant tracking systems expect. A functional format hides your timeline and often raises questions, while a combination format can help career changers who need to lead with skills.',
+      },
+      {
+        q: 'Which type of resume is better?',
+        a: 'Chronological suits steady career progression, functional suits very few cases such as long gaps, and combination suits career changers. If you are unsure, choose chronological. Within that, pick a single-column ATS-focused template for automated screens, or a two-column or creative layout when a person is likely to read it first.',
+      },
+      {
+        q: 'What font is best for resumes?',
+        a: 'Pick a clean, widely used typeface that stays legible at 10 to 12 pt, such as Inter, Calibri, Arial, Helvetica or Georgia. Use one family, or at most a serif and sans-serif pair. In the editor you can change the typeface and size on any template with a live preview.',
+      },
+      {
+        q: 'How long should a CV be?',
+        a: 'One page is right for students, graduates and anyone with under about ten years of experience. Two pages suit experienced professionals, managers and technical roles with many projects. Academic CVs can run longer. Whatever the length, every line should earn its place, and the last page should never hold just a few stray lines.',
+      },
+      {
+        q: 'How many pages can a CV be?',
+        a: 'In most industries a CV should be one or two pages. Three or more pages are normal only for academic, medical, research or senior executive CVs that list publications, qualifications or board roles. Check what the employer or country expects before you go beyond two.',
+      },
+      {
+        q: 'Is a one or two page CV better?',
+        a: 'Neither is better in general: use the shortest length that shows your relevant experience. A tight one-page resume is easier to scan and works well early in a career. A well-organised two-page resume is better once you have a longer track record. Never pad a short history to fill a second page, or squeeze a long one onto a single cramped page.',
+      },
+    ],
   },
   {
-    q: 'How does the download work?',
-    a: 'Download opens your print dialog with the resume already isolated on an A4 page. Choose “Save as PDF” and you get a clean, selectable-text file.',
-  },
-  {
-    q: 'Can I download my resume as a PDF for free?',
-    a: 'Yes. Every download is free and unlimited, with no watermark. You can also export a Word file or copy the plain text if an application form asks for it.',
-  },
-  {
-    q: 'Is Free Resume Maker AI really an AI resume builder?',
-    a: 'The name says AI because that is how most people search for a resume maker — but to be straight with you, it does not write your resume with generative AI, and it never invents experience you do not have. What it does is smart in a practical way: it reads an existing PDF and fills in your sections automatically, guides your cover letter into three short blocks, and lays out anything you paste in, including bullet points drafted with an AI writing assistant.',
+    id: 'using',
+    label: 'Using the builder',
+    items: [
+      {
+        q: 'Can I edit my resume online?',
+        a: 'Yes. Open the editor in any modern browser, fill in the form and watch the resume update live at full page size. You can change templates, colours, typefaces, margins and spacing at any time, and your draft is saved automatically in your browser so you can return later.',
+      },
+      {
+        q: 'How can I edit my old resume?',
+        a: 'Use the Import resume page and upload your existing PDF. The builder reads it in your browser, sorts your roles, education and skills into the right sections and opens it in the editor, where you can update the content and switch to a fresh template. Nothing is uploaded to a server. If your old resume is a Word file, save it as a PDF first.',
+      },
+      {
+        q: 'Can I create a CV on my phone?',
+        a: 'Yes. The editor works on phones and tablets with an Edit and Preview toggle, so you can type your details and then check the page layout. Many people prefer a laptop for final tidying, but a complete resume can be built and saved from a phone.',
+      },
+      {
+        q: 'Is Free Resume Maker AI really an AI resume builder?',
+        a: 'The name says AI because that is how most people search for a resume maker, but to be straight with you, it does not write your resume with generative AI and it never invents experience you do not have. What it does is practical: it reads an existing PDF and fills in your sections automatically, guides your cover letter into three short blocks, and lays out anything you paste in, including bullet points drafted with an AI writing assistant.',
+      },
+    ],
   },
 ];
+
+const faqs = faqGroups.flatMap((group) => group.items);
 
 /** Structured data: the app itself, the site, and the visible FAQ above. */
 const siteUrl = (Astro.site ?? new URL(Astro.url.origin)).href;
@@ -175,10 +271,10 @@ const structuredData = {
           </h1>
 
           <p class="mt-6 max-w-lg text-[17px] leading-relaxed text-ink-soft">
-            Choose a template, fill in your details, download the PDF. Then, if the posting asks for
-            one, write the cover letter the same way — its own formats, its own editor, the same
-            colour and type. No sign-up wall, no credit card, no export that quietly stamps a logo
-            on your work.
+            The free resume builder with nothing to pay for: choose a template, fill in your
+            details and download your resume as a PDF. Need a cover letter too? Write it the same
+            way, in matching colour and type. No sign-up wall, no credit card, and no free resume
+            maker catch where the export quietly stamps a logo on your work.
           </p>
 
           <div class="mt-9 flex flex-wrap items-center gap-3">
@@ -305,18 +401,19 @@ const structuredData = {
           <div>
             <p class="eyebrow">Templates</p>
             <h2 class="display mt-3 max-w-xl text-[clamp(1.9rem,4vw,2.7rem)]">
-              {TEMPLATES.length} layouts, no filler.
+              {TEMPLATES.length} free resume templates, no filler.
             </h2>
-            <p class="mt-4 max-w-md text-ink-muted">
-              One from each shelf below — ATS-focused through creative. Every preview is the live
-              template rendering real content, so what you see is exactly what prints.
+            <p class="mt-4 max-w-lg text-ink-muted">
+              Six of our best free resume maker layouts, from ATS-friendly to creative. Every
+              preview is the live template rendering real content, so what you see is exactly what
+              prints.
             </p>
           </div>
           <a
             href="/templates"
             class="inline-flex items-center gap-1.5 text-sm font-medium text-ink underline-offset-4 hover:underline"
           >
-            See them full size
+            Browse all {TEMPLATES.length} templates
             <span aria-hidden="true">→</span>
           </a>
         </div>
@@ -325,26 +422,37 @@ const structuredData = {
           {featured.map((template) => <TemplateCard template={template} />)}
         </div>
 
-        <div
-          class="mt-14 flex flex-col items-start justify-between gap-5 rounded-card border border-line bg-surface p-7 sm:flex-row sm:items-center"
-        >
-          <div>
-            <p class="eyebrow">Fast start</p>
-            <h3 class="mt-2 text-lg font-semibold tracking-[-0.015em]">
-              Or open one already written for your job.
-            </h3>
-            <p class="mt-1.5 max-w-lg text-sm leading-relaxed text-ink-muted">
-              {BLUEPRINTS.length} role blueprints — engineering, product, data, finance, marketing,
-              design, healthcare and executive — each arriving as a finished resume you edit over
-              instead of an empty form.
-            </p>
+        <div class="fast-start mt-14">
+          <div class="relative grid items-center gap-8 p-8 sm:p-10 lg:grid-cols-[1.2fr_0.8fr]">
+            <div>
+              <p class="fs-kicker">
+                <span class="fs-pulse" aria-hidden="true"></span>
+                Fast start
+              </p>
+              <h3 class="display mt-4 text-[clamp(1.5rem,3vw,2.1rem)]">
+                Skip the blank page. <span class="fs-accent">Start from a finished resume.</span>
+              </h3>
+              <p class="mt-3 max-w-lg text-sm leading-relaxed text-ink-muted">
+                {BLUEPRINTS.length} role blueprints, each written for a real job and ready to edit.
+                Swap in your own details instead of staring at an empty form — a faster way to build
+                a resume for free.
+              </p>
+              <a href="/templates?tab=roles" class="fs-button mt-7">
+                <span>See the blueprints</span>
+                <span class="fs-arrow" aria-hidden="true">→</span>
+              </a>
+            </div>
+
+            <ul class="fs-chips" aria-label="Role blueprints available">
+              {
+                roleChips.map((chip, i) => (
+                  <li style={`--i:${i}`}>
+                    <a href="/templates?tab=roles">{chip}</a>
+                  </li>
+                ))
+              }
+            </ul>
           </div>
-          <a
-            href="/templates?tab=roles"
-            class="inline-flex h-11 flex-none items-center rounded-full border border-line-strong px-6 text-sm font-medium text-ink transition-colors duration-200 hover:bg-paper-sunk"
-          >
-            See the blueprints
-          </a>
         </div>
       </div>
     </section>
@@ -534,36 +642,77 @@ const structuredData = {
       </div>
     </section>
 
-    <!-- FAQ -->
-    <section id="faq" class="scroll-mt-20 border-t border-line">
-      <div class="shell grid gap-12 py-20 lg:grid-cols-[0.8fr_1.2fr]">
-        <div>
+    <!-- FAQ: four short topics instead of one long list. Every answer stays in
+         the page (and in the JSON-LD above); the tabs only choose which topic
+         is on screen, and without JavaScript all of them are shown. -->
+    <section id="faq" class="scroll-mt-20 border-t border-line" data-faq>
+      <div class="shell grid gap-10 py-20 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16">
+        <div class="lg:sticky lg:top-24 lg:self-start">
           <p class="eyebrow">FAQ</p>
-          <h2 class="display mt-3 text-[clamp(1.9rem,4vw,2.7rem)]">Reasonable questions.</h2>
+          <h2 class="display mt-3 text-[clamp(1.9rem,4vw,2.7rem)]">
+            Resume builder questions, answered.
+          </h2>
+          <p class="mt-4 max-w-sm text-sm leading-relaxed text-ink-muted">
+            Straight answers on safety, cost, formats and writing a resume that gets read.
+          </p>
+
+          <div class="faq-tabs mt-7" role="tablist" aria-label="FAQ topics" data-faq-tabs>
+            {
+              faqGroups.map((group, index) => (
+                <button
+                  type="button"
+                  role="tab"
+                  class="faq-tab"
+                  id={`faq-tab-${group.id}`}
+                  aria-controls={`faq-panel-${group.id}`}
+                  aria-selected={index === 0 ? 'true' : 'false'}
+                  data-faq-tab={group.id}
+                >
+                  <span>{group.label}</span>
+                  <span class="faq-count">{group.items.length}</span>
+                </button>
+              ))
+            }
+          </div>
+
+          <a href="/editor" class="faq-cta mt-8 hidden lg:inline-flex">
+            Ready? Build my resume
+            <span aria-hidden="true">→</span>
+          </a>
         </div>
 
-        <div class="divide-y divide-line border-y border-line">
+        <div>
           {
-            faqs.map((faq) => (
-              <details class="group py-5">
-                <summary class="flex cursor-pointer list-none items-center justify-between gap-6 text-[15px] font-medium">
-                  {faq.q}
-                  <span
-                    class="grid size-6 flex-none place-items-center rounded-full border border-line text-ink-muted transition-transform duration-300 ease-(--ease-out-soft) group-open:rotate-45"
-                    aria-hidden="true"
-                  >
-                    <svg viewBox="0 0 12 12" class="size-3" fill="none">
-                      <path
-                        d="M6 2v8M2 6h8"
-                        stroke="currentColor"
-                        stroke-width="1.4"
-                        stroke-linecap="round"
-                      />
-                    </svg>
-                  </span>
-                </summary>
-                <p class="mt-3 max-w-2xl pr-12 text-sm leading-relaxed text-ink-muted">{faq.a}</p>
-              </details>
+            faqGroups.map((group, index) => (
+              <div
+                class="faq-panel"
+                role="tabpanel"
+                id={`faq-panel-${group.id}`}
+                aria-labelledby={`faq-tab-${group.id}`}
+                data-faq-panel={group.id}
+              >
+                <h3 class="faq-panel-title">{group.label}</h3>
+                <div class="faq-list">
+                  {group.items.map((faq, n) => (
+                    <details class="faq-item group" open={index === 0 && n === 0}>
+                      <summary>
+                        <span class="faq-q">{faq.q}</span>
+                        <span class="faq-toggle" aria-hidden="true">
+                          <svg viewBox="0 0 12 12" class="size-3" fill="none">
+                            <path
+                              d="M6 2v8M2 6h8"
+                              stroke="currentColor"
+                              stroke-width="1.4"
+                              stroke-linecap="round"
+                            />
+                          </svg>
+                        </span>
+                      </summary>
+                      <p class="faq-a">{faq.a}</p>
+                    </details>
+                  ))}
+                </div>
+              </div>
             ))
           }
         </div>
@@ -892,6 +1041,337 @@ const structuredData = {
     }
   }
 
+  /* --- Fast start ---------------------------------------------------------- */
+  .fast-start {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    border-radius: var(--radius-card);
+    border: 1px solid color-mix(in srgb, var(--color-clay) 22%, var(--color-line));
+    background:
+      radial-gradient(
+        70% 120% at 100% 0%,
+        color-mix(in srgb, var(--color-clay) 16%, transparent),
+        transparent 65%
+      ),
+      linear-gradient(160deg, color-mix(in srgb, var(--color-surface) 90%, var(--color-clay)), var(--color-surface) 55%);
+    box-shadow: 0 1px 2px rgb(22 21 15 / 0.04);
+  }
+
+  .fast-start::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      linear-gradient(to right, color-mix(in srgb, var(--color-line) 60%, transparent) 1px, transparent 1px) 0 0 / 40px 40px,
+      linear-gradient(to bottom, color-mix(in srgb, var(--color-line) 60%, transparent) 1px, transparent 1px) 0 0 / 40px 40px;
+    -webkit-mask-image: radial-gradient(70% 90% at 100% 0%, #000, transparent 75%);
+    mask-image: radial-gradient(70% 90% at 100% 0%, #000, transparent 75%);
+  }
+
+  .fs-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.7rem 0.25rem 0.55rem;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--color-clay) 28%, transparent);
+    background: color-mix(in srgb, var(--color-clay) 8%, transparent);
+    color: var(--color-clay);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .fs-pulse {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--color-clay);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-clay) 55%, transparent);
+    animation: fs-pulse 2.2s ease-out infinite;
+  }
+
+  @keyframes fs-pulse {
+    to {
+      box-shadow: 0 0 0 7px transparent;
+    }
+  }
+
+  .fs-accent {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-weight: 400;
+    color: var(--color-clay);
+  }
+
+  .fs-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    height: 2.75rem;
+    padding: 0 1.5rem;
+    border-radius: 999px;
+    background: var(--color-ink);
+    color: var(--color-paper);
+    font-size: 14px;
+    font-weight: 500;
+    transition:
+      transform 220ms var(--ease-out-soft),
+      box-shadow 260ms ease;
+  }
+
+  .fs-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 24px -12px color-mix(in srgb, var(--color-clay) 70%, transparent);
+  }
+
+  .fs-arrow {
+    display: inline-block;
+    transition: transform 240ms cubic-bezier(0.3, 1.6, 0.5, 1);
+  }
+
+  .fs-button:hover .fs-arrow {
+    transform: translateX(3px);
+  }
+
+  .fs-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  @media (min-width: 1024px) {
+    .fs-chips {
+      justify-content: flex-end;
+    }
+  }
+
+  .fs-chips a {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    border-radius: 999px;
+    border: 1px solid var(--color-line-strong);
+    background: color-mix(in srgb, var(--color-surface) 80%, transparent);
+    color: var(--color-ink-soft);
+    font-size: 13px;
+    font-weight: 500;
+    transition:
+      transform 250ms var(--ease-out-soft),
+      border-color 200ms ease,
+      color 200ms ease,
+      background-color 200ms ease;
+  }
+
+  .fs-chips li:nth-child(odd) a {
+    transform: translateY(0);
+  }
+
+  .fs-chips a:hover {
+    transform: translateY(-2px);
+    color: var(--color-clay);
+    border-color: color-mix(in srgb, var(--color-clay) 45%, transparent);
+    background: color-mix(in srgb, var(--color-clay) 8%, var(--color-surface));
+  }
+
+  /* --- FAQ ----------------------------------------------------------------- */
+  .faq-tabs {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  @media (max-width: 1023px) {
+    .faq-tabs {
+      flex-direction: row;
+      overflow-x: auto;
+      padding-bottom: 0.25rem;
+      scrollbar-width: none;
+    }
+    .faq-tabs::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
+  .faq-tab {
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.9rem;
+    padding: 0.65rem 0.9rem;
+    border-radius: 0.8rem;
+    border: 1px solid transparent;
+    color: var(--color-ink-muted);
+    font-size: 14px;
+    font-weight: 500;
+    text-align: left;
+    cursor: pointer;
+    transition:
+      color 200ms ease,
+      background-color 200ms ease,
+      border-color 200ms ease;
+  }
+
+  .faq-tab:hover {
+    color: var(--color-ink);
+    background: var(--color-paper-sunk);
+  }
+
+  .faq-tab[aria-selected='true'] {
+    color: var(--color-ink);
+    background: var(--color-surface);
+    border-color: var(--color-line-strong);
+    box-shadow: 0 1px 2px rgb(22 21 15 / 0.05);
+  }
+
+  .faq-count {
+    display: grid;
+    place-items: center;
+    min-width: 1.4rem;
+    height: 1.4rem;
+    padding: 0 0.35rem;
+    border-radius: 999px;
+    background: var(--color-paper-sunk);
+    color: var(--color-ink-muted);
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+    transition:
+      background-color 200ms ease,
+      color 200ms ease;
+  }
+
+  .faq-tab[aria-selected='true'] .faq-count {
+    background: var(--color-clay);
+    color: #fff;
+  }
+
+  .faq-cta {
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-clay);
+  }
+
+  .faq-cta:hover {
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+
+  .faq-panel + .faq-panel {
+    margin-top: 2.75rem;
+  }
+
+  .faq-panel[hidden] {
+    display: none;
+  }
+
+  [data-faq][data-ready] .faq-panel-title {
+    display: none;
+  }
+
+  .faq-panel-title {
+    margin-bottom: 0.9rem;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-ink-muted);
+  }
+
+  .faq-list {
+    display: grid;
+    gap: 0.6rem;
+  }
+
+  .faq-item {
+    border-radius: 1rem;
+    border: 1px solid var(--color-line);
+    background: var(--color-surface);
+    transition:
+      border-color 250ms ease,
+      box-shadow 250ms ease;
+  }
+
+  .faq-item:hover {
+    border-color: var(--color-line-strong);
+  }
+
+  .faq-item[open] {
+    border-color: color-mix(in srgb, var(--color-clay) 30%, var(--color-line-strong));
+    box-shadow: 0 14px 30px -22px color-mix(in srgb, var(--color-clay) 55%, rgb(22 21 15 / 0.3));
+  }
+
+  .faq-item summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.25rem;
+    padding: 1.05rem 1.25rem;
+    list-style: none;
+    cursor: pointer;
+  }
+
+  .faq-item summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .faq-q {
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: -0.005em;
+    line-height: 1.4;
+  }
+
+  .faq-toggle {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 1.6rem;
+    height: 1.6rem;
+    border-radius: 50%;
+    border: 1px solid var(--color-line-strong);
+    color: var(--color-ink-muted);
+    transition:
+      transform 300ms var(--ease-out-soft),
+      background-color 200ms ease,
+      color 200ms ease,
+      border-color 200ms ease;
+  }
+
+  .faq-item[open] .faq-toggle {
+    transform: rotate(45deg);
+    background: var(--color-clay);
+    border-color: var(--color-clay);
+    color: #fff;
+  }
+
+  .faq-a {
+    padding: 0 3.5rem 1.2rem 1.25rem;
+    font-size: 14.5px;
+    line-height: 1.7;
+    color: var(--color-ink-muted);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .fs-pulse {
+      animation: none;
+    }
+    .fs-button,
+    .fs-arrow,
+    .fs-chips a,
+    .faq-toggle {
+      transition: none;
+    }
+  }
   /* --- Closing panel ------------------------------------------------------
      Light: an inverted ink panel. Dark: a raised surface with a lit edge —
      an inverted panel there would be a sheet of white in the middle of a
@@ -974,4 +1454,22 @@ const structuredData = {
       card.style.setProperty('--my', `${event.clientY - r.top}px`);
     });
   });
+
+  // FAQ: one topic on screen at a time. All answers remain in the page.
+  const faq = document.querySelector<HTMLElement>('[data-faq]');
+  if (faq) {
+    const tabs = Array.from(faq.querySelectorAll<HTMLButtonElement>('[data-faq-tab]'));
+    const panels = Array.from(faq.querySelectorAll<HTMLElement>('[data-faq-panel]'));
+    const show = (id: string) => {
+      tabs.forEach((tab) =>
+        tab.setAttribute('aria-selected', String(tab.dataset.faqTab === id)),
+      );
+      panels.forEach((panel) => {
+        panel.hidden = panel.dataset.faqPanel !== id;
+      });
+    };
+    faq.dataset.ready = '';
+    show(tabs[0]?.dataset.faqTab ?? '');
+    tabs.forEach((tab) => tab.addEventListener('click', () => show(tab.dataset.faqTab!)));
+  }
 </script>
