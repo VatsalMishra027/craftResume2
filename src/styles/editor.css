@@ -749,3 +749,25 @@
   font-weight: 600;
   color: var(--color-ink);
 }
+
+/* --- Phones: the bar's tool menus open across the whole row -----------------
+   On a narrow screen the pills are too close to the edge for a 19rem panel
+   anchored under each one, so the panels anchor to the tool row instead.
+--------------------------------------------------------------------------- */
+@media (width < 40rem) {
+  .bar-tools [data-menu] {
+    position: static;
+  }
+
+  .bar-tools [data-menu-panel] {
+    left: 0;
+    right: 0;
+    top: calc(100% + 0.25rem);
+    width: auto;
+  }
+
+  .bar-tools .bar-button {
+    padding: 0 0.6rem;
+    gap: 0.35rem;
+  }
+}

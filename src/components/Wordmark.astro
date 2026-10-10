@@ -50,6 +50,12 @@ const { size = 'sm', compact = false, class: className = '' } = Astro.props;
     font-size: 26px;
   }
 
+  @media (max-width: 419px) {
+    .wm--lg {
+      font-size: 22px;
+    }
+  }
+
   .wm-line {
     display: inline-flex;
     align-items: center;

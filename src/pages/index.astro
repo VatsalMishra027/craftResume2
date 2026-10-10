@@ -647,7 +647,7 @@ const structuredData = {
          is on screen, and without JavaScript all of them are shown. -->
     <section id="faq" class="scroll-mt-20 border-t border-line" data-faq>
       <div class="shell grid gap-10 py-20 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16">
-        <div class="lg:sticky lg:top-24 lg:self-start">
+        <div class="min-w-0 lg:sticky lg:top-24 lg:self-start">
           <p class="eyebrow">FAQ</p>
           <h2 class="display mt-3 text-[clamp(1.9rem,4vw,2.7rem)]">
             Resume builder questions, answered.
@@ -681,7 +681,7 @@ const structuredData = {
           </a>
         </div>
 
-        <div>
+        <div class="min-w-0">
           {
             faqGroups.map((group, index) => (
               <div

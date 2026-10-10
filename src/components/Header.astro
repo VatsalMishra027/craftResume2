@@ -16,7 +16,7 @@ const links = [
 ---
 
 <header class="site-header glass-bar glass-edge sticky top-0 z-40">
-  <div class="shell flex h-16 items-center justify-between gap-6">
+  <div class="shell flex h-16 items-center justify-between gap-3 sm:gap-6">
     <Logo />
 
     <nav
@@ -41,17 +41,55 @@ const links = [
       }
     </nav>
 
-    <div class="flex items-center gap-2.5">
-      <ThemeToggle />
+    <div class="flex items-center gap-2">
+      <span class="flex max-[399px]:hidden"><ThemeToggle /></span>
       <a
         href="/editor"
         class="cta-btn inline-flex h-9 items-center gap-1.5 rounded-full bg-ink px-4 text-sm font-medium text-paper"
       >
-        <span>Build my resume</span>
+        <span class="hidden min-[400px]:inline">Build my resume</span>
+        <span class="min-[400px]:hidden">Build</span>
         <span class="cta-arrow" aria-hidden="true">→</span>
       </a>
+      <button
+        type="button"
+        class="menu-btn grid size-9 place-items-center rounded-full border border-line-strong text-ink sm:hidden"
+        aria-label="Open menu"
+        aria-expanded="false"
+        aria-controls="mobile-nav"
+        data-menu-btn
+      >
+        <svg viewBox="0 0 16 16" class="size-4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <path class="menu-bars" d="M2.5 4.5h11M2.5 8h11M2.5 11.5h11"></path>
+          <path class="menu-x" d="m3.5 3.5 9 9m0-9-9 9"></path>
+        </svg>
+      </button>
     </div>
   </div>
+
+  <nav id="mobile-nav" class="mobile-nav sm:hidden" aria-label="Mobile" data-mobile-nav hidden>
+    <ul class="shell flex flex-col py-2">
+      {
+        links.map((link) => (
+          <li>
+            <a
+              href={link.href}
+              aria-current={active === link.key ? 'page' : undefined}
+              class="mobile-link"
+            >
+              {link.label}
+            </a>
+          </li>
+        ))
+      }
+      <li class="min-[400px]:hidden">
+        <div class="mobile-link">
+          <span>Colour theme</span>
+          <ThemeToggle />
+        </div>
+      </li>
+    </ul>
+  </nav>
 </header>
 
 <style is:global>
@@ -130,6 +168,55 @@ const links = [
     border-radius: 50%;
     background: var(--color-clay);
     box-shadow: 0 0 8px var(--color-clay);
+  }
+
+  /* --- Phone menu ------------------------------------------------------------ */
+  .menu-btn .menu-x {
+    display: none;
+  }
+  .menu-btn[aria-expanded='true'] .menu-x {
+    display: block;
+  }
+  .menu-btn[aria-expanded='true'] .menu-bars {
+    display: none;
+  }
+
+  .mobile-nav {
+    border-top: 1px solid var(--color-line);
+    background: color-mix(in srgb, var(--color-paper) 96%, transparent);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+  }
+
+  .mobile-nav[hidden] {
+    display: none;
+  }
+
+  .mobile-link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.95rem 0.25rem;
+    border-bottom: 1px solid var(--color-line);
+    font-size: 15px;
+    color: var(--color-ink-soft);
+  }
+
+  li:last-child > .mobile-link {
+    border-bottom: 0;
+  }
+
+  .mobile-link[aria-current='page'] {
+    color: var(--color-ink);
+    font-weight: 500;
+  }
+
+  .mobile-link[aria-current='page']::after {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--color-clay);
   }
 
   /* --- The main button: a sweep of light and an arrow that leans in --------- */
@@ -237,8 +324,27 @@ const links = [
     ).observe(howSection);
   }
 
+  // Phone menu: a plain disclosure that closes after a choice or on Escape.
+  const menuBtn = document.querySelector<HTMLButtonElement>('[data-menu-btn]');
+  const menu = document.querySelector<HTMLElement>('[data-mobile-nav]');
+  if (menuBtn && menu) {
+    const setOpen = (open: boolean) => {
+      menu.hidden = !open;
+      menuBtn.setAttribute('aria-expanded', String(open));
+      menuBtn.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+    };
+    menuBtn.addEventListener('click', () => setOpen(menu.hidden));
+    menu.addEventListener('click', (event) => {
+      if ((event.target as HTMLElement).closest('a')) setOpen(false);
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') setOpen(false);
+    });
+    window.matchMedia('(min-width: 640px)').addEventListener('change', () => setOpen(false));
+  }
+
   if (nav && blob) {
-    const links =Array.from(nav.querySelectorAll<HTMLAnchorElement>('.nav-link'));
+    const links = Array.from(nav.querySelectorAll<HTMLAnchorElement>('.nav-link'));
     let placed = false;
 
     const moveTo = (link: HTMLElement) => {

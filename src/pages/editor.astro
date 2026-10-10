@@ -55,12 +55,14 @@ const listPanels = panels.filter((panel) => panel.key !== 'basics');
   <div class="flex h-dvh flex-col">
     <!-- Top bar -->
     <header
-      class="editor-bar glass-bar glass-edge flex h-14 flex-none items-center justify-between gap-3 px-3 sm:px-5"
+      class="editor-bar glass-bar glass-edge flex flex-none flex-wrap items-center justify-between gap-x-3 gap-y-2 px-3 py-2 sm:h-14 sm:flex-nowrap sm:px-5 sm:py-0"
     >
-      <div class="flex items-center gap-4">
-        <Logo compact class="[&>span:last-child]:hidden md:[&>span:last-child]:inline" />
+      <Logo compact class="mr-auto sm:mr-4 [&>span:last-child]:hidden md:[&>span:last-child]:inline" />
 
-        <div class="flex items-center gap-1.5">
+      {/* On phones the tools drop to their own full-width row (and their
+          panels open across it); from sm up they sit beside the logo. */}
+      <div class="bar-tools relative order-last flex w-full items-center justify-between gap-1.5 sm:static sm:order-none sm:mr-auto sm:w-auto sm:justify-start">
+        <div class="contents">
           <TemplateMenu />
           <AccentMenu />
           <TypeMenu />

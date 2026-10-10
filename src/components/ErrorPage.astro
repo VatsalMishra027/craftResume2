@@ -1,0 +1,106 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from './Header.astro';
+import Footer from './Footer.astro';
+
+interface Props {
+  code: string;
+  title: string;
+  heading: string;
+  message: string;
+  /** Primary action; the second is always "Back to home". */
+  primary: { href: string; label: string };
+}
+const { code, title, heading, message, primary } = Astro.props;
+
+const links = [
+  { href: '/templates', label: 'Resume templates', hint: 'Browse all 17 layouts' },
+  { href: '/cover-letter-templates', label: 'Cover letters', hint: 'Write the matching letter' },
+  { href: '/import', label: 'Import resume', hint: 'Start from your old PDF' },
+];
+---
+
+<Layout title={title} description={message} noindex>
+  <Header />
+
+  <main class="relative overflow-hidden">
+    <div class="hero-glow" aria-hidden="true"></div>
+
+    <div class="shell relative flex min-h-[calc(100vh-14rem)] flex-col items-center justify-center py-20 text-center">
+      <p class="err-code" aria-hidden="true">{code}</p>
+
+      <p class="eyebrow mt-2">Error {code}</p>
+      <h1 class="display mt-3 max-w-xl text-[clamp(2rem,5vw,3.2rem)]">{heading}</h1>
+      <p class="mt-4 max-w-md text-[15px] leading-relaxed text-ink-muted">{message}</p>
+
+      <div class="mt-9 flex flex-wrap items-center justify-center gap-3">
+        <a
+          href={primary.href}
+          class="inline-flex h-12 items-center rounded-full bg-ink px-7 text-[15px] font-medium text-paper transition-transform duration-200 ease-(--ease-out-soft) hover:-translate-y-0.5"
+        >
+          {primary.label}
+        </a>
+        <a
+          href="/"
+          class="inline-flex h-12 items-center rounded-full border border-line-strong px-7 text-[15px] font-medium text-ink transition-colors duration-200 hover:bg-paper-sunk"
+        >
+          Back to home
+        </a>
+      </div>
+
+      <ul class="mt-14 grid w-full max-w-2xl gap-3 sm:grid-cols-3">
+        {
+          links.map((link) => (
+            <li>
+              <a href={link.href} class="err-link">
+                <span class="text-sm font-semibold">{link.label}</span>
+                <span class="mt-0.5 block text-xs text-ink-muted">{link.hint}</span>
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </main>
+
+  <Footer />
+</Layout>
+
+<style>
+  .err-code {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: clamp(6rem, 22vw, 11rem);
+    line-height: 0.9;
+    letter-spacing: -0.04em;
+    background: linear-gradient(120deg, var(--color-clay), #e8855a 55%, #f0a070);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .err-link {
+    display: block;
+    padding: 1rem 1.1rem;
+    border-radius: 1rem;
+    border: 1px solid var(--color-line);
+    background: var(--color-surface);
+    text-align: left;
+    transition:
+      transform 250ms var(--ease-out-soft),
+      border-color 200ms ease,
+      box-shadow 250ms ease;
+  }
+
+  .err-link:hover {
+    transform: translateY(-2px);
+    border-color: color-mix(in srgb, var(--color-clay) 35%, var(--color-line-strong));
+    box-shadow: 0 14px 28px -20px color-mix(in srgb, var(--color-clay) 55%, rgb(22 21 15 / 0.3));
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .err-link {
+      transition: none;
+    }
+  }
+</style>
