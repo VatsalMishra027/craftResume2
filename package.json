@@ -11,7 +11,7 @@
     "preview": "astro preview",
     "astro": "astro",
     "test": "npx tsx tests/parser-scenarios.test.ts && npx tsx tests/projects-rendering.test.ts && npx tsx tests/custom-sections.test.ts && npx tsx tests/pdf-export.test.ts && npx tsx tests/design.test.ts",
-    "deploy": "npm run build && wrangler pages deploy dist --project-name=freeresumemakerai"
+    "deploy": "npm run build && wrangler pages deploy dist --project-name=freeresumemakerai --branch=master"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",
