@@ -1,0 +1,143 @@
+---
+/**
+ * The site name, freeresumemakerai.com, set as a logotype.
+ *
+ * "free" is circled in pen — the mark a job-seeker (or a recruiter) puts
+ * around the line that matters — and the rest runs on as one confident word
+ * with "ai" picked out in clay and ".com" receding. The circle draws itself
+ * once on load and again on hover. Screen readers get the plain domain; the
+ * pieces are decoration.
+ */
+interface Props {
+  /** `lg` for the footer. */
+  size?: 'sm' | 'lg';
+  /** Drops the ".com" where space is tight, such as the editor's toolbar. */
+  compact?: boolean;
+  class?: string;
+}
+const { size = 'sm', compact = false, class: className = '' } = Astro.props;
+---
+
+<span class:list={['wm', size === 'lg' && 'wm--lg', compact && 'wm--compact', className]} translate="no">
+  <span class="sr-only">freeresumemakerai.com</span>
+  <span class="wm-line" aria-hidden="true">
+    <span class="wm-free">
+      <svg class="wm-pen" viewBox="0 0 60 30" preserveAspectRatio="none" fill="none" focusable="false">
+        <path
+          d="M8 18C3 8 22 2 42 5c14 2 20 9 14 17-6 7-26 8-40 4C6 24 3 16 11 9"
+          pathLength="1"
+          vector-effect="non-scaling-stroke"></path>
+      </svg>
+      <span class="wm-free-text">free</span>
+    </span>
+    <span class="wm-name">resumemaker<span class="wm-ai">ai</span></span>
+    <span class="wm-com">.com</span>
+  </span>
+</span>
+
+<style is:global>
+  .wm {
+    display: inline-flex;
+    align-items: center;
+    font-size: 17px;
+    line-height: 1;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    white-space: nowrap;
+  }
+
+  .wm--lg {
+    font-size: 26px;
+  }
+
+  .wm-line {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  /* The word sits inside its own room so the pen stroke has space to loop. */
+  .wm-free {
+    position: relative;
+    display: inline-block;
+    padding: 0 0.1em;
+    margin-right: 0.55em;
+  }
+
+  .wm-free-text {
+    position: relative;
+    color: var(--color-ink);
+  }
+
+  .wm-pen {
+    position: absolute;
+    left: -0.4em;
+    top: -0.3em;
+    width: calc(100% + 0.8em);
+    height: calc(100% + 0.62em);
+    overflow: visible;
+    pointer-events: none;
+  }
+
+  .wm-pen path {
+    stroke: var(--color-clay);
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-dasharray: 1;
+    stroke-dashoffset: 0;
+    animation: wm-draw 900ms cubic-bezier(0.5, 0, 0.2, 1) 250ms both;
+  }
+
+  @keyframes wm-draw {
+    from {
+      stroke-dashoffset: 1;
+    }
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  /* Hover: the pen goes round again. */
+  a:hover .wm-pen path,
+  a:focus-visible .wm-pen path {
+    animation: wm-draw 700ms cubic-bezier(0.5, 0, 0.2, 1) both;
+  }
+
+  .wm-name {
+    color: var(--color-ink);
+  }
+
+  .wm-ai {
+    color: var(--color-clay);
+  }
+
+  .wm-com {
+    color: var(--color-ink-faint);
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+
+  .wm--compact .wm-com {
+    display: none;
+  }
+
+  /* The domain suffix is the first thing to go when the bar gets tight. */
+  @media (max-width: 1023px) {
+    .wm:not(.wm--lg) .wm-com {
+      display: none;
+    }
+  }
+
+  @media (max-width: 380px) {
+    .wm:not(.wm--lg) {
+      font-size: 15px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .wm-pen path,
+    a:hover .wm-pen path,
+    a:focus-visible .wm-pen path {
+      animation: none;
+    }
+  }
+</style>

@@ -1,4 +1,4 @@
-# CraftResume
+# Free Resume Maker AI (freeresumemakerai.com)
 
 A free resume builder. Pick a template, fill in your details, download a clean A4 PDF.
 No account, no watermark, nothing uploaded to a server.

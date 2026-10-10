@@ -14,7 +14,7 @@ const PAGES: { path: string; priority: string; changefreq: string }[] = [
 ];
 
 export const GET: APIRoute = ({ site }) => {
-  const base = site ?? new URL('https://craftresume.app');
+  const base = site ?? new URL('https://freeresumemakerai.com');
   const urls = PAGES.map(
     (p) =>
       `  <url>\n    <loc>${new URL(p.path, base).href}</loc>\n    <changefreq>${p.changefreq}</changefreq>\n    <priority>${p.priority}</priority>\n  </url>`,

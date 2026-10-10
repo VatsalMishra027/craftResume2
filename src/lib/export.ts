@@ -1091,7 +1091,7 @@ export async function printResumeIframe(sheetsHtml: string, documentTitle = 'Res
         win.focus();
         win.print();
       } catch (err) {
-        console.error('[CraftResume Print] Iframe print failed, using standard fallback:', err);
+        console.error('[Free Resume Maker AI Print] Iframe print failed, using standard fallback:', err);
         window.print();
         cleanup();
       }

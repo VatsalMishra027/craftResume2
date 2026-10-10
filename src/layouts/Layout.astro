@@ -16,10 +16,10 @@ interface Props {
 
 const {
   title,
-  description = 'CraftResume is a free resume builder and online resume maker. Pick a template, fill in your details and download a clean PDF. No account needed.',
+  description = 'Free Resume Maker AI is a free resume builder and online resume maker. Pick a template, fill in your details and download a clean PDF. No account needed.',
   bare = false,
   image = '/og-image.png',
-  imageAlt = 'CraftResume — free resume builder and resume maker with PDF download',
+  imageAlt = 'Free Resume Maker AI — free resume builder and resume maker with PDF download',
   noindex = false,
 } = Astro.props;
 
@@ -50,7 +50,7 @@ const imageUrl = new URL(image, site).href;
 
     {/* Open Graph — Facebook, LinkedIn, WhatsApp, Slack and most link previews. */}
     <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="CraftResume" />
+    <meta property="og:site_name" content="Free Resume Maker AI" />
     <meta property="og:locale" content="en_US" />
     <meta property="og:url" content={canonical} />
     <meta property="og:title" content={title} />
@@ -71,8 +71,8 @@ const imageUrl = new URL(image, site).href;
 
     <meta name="theme-color" content="#faf9f6" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#16150f" media="(prefers-color-scheme: dark)" />
-    <meta name="application-name" content="CraftResume" />
-    <meta name="apple-mobile-web-app-title" content="CraftResume" />
+    <meta name="application-name" content="Free Resume Maker AI" />
+    <meta name="apple-mobile-web-app-title" content="Free Resume Maker AI" />
     <meta name="color-scheme" content="light dark" />
 
     {/* Page-specific additions such as structured data. */}

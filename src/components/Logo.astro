@@ -1,18 +1,23 @@
 ---
+import Wordmark from './Wordmark.astro';
+
 interface Props {
   class?: string;
+  /** Leave the ".com" off the wordmark, for tight toolbars. */
+  compact?: boolean;
+  size?: 'sm' | 'lg';
 }
-const { class: className = '' } = Astro.props;
+const { class: className = '', compact = false, size = 'sm' } = Astro.props;
 ---
 
 <a
   href="/"
   class={`group inline-flex items-center gap-2.5 ${className}`}
-  aria-label="CraftResume home"
+  aria-label="Free Resume Maker AI home"
 >
   <svg
     viewBox="0 0 64 64"
-    class="size-8 shrink-0 transition-transform duration-300 ease-(--ease-out-soft) group-hover:-rotate-6"
+    class:list={['shrink-0 transition-transform duration-300 ease-(--ease-out-soft) group-hover:-rotate-6', size === 'lg' ? 'size-11' : 'size-8']}
     aria-hidden="true"
   >
     <defs>
@@ -25,7 +30,5 @@ const { class: className = '' } = Astro.props;
     <path d="M38 10v10h10z" fill="#faf9f6" opacity=".9"></path>
     <path d="M25 30h7M25 37h12M25 44h17" stroke="#16150f" stroke-width="3.4" stroke-linecap="round"></path>
   </svg>
-  <span class="text-[15px] font-semibold tracking-[-0.02em]">
-    Craft<span class="text-ink-muted">Resume</span>
-  </span>
+  <Wordmark {compact} {size} />
 </a>
