@@ -108,6 +108,22 @@ const imageUrl = new URL(image, site).href;
       rel="stylesheet"
     />
 
+    {/* Google Analytics: production builds only, so local development never
+        sends hits. Disclosed in the privacy policy. */}
+    {
+      import.meta.env.PROD && (
+        <Fragment>
+          <script is:inline async src="https://www.googletagmanager.com/gtag/js?id=G-Q4WYC1S31B" />
+          <script is:inline>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-Q4WYC1S31B');
+          </script>
+        </Fragment>
+      )
+    }
+
     <title>{title}</title>
   </head>
   <body class={bare ? 'h-dvh overflow-hidden' : ''}>
