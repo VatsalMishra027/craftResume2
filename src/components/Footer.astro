@@ -22,7 +22,15 @@ const year = new Date().getFullYear();
     </nav>
   </div>
 
-  <div class="shell border-t border-line py-5">
+  <div
+    class="shell flex flex-col gap-4 border-t border-line py-5 sm:flex-row sm:items-center sm:justify-between"
+  >
     <p class="text-xs text-ink-faint">© {year} freeresumemakerai.com — Free Resume Maker AI. Built for people who just want the PDF.</p>
+    <nav class="flex flex-wrap gap-x-5 gap-y-2 text-xs text-ink-muted" aria-label="Company and legal">
+      <a href="/about" class="transition-colors hover:text-ink">About us</a>
+      <a href="/contact" class="transition-colors hover:text-ink">Contact us</a>
+      <a href="/privacy" class="transition-colors hover:text-ink">Privacy policy</a>
+      <a href="/terms" class="transition-colors hover:text-ink">Terms &amp; conditions</a>
+    </nav>
   </div>
 </footer>

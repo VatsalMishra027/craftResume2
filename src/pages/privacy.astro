@@ -1,0 +1,137 @@
+---
+import LegalPage from '../components/LegalPage.astro';
+import { CONTACT_EMAIL, SITE_NAME, SITE_DOMAIN } from '../lib/site';
+
+const toc = [
+  { id: 'summary', label: 'The short version' },
+  { id: 'what-we-collect', label: 'What we collect' },
+  { id: 'on-your-device', label: 'What stays on your device' },
+  { id: 'third-parties', label: 'Third-party services' },
+  { id: 'cookies', label: 'Cookies and storage' },
+  { id: 'your-control', label: 'Your control' },
+  { id: 'children', label: 'Children' },
+  { id: 'changes', label: 'Changes to this policy' },
+  { id: 'contact', label: 'Contact' },
+];
+---
+
+<LegalPage
+  title={`Privacy Policy | ${SITE_NAME}`}
+  description={`How ${SITE_NAME} handles your data: no account, no upload of your resume, and everything saved in your own browser.`}
+  eyebrow="Privacy policy"
+  heading="Your resume is yours. We never see it."
+  lead="This policy explains, in plain language, what happens to the information you type into our resume builder and cover letter editor."
+  toc={toc}
+>
+  <section id="summary">
+    <h2>The short version</h2>
+    <p class="legal-note">
+      You don’t need an account. What you type is saved in your own browser and is not sent to our
+      servers. We don’t sell your data, because we don’t have it.
+    </p>
+    <p>
+      {SITE_NAME} ({SITE_DOMAIN}) is a free resume builder, cover letter editor and PDF importer
+      that runs in your browser. The resume and letter content you enter, the PDF you import and the
+      files you export are all handled on your device.
+    </p>
+  </section>
+
+  <section id="what-we-collect">
+    <h2>What we collect</h2>
+    <p>
+      We do not ask for your name, email address or any other personal details to use the site, and
+      we do not run user accounts. We do not receive the content of your resume or cover letter.
+    </p>
+    <p>
+      Like most websites, the server that delivers our pages may keep ordinary technical logs, such
+      as IP address, browser type, the page requested and the time. These logs exist to keep the site
+      running and secure, and are not used to look at what you write.
+    </p>
+    <p>
+      If you email us, we receive your email address and whatever you choose to include. We use it
+      only to reply.
+    </p>
+  </section>
+
+  <section id="on-your-device">
+    <h2>What stays on your device</h2>
+    <ul>
+      <li>
+        <strong>Your drafts.</strong> Resume and cover letter content, your chosen template, colour,
+        typeface and layout settings are saved in your browser’s local storage so they are there when
+        you come back.
+      </li>
+      <li>
+        <strong>Imported PDFs.</strong> When you import a resume, the file is read by code running in
+        your browser. It is not uploaded to a server.
+      </li>
+      <li>
+        <strong>Exports.</strong> PDF and Word files are generated on your device.
+      </li>
+    </ul>
+    <p>
+      Because this data lives only in your browser, we cannot recover it for you. Clearing your
+      browser data, or using a private window, removes it.
+    </p>
+  </section>
+
+  <section id="third-parties">
+    <h2>Third-party services</h2>
+    <p>
+      To display the site’s typefaces, your browser requests font files from Google Fonts. That
+      request is made by your browser directly, so Google may receive technical information such as
+      your IP address. See Google’s own privacy policy for how it treats that information.
+    </p>
+    <p>
+      We do not currently use advertising networks or analytics trackers. If that changes, we will
+      update this page before it does.
+    </p>
+  </section>
+
+  <section id="cookies">
+    <h2>Cookies and storage</h2>
+    <p>
+      We do not set tracking or advertising cookies. We use your browser’s local storage for your
+      drafts and for preferences such as light or dark theme. These items are kept on your device and
+      are not used to identify you.
+    </p>
+  </section>
+
+  <section id="your-control">
+    <h2>Your control</h2>
+    <p>
+      Because your content is stored on your device, you are already in control of it. You can edit
+      or delete it in the editor, or remove everything at once by clearing this site’s data in your
+      browser settings. If you have emailed us and want that correspondence deleted, write to us and
+      we will remove it.
+    </p>
+    <p>
+      Depending on where you live, you may have additional rights over personal data, such as access
+      or deletion. Contact us and we will help with any request that applies.
+    </p>
+  </section>
+
+  <section id="children">
+    <h2>Children</h2>
+    <p>
+      The service is intended for people looking for work and is not directed at children under 13.
+      We do not knowingly collect personal information from children.
+    </p>
+  </section>
+
+  <section id="changes">
+    <h2>Changes to this policy</h2>
+    <p>
+      If we change how the site handles data, we will update this page and the date at the top.
+      Material changes will be easy to spot, not buried.
+    </p>
+  </section>
+
+  <section id="contact">
+    <h2>Contact</h2>
+    <p>
+      Questions about privacy? Write to <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a> or
+      use the <a href="/contact">contact page</a>.
+    </p>
+  </section>
+</LegalPage>

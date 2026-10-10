@@ -1,0 +1,271 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import { TEMPLATES } from '../lib/templates';
+import { BLUEPRINTS } from '../lib/blueprints';
+import { LETTERS } from '../lib/letters';
+import { SITE_NAME } from '../lib/site';
+
+const stats = [
+  { value: String(TEMPLATES.length), label: 'Resume templates' },
+  { value: String(BLUEPRINTS.length), label: 'Role blueprints' },
+  { value: String(LETTERS.length), label: 'Cover letter formats' },
+  { value: '$0', label: 'Cost, with no catch' },
+];
+
+const principles = [
+  {
+    n: '01',
+    title: 'Free means free',
+    body: 'Every template, every colour and every download. No trial that expires, no watermark, no surprise at the download button.',
+  },
+  {
+    n: '02',
+    title: 'Private by design',
+    body: 'Your resume holds your phone number and your work history. It stays in your browser, so there is nothing for us to leak or sell.',
+  },
+  {
+    n: '03',
+    title: 'Made for machines and people',
+    body: 'Real text, standard headings and one reading order, so an applicant tracking system can parse it and a recruiter can skim it.',
+  },
+  {
+    n: '04',
+    title: 'Honest about AI',
+    body: 'We do not invent experience for you. The tool gives structure to good writing and reads your old PDF for you; the words stay yours.',
+  },
+];
+
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'AboutPage',
+  name: `About ${SITE_NAME}`,
+  description:
+    'Free Resume Maker AI is a free resume builder and cover letter maker built to be private, ATS-friendly and honest about what it does.',
+};
+---
+
+<Layout
+  title={`About Us | ${SITE_NAME}`}
+  description="Why we built a free resume builder with no sign-up, no watermark and no paywall, and how it keeps your details on your own device."
+>
+  <Fragment slot="head">
+    <script type="application/ld+json" set:html={JSON.stringify(structuredData)} />
+  </Fragment>
+  <Header />
+
+  <main>
+    <section class="relative overflow-hidden">
+      <div class="hero-glow" aria-hidden="true"></div>
+      <div class="shell relative py-20 lg:py-28">
+        <p class="eyebrow">About us</p>
+        <h1 class="display mt-3 max-w-3xl text-[clamp(2.4rem,6.5vw,4.4rem)]">
+          A resume builder that
+          <span class="text-gradient-clay font-serif font-normal italic tracking-[-0.01em]"
+            >just lets you finish.</span
+          >
+        </h1>
+        <p class="mt-6 max-w-xl text-[17px] leading-relaxed text-ink-soft">
+          Looking for a job is stressful enough without a paywall waiting at the end of your resume. {SITE_NAME}
+          exists so anyone can build a clean, professional resume and download it,
+          without creating an account or paying a cent.
+        </p>
+        <div class="mt-9 flex flex-wrap gap-3">
+          <a
+            href="/editor"
+            class="inline-flex h-12 items-center rounded-full bg-ink px-7 text-[15px] font-medium text-paper transition-transform duration-200 ease-(--ease-out-soft) hover:-translate-y-0.5"
+          >
+            Start building
+          </a>
+          <a
+            href="/contact"
+            class="inline-flex h-12 items-center rounded-full border border-line-strong px-7 text-[15px] font-medium text-ink transition-colors duration-200 hover:bg-paper-sunk"
+          >
+            Get in touch
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section class="border-y border-line bg-surface/60">
+      <dl class="shell grid grid-cols-2 gap-px lg:grid-cols-4">
+        {
+          stats.map((stat) => (
+            <div class="about-stat">
+              <dd class="about-stat-value">{stat.value}</dd>
+              <dt class="eyebrow mt-2">{stat.label}</dt>
+            </div>
+          ))
+        }
+      </dl>
+    </section>
+
+    <section class="shell grid gap-10 py-20 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16">
+      <div class="lg:sticky lg:top-24 lg:self-start">
+        <p class="eyebrow">Our story</p>
+        <h2 class="display mt-3 text-[clamp(1.9rem,4vw,2.7rem)]">Why this exists.</h2>
+      </div>
+      <div class="seo-copy">
+        <p>
+          Most online resume tools follow the same pattern. You spend an hour choosing a template and
+          typing in your history, and only when you press download do you meet the subscription
+          screen. By then you have invested too much to walk away, which is exactly the point.
+        </p>
+        <p>
+          We wanted the opposite: a resume maker that is useful from the first minute and honest all
+          the way to the last. Pick a layout, fill in a simple form, watch the page update at true A4
+          size and download a PDF that is yours to keep.
+        </p>
+        <p>
+          It also helps to treat your resume as the private document it is. So the builder runs
+          entirely in your browser. Your details are saved on your own device, an imported PDF is read
+          locally, and nothing you type is uploaded.
+        </p>
+      </div>
+    </section>
+
+    <section class="border-t border-line">
+      <div class="shell py-20">
+        <p class="eyebrow">What we stand for</p>
+        <h2 class="display mt-3 max-w-2xl text-[clamp(1.9rem,4vw,2.7rem)]">
+          Four promises we build around.
+        </h2>
+
+        <div class="mt-12 grid gap-4 sm:grid-cols-2">
+          {
+            principles.map((item) => (
+              <article class="about-card">
+                <span class="about-card-n" aria-hidden="true">
+                  {item.n}
+                </span>
+                <h3 class="text-lg font-semibold tracking-[-0.015em]">{item.title}</h3>
+                <p class="mt-2.5 text-sm leading-relaxed text-ink-muted">{item.body}</p>
+              </article>
+            ))
+          }
+        </div>
+      </div>
+    </section>
+
+    <section class="border-t border-line">
+      <div class="shell py-20">
+        <div class="cta-card-about rounded-card px-8 py-14 text-center sm:px-16">
+          <h2 class="display mx-auto max-w-2xl text-[clamp(1.9rem,4.5vw,3rem)]">
+            Ready to make your resume?
+          </h2>
+          <p class="mx-auto mt-4 max-w-md text-[15px] leading-relaxed opacity-75">
+            It takes about ten minutes, and it will always be free.
+          </p>
+          <a
+            href="/editor"
+            class="about-cta mt-8 inline-flex h-12 items-center rounded-full px-8 text-[15px] font-medium transition-transform duration-200 ease-(--ease-out-soft) hover:-translate-y-0.5"
+          >
+            Start building
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <Footer />
+</Layout>
+
+<style>
+  .about-stat {
+    padding: 2rem 1.25rem;
+    background: transparent;
+  }
+
+  @media (min-width: 1024px) {
+    .about-stat + .about-stat {
+      border-left: 1px solid var(--color-line);
+    }
+  }
+
+  .about-stat-value {
+    font-family: var(--font-numeral);
+    font-size: clamp(2.4rem, 5vw, 3.4rem);
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    line-height: 1;
+    background: linear-gradient(
+      160deg,
+      var(--color-clay),
+      color-mix(in srgb, var(--color-clay) 45%, var(--color-ink))
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .about-card {
+    position: relative;
+    overflow: hidden;
+    padding: 1.9rem 1.75rem;
+    border-radius: var(--radius-card);
+    border: 1px solid var(--color-line);
+    background: linear-gradient(
+      160deg,
+      color-mix(in srgb, var(--color-surface) 92%, var(--color-clay)),
+      var(--color-surface) 50%
+    );
+    transition:
+      transform 300ms var(--ease-out-soft),
+      border-color 300ms ease,
+      box-shadow 300ms ease;
+  }
+
+  .about-card:hover {
+    transform: translateY(-3px);
+    border-color: color-mix(in srgb, var(--color-clay) 35%, var(--color-line-strong));
+    box-shadow: 0 22px 44px -26px color-mix(in srgb, var(--color-clay) 50%, rgb(22 21 15 / 0.3));
+  }
+
+  .about-card-n {
+    display: block;
+    margin-bottom: 1rem;
+    font-family: var(--font-numeral);
+    font-size: 2.4rem;
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: -0.04em;
+    color: transparent;
+    -webkit-text-stroke: 1px color-mix(in srgb, var(--color-clay) 55%, transparent);
+  }
+
+  .cta-card-about {
+    background: radial-gradient(
+      120% 140% at 50% -20%,
+      color-mix(in srgb, var(--color-ink) 88%, var(--color-clay)),
+      var(--color-ink) 62%
+    );
+    color: var(--color-paper);
+  }
+
+  .about-cta {
+    background: var(--color-paper);
+    color: var(--color-ink);
+  }
+
+  :root[data-theme='dark'] .cta-card-about {
+    background: radial-gradient(
+      120% 140% at 50% -20%,
+      color-mix(in srgb, var(--color-surface) 70%, var(--color-clay)),
+      var(--color-surface) 58%
+    );
+    color: var(--color-ink);
+    border: 1px solid var(--color-line-strong);
+  }
+
+  :root[data-theme='dark'] .about-cta {
+    background: var(--color-ink);
+    color: var(--color-paper);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .about-card {
+      transition: none;
+    }
+  }
+</style>

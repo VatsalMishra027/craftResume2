@@ -11,6 +11,10 @@ const PAGES: { path: string; priority: string; changefreq: string }[] = [
   { path: '/cover-letter-templates', priority: '0.7', changefreq: 'monthly' },
   { path: '/cover-letter', priority: '0.6', changefreq: 'monthly' },
   { path: '/import', priority: '0.6', changefreq: 'monthly' },
+  { path: '/about', priority: '0.4', changefreq: 'yearly' },
+  { path: '/contact', priority: '0.4', changefreq: 'yearly' },
+  { path: '/privacy', priority: '0.3', changefreq: 'yearly' },
+  { path: '/terms', priority: '0.3', changefreq: 'yearly' },
 ];
 
 export const GET: APIRoute = ({ site }) => {

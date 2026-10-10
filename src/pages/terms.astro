@@ -1,0 +1,126 @@
+---
+import LegalPage from '../components/LegalPage.astro';
+import { CONTACT_EMAIL, SITE_NAME, SITE_DOMAIN } from '../lib/site';
+
+const toc = [
+  { id: 'summary', label: 'The short version' },
+  { id: 'using-the-service', label: 'Using the service' },
+  { id: 'your-content', label: 'Your content' },
+  { id: 'accuracy', label: 'Accuracy and results' },
+  { id: 'acceptable-use', label: 'Acceptable use' },
+  { id: 'our-work', label: 'Our work' },
+  { id: 'availability', label: 'Availability and changes' },
+  { id: 'liability', label: 'Disclaimers and liability' },
+  { id: 'changes', label: 'Changes to these terms' },
+  { id: 'contact', label: 'Contact' },
+];
+---
+
+<LegalPage
+  title={`Terms & Conditions | ${SITE_NAME}`}
+  description={`The terms for using ${SITE_NAME}, a free resume builder and cover letter maker. Plain-language and short.`}
+  eyebrow="Terms & conditions"
+  heading="The rules, in plain language."
+  lead="By using this site you agree to the terms below. We’ve kept them short and readable, because they should be."
+  toc={toc}
+>
+  <section id="summary">
+    <h2>The short version</h2>
+    <p class="legal-note">
+      The tool is free to use. What you write is yours. Please use it honestly, and understand it is
+      provided as is, with no guarantee of a job.
+    </p>
+    <p>
+      These terms apply to {SITE_NAME} at {SITE_DOMAIN} (“we”, “us”, “the site”). If you do not
+      agree with them, please do not use the site.
+    </p>
+  </section>
+
+  <section id="using-the-service">
+    <h2>Using the service</h2>
+    <p>
+      You can use the resume builder, cover letter editor, templates, importer and exports for free,
+      for personal or professional job applications, with no account required. You must be old enough
+      to enter a binding agreement where you live, or have a parent or guardian’s permission.
+    </p>
+  </section>
+
+  <section id="your-content">
+    <h2>Your content</h2>
+    <p>
+      You keep full ownership of everything you create, including your resume and cover letter text.
+      Your content is processed and stored on your own device, and we do not claim any rights to it.
+      You are responsible for what you write and for keeping a backup, since we cannot recover content
+      stored in your browser.
+    </p>
+  </section>
+
+  <section id="accuracy">
+    <h2>Accuracy and results</h2>
+    <p>
+      We provide templates, layout and guidance, but you are responsible for the accuracy of your
+      resume. Please only state experience, qualifications and dates that are true. We make no promise
+      that a resume made here will pass any particular applicant tracking system, earn an interview or
+      lead to a job. ATS ratings shown on templates are general guidance, not a guarantee.
+    </p>
+    <p>
+      Sample content, role blueprints and example text are placeholders. Replace them with your own
+      details and check them before you send anything.
+    </p>
+  </section>
+
+  <section id="acceptable-use">
+    <h2>Acceptable use</h2>
+    <p>Please do not:</p>
+    <ul>
+      <li>use the site to create false, misleading or fraudulent documents;</li>
+      <li>attempt to disrupt, overload or break the site or its security;</li>
+      <li>scrape or copy the site at scale, or resell the site or its templates as your own product;</li>
+      <li>use the site in a way that breaks the law or infringes anyone’s rights.</li>
+    </ul>
+  </section>
+
+  <section id="our-work">
+    <h2>Our work</h2>
+    <p>
+      The site’s design, code, templates, text, logo and name belong to us or our licensors and are
+      protected by copyright and other laws. You may use the documents you export for your own job
+      search. You may not copy the site itself or its templates to build a competing product.
+    </p>
+  </section>
+
+  <section id="availability">
+    <h2>Availability and changes</h2>
+    <p>
+      We work to keep the site available, but it may be interrupted, changed or discontinued at any
+      time, and features may be added or removed. Because your drafts are stored in your browser,
+      please export a PDF of anything important.
+    </p>
+  </section>
+
+  <section id="liability">
+    <h2>Disclaimers and liability</h2>
+    <p>
+      The site is provided “as is” and “as available”, without warranties of any kind, express or
+      implied. To the fullest extent the law allows, we are not liable for any indirect or
+      consequential loss, loss of data, or loss of opportunity arising from your use of the site.
+      Nothing in these terms limits any right or liability that cannot be limited by law.
+    </p>
+  </section>
+
+  <section id="changes">
+    <h2>Changes to these terms</h2>
+    <p>
+      We may update these terms from time to time. The date at the top shows when they last changed,
+      and continued use of the site after a change means you accept the updated terms.
+    </p>
+  </section>
+
+  <section id="contact">
+    <h2>Contact</h2>
+    <p>
+      Questions about these terms? Email <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a> or use
+      the <a href="/contact">contact page</a>. See also our <a href="/privacy">privacy policy</a>.
+    </p>
+  </section>
+</LegalPage>

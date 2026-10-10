@@ -1,0 +1,235 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from './Header.astro';
+import Footer from './Footer.astro';
+import { LEGAL_UPDATED } from '../lib/site';
+
+interface Props {
+  title: string;
+  description: string;
+  eyebrow: string;
+  heading: string;
+  /** One-line summary shown under the heading. */
+  lead: string;
+  /** Contents list; each id must match a section in the slot. */
+  toc: { id: string; label: string }[];
+}
+const { title, description, eyebrow, heading, lead, toc } = Astro.props;
+---
+
+<Layout title={title} description={description}>
+  <Header />
+
+  <main>
+    <section class="relative overflow-hidden border-b border-line">
+      <div class="hero-glow" aria-hidden="true"></div>
+      <div class="shell relative py-16 lg:py-20">
+        <p class="eyebrow">{eyebrow}</p>
+        <h1 class="display mt-3 max-w-2xl text-[clamp(2.2rem,5.5vw,3.6rem)]">{heading}</h1>
+        <p class="mt-5 max-w-xl text-[17px] leading-relaxed text-ink-soft">{lead}</p>
+        <p class="legal-stamp mt-7">
+          <span class="legal-dot" aria-hidden="true"></span>
+          Last updated {LEGAL_UPDATED}
+        </p>
+      </div>
+    </section>
+
+    <div class="shell grid gap-10 py-14 lg:grid-cols-[15rem_1fr] lg:gap-16 lg:py-20">
+      <aside class="min-w-0 lg:sticky lg:top-24 lg:self-start">
+        <p class="eyebrow">On this page</p>
+        <nav class="legal-toc mt-4" aria-label="On this page" data-legal-toc>
+          {
+            toc.map((item, i) => (
+              <a href={`#${item.id}`} data-toc-link={item.id}>
+                <span class="legal-toc-n">{String(i + 1).padStart(2, '0')}</span>
+                <span>{item.label}</span>
+              </a>
+            ))
+          }
+        </nav>
+      </aside>
+
+      <article class="legal-copy min-w-0">
+        <slot />
+      </article>
+    </div>
+  </main>
+
+  <Footer />
+</Layout>
+
+<style is:global>
+  .legal-stamp {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 0.8rem;
+    border-radius: 999px;
+    border: 1px solid var(--color-line-strong);
+    background: color-mix(in srgb, var(--color-surface) 80%, transparent);
+    color: var(--color-ink-muted);
+    font-size: 12px;
+  }
+
+  .legal-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--color-clay);
+  }
+
+  .legal-toc {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    border-left: 1px solid var(--color-line);
+  }
+
+  @media (max-width: 1023px) {
+    .legal-toc {
+      flex-direction: row;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      border-left: 0;
+    }
+  }
+
+  .legal-toc a {
+    display: flex;
+    align-items: baseline;
+    gap: 0.7rem;
+    margin-left: -1px;
+    padding: 0.4rem 0.9rem;
+    border-left: 2px solid transparent;
+    font-size: 13.5px;
+    color: var(--color-ink-muted);
+    transition:
+      color 200ms ease,
+      border-color 200ms ease;
+  }
+
+  @media (max-width: 1023px) {
+    .legal-toc a {
+      margin: 0;
+      padding: 0.4rem 0.8rem;
+      border: 1px solid var(--color-line);
+      border-radius: 999px;
+      background: var(--color-surface);
+    }
+    .legal-toc-n {
+      display: none;
+    }
+  }
+
+  .legal-toc a:hover {
+    color: var(--color-ink);
+  }
+
+  .legal-toc a[aria-current='true'] {
+    color: var(--color-ink);
+    border-color: var(--color-clay);
+    font-weight: 500;
+  }
+
+  .legal-toc-n {
+    font-family: var(--font-numeral);
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+    color: var(--color-ink-faint);
+  }
+
+  .legal-copy {
+    max-width: 44rem;
+    font-size: 15.5px;
+    line-height: 1.75;
+    color: var(--color-ink-soft);
+  }
+
+  .legal-copy section {
+    scroll-margin-top: 6rem;
+    padding-bottom: 2.5rem;
+  }
+
+  .legal-copy section + section {
+    padding-top: 2.5rem;
+    border-top: 1px solid var(--color-line);
+  }
+
+  .legal-copy h2 {
+    font-size: 1.4rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.3;
+    color: var(--color-ink);
+  }
+
+  .legal-copy h2 + * {
+    margin-top: 0.8rem;
+  }
+
+  .legal-copy p + p,
+  .legal-copy p + ul,
+  .legal-copy ul + p {
+    margin-top: 0.9rem;
+  }
+
+  .legal-copy ul {
+    padding-left: 1.25rem;
+    list-style: disc;
+  }
+
+  .legal-copy li + li {
+    margin-top: 0.4rem;
+  }
+
+  .legal-copy li::marker {
+    color: var(--color-clay);
+  }
+
+  .legal-copy strong {
+    color: var(--color-ink);
+    font-weight: 600;
+  }
+
+  .legal-copy a {
+    color: var(--color-clay);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  /* A short plain-language summary that opens a section. */
+  .legal-note {
+    margin-top: 1rem;
+    padding: 1rem 1.2rem;
+    border-radius: var(--radius-card);
+    border: 1px solid color-mix(in srgb, var(--color-clay) 25%, var(--color-line));
+    background: color-mix(in srgb, var(--color-clay) 6%, var(--color-surface));
+    color: var(--color-ink);
+    font-size: 15px;
+  }
+</style>
+
+<script>
+  // Highlights the contents entry for the section being read.
+  const links = Array.from(
+    document.querySelectorAll<HTMLAnchorElement>('[data-toc-link]'),
+  );
+  const sections = links
+    .map((link) => document.getElementById(link.dataset.tocLink!))
+    .filter((el): el is HTMLElement => !!el);
+
+  if (sections.length && 'IntersectionObserver' in window) {
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          links.forEach((link) =>
+            link.setAttribute('aria-current', String(link.dataset.tocLink === entry.target.id)),
+          );
+        });
+      },
+      { rootMargin: '-20% 0px -70% 0px' },
+    );
+    sections.forEach((section) => io.observe(section));
+  }
+</script>

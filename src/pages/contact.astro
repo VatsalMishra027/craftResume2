@@ -1,0 +1,301 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import { CONTACT_EMAIL, SITE_NAME } from '../lib/site';
+
+const topics = ['General question', 'Bug or something broken', 'Feature idea', 'Feedback on a template', 'Privacy or legal'];
+
+const cards = [
+  {
+    title: 'Email us',
+    body: CONTACT_EMAIL,
+    href: `mailto:${CONTACT_EMAIL}`,
+    icon: '<rect x="2" y="3.5" width="12" height="9" rx="1.6"/><path d="m2.6 4.8 5.4 4 5.4-4"/>',
+  },
+  {
+    title: 'Quick answers first',
+    body: 'Most questions are covered in the FAQ.',
+    href: '/#faq',
+    icon: '<circle cx="8" cy="8" r="6"/><path d="M6.3 6.2a1.8 1.8 0 1 1 2.6 1.6c-.6.3-.9.7-.9 1.3"/><path d="M8 11.4h.01"/>',
+  },
+  {
+    title: 'Your privacy',
+    body: 'Read what happens to your data.',
+    href: '/privacy',
+    icon: '<path d="M8 1.8 2.6 4.2v4c0 3.2 2.3 5.4 5.4 6.2 3.1-.8 5.4-3 5.4-6.2v-4z"/>',
+  },
+];
+
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'ContactPage',
+  name: `Contact ${SITE_NAME}`,
+};
+---
+
+<Layout
+  title={`Contact Us | ${SITE_NAME}`}
+  description="Questions, bug reports or ideas for our free resume builder? Send us a message and we’ll get back to you."
+>
+  <Fragment slot="head">
+    <script type="application/ld+json" set:html={JSON.stringify(structuredData)} />
+  </Fragment>
+  <Header />
+
+  <main>
+    <section class="relative overflow-hidden border-b border-line">
+      <div class="hero-glow" aria-hidden="true"></div>
+      <div class="shell relative py-16 lg:py-20">
+        <p class="eyebrow">Contact us</p>
+        <h1 class="display mt-3 max-w-2xl text-[clamp(2.2rem,5.5vw,3.6rem)]">
+          Say hello, <span class="text-gradient-clay font-serif font-normal italic">or tell us what’s broken.</span>
+        </h1>
+        <p class="mt-5 max-w-xl text-[17px] leading-relaxed text-ink-soft">
+          A real person reads every message. Send a question, a bug report or an idea for a template
+          and we will reply by email.
+        </p>
+      </div>
+    </section>
+
+    <section class="shell grid gap-10 py-14 lg:grid-cols-[0.8fr_1.2fr] lg:gap-14 lg:py-20">
+      <div class="min-w-0 space-y-3">
+        {
+          cards.map((card) => (
+            <a href={card.href} class="contact-card">
+              <span class="contact-icon" aria-hidden="true">
+                <svg
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.25"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="size-[1.1rem]"
+                  set:html={card.icon}
+                />
+              </span>
+              <span class="min-w-0">
+                <span class="block text-[15px] font-semibold tracking-[-0.01em]">{card.title}</span>
+                <span class="mt-0.5 block break-words text-sm text-ink-muted">{card.body}</span>
+              </span>
+              <span class="contact-arrow" aria-hidden="true">→</span>
+            </a>
+          ))
+        }
+        <p class="px-1 pt-2 text-xs leading-relaxed text-ink-faint">
+          We aim to reply within a few working days. Please don’t send your resume or personal
+          documents by email unless we ask.
+        </p>
+      </div>
+
+      <form class="contact-form" data-contact-form novalidate>
+        <h2 class="text-xl font-semibold tracking-[-0.02em]">Send a message</h2>
+        <p class="mt-1.5 text-sm text-ink-muted">
+          This opens your email app with the message ready to send, so nothing is stored on our side.
+        </p>
+
+        <div class="mt-6 grid gap-5 sm:grid-cols-2">
+          <label class="block">
+            <span class="contact-label">Your name</span>
+            <input name="name" type="text" autocomplete="name" required class="contact-input" />
+          </label>
+          <label class="block">
+            <span class="contact-label">Your email</span>
+            <input name="email" type="email" autocomplete="email" required class="contact-input" />
+          </label>
+        </div>
+
+        <label class="mt-5 block">
+          <span class="contact-label">What is it about?</span>
+          <select name="topic" class="contact-input">
+            {topics.map((topic) => <option>{topic}</option>)}
+          </select>
+        </label>
+
+        <label class="mt-5 block">
+          <span class="contact-label">Message</span>
+          <textarea name="message" rows="6" required class="contact-input resize-y leading-relaxed"
+          ></textarea>
+        </label>
+
+        <p class="contact-error mt-4" data-contact-error role="alert" hidden>
+          Please add your name, a valid email and a message.
+        </p>
+
+        <button type="submit" class="contact-submit mt-6">
+          <span>Open in my email app</span>
+          <span class="contact-arrow-inline" aria-hidden="true">→</span>
+        </button>
+        <p class="mt-4 text-xs text-ink-faint">
+          Prefer to write it yourself? Email <a
+            href={`mailto:${CONTACT_EMAIL}`}
+            class="underline underline-offset-2 hover:text-ink">{CONTACT_EMAIL}</a
+          >.
+        </p>
+      </form>
+    </section>
+  </main>
+
+  <Footer />
+</Layout>
+
+<style>
+  .contact-card {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.15rem 1.25rem;
+    border-radius: var(--radius-card);
+    border: 1px solid var(--color-line);
+    background: var(--color-surface);
+    transition:
+      transform 250ms var(--ease-out-soft),
+      border-color 200ms ease,
+      box-shadow 250ms ease;
+  }
+
+  .contact-card:hover {
+    transform: translateY(-2px);
+    border-color: color-mix(in srgb, var(--color-clay) 35%, var(--color-line-strong));
+    box-shadow: 0 16px 32px -22px color-mix(in srgb, var(--color-clay) 55%, rgb(22 21 15 / 0.3));
+  }
+
+  .contact-icon {
+    display: grid;
+    place-items: center;
+    width: 2.6rem;
+    height: 2.6rem;
+    border-radius: 0.8rem;
+    color: var(--color-clay);
+    background: var(--color-clay-soft);
+    border: 1px solid color-mix(in srgb, var(--color-clay) 22%, transparent);
+  }
+
+  .contact-arrow {
+    color: var(--color-ink-faint);
+    transition:
+      transform 250ms var(--ease-out-soft),
+      color 200ms ease;
+  }
+
+  .contact-card:hover .contact-arrow {
+    transform: translateX(3px);
+    color: var(--color-clay);
+  }
+
+  .contact-form {
+    min-width: 0;
+    padding: 1.75rem;
+    border-radius: 1.1rem;
+    border: 1px solid var(--color-line);
+    background: linear-gradient(
+      160deg,
+      color-mix(in srgb, var(--color-surface) 94%, var(--color-clay)),
+      var(--color-surface) 40%
+    );
+    box-shadow: 0 1px 2px rgb(22 21 15 / 0.04);
+  }
+
+  @media (min-width: 640px) {
+    .contact-form {
+      padding: 2.25rem;
+    }
+  }
+
+  .contact-label {
+    display: block;
+    margin-bottom: 0.4rem;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--color-ink-soft);
+  }
+
+  .contact-input {
+    width: 100%;
+    padding: 0.7rem 0.85rem;
+    border-radius: 0.65rem;
+    border: 1px solid var(--color-line-strong);
+    background: var(--color-paper);
+    color: var(--color-ink);
+    font: inherit;
+    font-size: 14.5px;
+    transition:
+      border-color 150ms ease,
+      box-shadow 150ms ease;
+  }
+
+  .contact-input:hover {
+    border-color: var(--color-ink-faint);
+  }
+
+  .contact-input:focus {
+    outline: none;
+    border-color: var(--color-clay);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-clay) 18%, transparent);
+  }
+
+  .contact-error {
+    font-size: 13px;
+    color: var(--color-clay);
+  }
+
+  .contact-submit {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    height: 3rem;
+    padding: 0 1.75rem;
+    border-radius: 999px;
+    background: var(--color-ink);
+    color: var(--color-paper);
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition:
+      transform 220ms var(--ease-out-soft),
+      box-shadow 260ms ease;
+  }
+
+  .contact-submit:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 24px -12px color-mix(in srgb, var(--color-clay) 70%, transparent);
+  }
+
+  .contact-arrow-inline {
+    transition: transform 240ms cubic-bezier(0.3, 1.6, 0.5, 1);
+  }
+
+  .contact-submit:hover .contact-arrow-inline {
+    transform: translateX(3px);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .contact-card,
+    .contact-arrow,
+    .contact-submit,
+    .contact-arrow-inline {
+      transition: none;
+    }
+  }
+</style>
+
+<script define:vars={{ email: CONTACT_EMAIL }}>
+  // No server: the form builds a mailto: link and hands it to the visitor's mail app.
+  const form = document.querySelector('[data-contact-form]');
+  const error = document.querySelector('[data-contact-error]');
+  form?.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const data = new FormData(form);
+    const name = String(data.get('name') || '').trim();
+    const from = String(data.get('email') || '').trim();
+    const topic = String(data.get('topic') || '');
+    const message = String(data.get('message') || '').trim();
+    const valid = name && message && /^\S+@\S+\.\S+$/.test(from);
+    error.hidden = !!valid;
+    if (!valid) return;
+    const body = `${message}\n\n—\n${name}\n${from}`;
+    window.location.href = `mailto:${email}?subject=${encodeURIComponent(`[${topic}] from ${name}`)}&body=${encodeURIComponent(body)}`;
+  });
+</script>
